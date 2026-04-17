@@ -280,6 +280,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Engine\Components\PointLightComponent.cpp" />
+    <ClCompile Include="Source\Engine\GameFramework\PointLight.cpp" />
+    <ClCompile Include="Source\Engine\Components\DirectionalLightComponent.cpp" />
+    <ClCompile Include="Source\Engine\Components\AmbientLightComponent.cpp" />
+    <ClCompile Include="Source\Engine\Components\LightComponent.cpp" />
     <ClCompile Include="Source\Editor\EditorEngine.cpp" />
     <ClCompile Include="Source\Editor\EditorRenderPipeline.cpp" />
     <ClCompile Include="Source\Editor\Input\EditorGizmoTool.cpp" />
@@ -317,12 +322,15 @@
     <ClCompile Include="Source\Engine\Components\ExponentialHeightFogComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\FireBallComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\GizmoComponent.cpp" />
+    <ClCompile Include="Source\Engine\Components\LightComponentBase.cpp" />
+    <ClCompile Include="Source\Engine\Components\LocalLightComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\MeshComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\MovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\ProjectileMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\RotatingMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\SceneComponent.cpp" />
+    <ClCompile Include="Source\Engine\Components\SpotLightComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\StaticMeshComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\SubUVComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\TextRenderComponent.cpp" />
@@ -331,6 +339,7 @@
     <ClCompile Include="Source\Engine\GameFramework\AActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\DecalActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\Level.cpp" />
+    <ClCompile Include="Source\Engine\GameFramework\SpotLight.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\SpotLightActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\StaticMeshActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\World.cpp" />
@@ -417,6 +426,11 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Engine\Components\PointLightComponent.h" />
+    <ClInclude Include="Source\Engine\GameFramework\PointLight.h" />
+    <ClInclude Include="Source\Engine\Components\DirectionalLightComponent.h" />
+    <ClInclude Include="Source\Engine\Components\AmbientLightComponent.h" />
+    <ClInclude Include="Source\Engine\Components\LightComponent.h" />
     <ClInclude Include="Source\Editor\EditorEngine.h" />
     <ClInclude Include="Source\Editor\EditorRenderPipeline.h" />
     <ClInclude Include="Source\Editor\Input\EditorGizmoTool.h" />
@@ -458,6 +472,8 @@
     <ClInclude Include="Source\Engine\Components\ExponentialHeightFogComponent.h" />
     <ClInclude Include="Source\Engine\Components\FireBallComponent.h" />
     <ClInclude Include="Source\Engine\Components\GizmoComponent.h" />
+    <ClInclude Include="Source\Engine\Components\LightComponentBase.h" />
+    <ClInclude Include="Source\Engine\Components\LocalLightComponent.h" />
     <ClInclude Include="Source\Engine\Components\MeshComponent.h" />
     <ClInclude Include="Source\Engine\Components\MovementComponent.h" />
     <ClInclude Include="Source\Engine\Components\PrimitiveComponent.h" />
@@ -465,6 +481,7 @@
     <ClInclude Include="Source\Engine\Components\RotatingMovementComponent.h" />
     <ClInclude Include="Source\Engine\Components\SceneComponent.h" />
     <ClInclude Include="Source\Engine\Components\SceneEffectSource.h" />
+    <ClInclude Include="Source\Engine\Components\SpotLightComponent.h" />
     <ClInclude Include="Source\Engine\Components\StaticMeshComponent.h" />
     <ClInclude Include="Source\Engine\Components\SubUVComponent.h" />
     <ClInclude Include="Source\Engine\Components\TextRenderComponent.h" />
@@ -481,6 +498,7 @@
     <ClInclude Include="Source\Engine\GameFramework\AActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\DecalActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\Level.h" />
+    <ClInclude Include="Source\Engine\GameFramework\SpotLight.h" />
     <ClInclude Include="Source\Engine\GameFramework\SpotLightActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\StaticMeshActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\World.h" />
