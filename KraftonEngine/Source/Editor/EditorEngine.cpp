@@ -30,6 +30,8 @@
 #include <filesystem>
 #include <utility>
 #include "ImGui/imgui.h"
+#include "GameFramework/SpotLight.h"
+#include "GameFramework/PointLight.h"
 
 IMPLEMENT_CLASS(UEditorEngine, UEngine)
 
@@ -114,6 +116,7 @@ constexpr const char* GPlaceableIdSphere = "basic_shape_sphere";
 constexpr const char* GPlaceableIdCylinder = "basic_shape_cylinder";
 constexpr const char* GPlaceableIdDecal = "basic_actor_decal";
 constexpr const char* GPlaceableIdSpotLight = "basic_actor_spotlight";
+constexpr const char* GPlaceableIdPointLight = "basic_actor_pointlight";
 constexpr const char* GPlaceableIdEmptyActor = "basic_actor_empty";
 
 bool SpawnPlacedActors(
@@ -1198,26 +1201,44 @@ void UEditorEngine::RegisterDefaultPlaceableActors()
 		});
 
 	RegisterPlaceableActor({
-	GPlaceableIdSpotLight,
-	"SpotLight",
-	[](UWorld* World) -> AActor*
-	{
-		// ASpotLightActor 클래스가 구현되어 있다고 가정합니다.
-		return World ? static_cast<AActor*>(World->SpawnActor<ASpotLightActor>()) : nullptr;
-	},
-	[](AActor* Actor) -> bool
-	{
-		ASpotLightActor* SpotLightActor = Cast<ASpotLightActor>(Actor);
-		if (!SpotLightActor)
+		GPlaceableIdSpotLight,
+		"Spot Light",
+		[](UWorld* World) -> AActor*
 		{
-			return false;
-		}
+			// ASpotLight 클래스가 구현되어 있다고 가정합니다.
+			return World ? static_cast<AActor*>(World->SpawnActor<ASpotLight>()) : nullptr;
+		},
+		[](AActor* Actor) -> bool
+		{
+			ASpotLight* SpotLightActor = Cast<ASpotLight>(Actor);
+			if (!SpotLightActor)
+			{
+				return false;
+			}
 
-		return true;
-	}
+			return true;
+		}
 	});
 
-	
+	RegisterPlaceableActor({
+		GPlaceableIdPointLight,
+		"PointLight",
+		[](UWorld* World) -> AActor*
+		{
+			// APointLight 클래스가 구현되어 있다고 가정합니다.
+			return World ? static_cast<AActor*>(World->SpawnActor<APointLight>()) : nullptr;
+		},
+		[](AActor* Actor) -> bool
+		{
+			APointLight* PointLightActor = Cast<APointLight>(Actor);
+			if (!PointLightActor)
+			{
+				return false;
+			}
+
+			return true;
+		}
+		});
 }
 
 bool UEditorEngine::PlaceActor(const FActorSpawnFactory& InSpawnFactory, const FActorPostSpawnInitializer& InInitializer, int32 InCount)

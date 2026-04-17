@@ -572,8 +572,11 @@
     <ClCompile Include="Source\Engine\Components\LightComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\AmbientLightComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\DirectionalLightComponent.cpp" />
-    <ClCompile Include="Source\Engine\Components\PointLightComponenet.cpp" />
-    <ClCompile Include="Source\Engine\Components\SpotLightComponenet.cpp" />
+    <ClCompile Include="Source\Engine\Components\SpotLightComponent.cpp" />
+    <ClCompile Include="Source\Engine\Components\LocalLightComponent.cpp" />
+    <ClCompile Include="Source\Engine\GameFramework\SpotLight.cpp" />
+    <ClCompile Include="Source\Engine\GameFramework\PointLight.cpp" />
+    <ClCompile Include="Source\Engine\Components\PointLightComponent.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Editor\EditorEngine.h">
@@ -1073,8 +1076,11 @@
     <ClInclude Include="Source\Engine\Components\LightComponent.h" />
     <ClInclude Include="Source\Engine\Components\AmbientLightComponent.h" />
     <ClInclude Include="Source\Engine\Components\DirectionalLightComponent.h" />
-    <ClInclude Include="Source\Engine\Components\PointLightComponenet.h" />
-    <ClInclude Include="Source\Engine\Components\SpotLightComponenet.h" />
+    <ClInclude Include="Source\Engine\Components\SpotLightComponent.h" />
+    <ClInclude Include="Source\Engine\Components\LocalLightComponent.h" />
+    <ClInclude Include="Source\Engine\GameFramework\SpotLight.h" />
+    <ClInclude Include="Source\Engine\GameFramework\PointLight.h" />
+    <ClInclude Include="Source\Engine\Components\PointLightComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KraftonEngine.rc" />
