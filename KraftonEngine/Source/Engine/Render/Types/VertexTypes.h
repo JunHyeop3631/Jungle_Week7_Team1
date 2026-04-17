@@ -28,6 +28,7 @@ struct FVertexPNCT
 {
 	FVector Position;
 	FVector Normal;
+	FVector4 Tangent; // [신규] XYZ: 접선 방향, W: 뒤집힘 확인용 (1.0f 또는 -1.0f)
 	FVector4 Color;
 	FVector2 UV;
 };
@@ -58,6 +59,7 @@ inline D3D11_INPUT_ELEMENT_DESC FVertexPNCTInputLayout[] =
 {
 	{ "POSITION",  0, DXGI_FORMAT_R32G32B32_FLOAT,    0, static_cast<uint32>(offsetof(FVertexPNCT, Position)), D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT,    0, static_cast<uint32>(offsetof(FVertexPNCT, Normal)),   D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "TANGENT",   0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, static_cast<uint32>(offsetof(FVertexPNCT, Tangent)),  D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "COLOR",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, static_cast<uint32>(offsetof(FVertexPNCT, Color)),    D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "TEXTCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, static_cast<uint32>(offsetof(FVertexPNCT, UV)),       D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };

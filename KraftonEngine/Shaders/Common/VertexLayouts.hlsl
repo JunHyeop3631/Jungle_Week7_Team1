@@ -18,8 +18,9 @@ struct VS_Input_PC
 struct VS_Input_PNCT
 {
     float3 position : POSITION;
-    float3 normal   : NORMAL;
-    float4 color    : COLOR;
+    float3 normal : NORMAL;
+    float4 tangent : TANGENT;
+    float4 color : COLOR;
     float2 texcoord : TEXTCOORD;
 };
 
@@ -60,6 +61,7 @@ struct PS_Input_Full
 {
     float4 position : SV_POSITION;
     float3 normal   : NORMAL;
+    float4 tangent  : TANGENT;
     float4 color    : COLOR;
     float2 texcoord : TEXTCOORD;
     float3 worldPos : TEXCOORD1;

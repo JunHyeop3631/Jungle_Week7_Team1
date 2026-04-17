@@ -68,6 +68,9 @@ public:
 	const FVector& GetWireframeColor() const { return WireframeColor; }
 	void SetWireframeColor(const FVector& InColor) { WireframeColor = InColor; }
 
+	void SetLightingConstants(const FLightingConstants& InConstants) { LightingConstants = InConstants; }
+	const FLightingConstants& GetLightingConstants() const { return LightingConstants; }
+
 	const float GetViewportWidth() const { return viewportWidth; }
 	const float GetViewportHeight() const { return viewportHeight; }
 	ID3D11RenderTargetView*  GetViewportRTV()        const { return ViewportRTV; }
@@ -105,6 +108,7 @@ private:
 	TArray<FDebugLineEntry> DebugLineEntries;
 	FSceneEffectConstants SceneEffectConstants = {};
 	FFogPostProcessConstants FogPostProcessConstants = {};
+	FLightingConstants LightingConstants = {};
 
 	FMatrix View;
 	FMatrix Proj;
