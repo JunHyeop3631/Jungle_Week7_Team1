@@ -16,8 +16,10 @@ void FRenderCollector::CollectWorld(UWorld* World, FRenderBus& RenderBus)
 	if (!World) return;
 
 	// Dirty 프록시 갱신 후 visible 리스트만 순회
+	
 	World->GetScene().UpdateDirtyProxies();
 	CollectVisibleProxies(World->GetVisibleProxies(), RenderBus);
+	CollectLight(World->GetScene().GetLightArray(), RenderBus);
 }
 
 void FRenderCollector::CollectVisibleList(UWorld* World, const TArray<FPrimitiveSceneProxy*>& VisibleProxies, FRenderBus& RenderBus)
@@ -127,6 +129,21 @@ void FRenderCollector::CollectOctreeDebug(const FOctree* Node, FRenderBus& Rende
 	for (const FOctree* Child : Node->GetChildren())
 	{
 		CollectOctreeDebug(Child, RenderBus, Depth + 1);
+	}
+}
+
+void FRenderCollector::CollectLight(const TArray<FLightData*>& Lights, FRenderBus& RenderBus)
+{
+	for (const FLightData* Light : Lights)
+	{
+		if (!Light->bVisible) continue;
+
+		FLightData Entry = {};
+		Entry.Position = Light->Position;
+		Entry.Color = Light->Color;
+		Entry.Intensity = Light->Intensity;
+
+		RenderBus.AddLightEntry(std::move(Entry));
 	}
 }
 

@@ -77,6 +77,11 @@ void FRenderBus::AddDebugLineEntry(FDebugLineEntry&& Entry)
 	DebugLineEntries.push_back(std::move(Entry));
 }
 
+void FRenderBus::AddLightEntry(FLightData&& Entry)
+{
+	LightEntries.push_back(std::move(Entry));
+}
+
 void FRenderBus::SetCameraInfo(const UCameraComponent* Camera)
 {
 	View = Camera->GetViewMatrix();

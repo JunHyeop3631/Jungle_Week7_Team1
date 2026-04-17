@@ -148,6 +148,31 @@ FPrimitiveSceneProxy* FScene::AddPrimitive(UPrimitiveComponent* Component)
 	return Proxy;
 }
 
+FLightData* FScene::AddLight(ULightComponentBase* Component)
+{
+	if (!Component) return nullptr;
+
+	// 컴포넌트가 자신에 맞는 구체 프록시를 생성 (다형성)
+	FLightData* LightData = new FLightData{Component->GetWorldLocation(), Component->GetLightColor(), Component->GetIntensiry(), Component->IsVisible()};
+	if (!LightData) return nullptr;
+
+	RegisterLightData(LightData);
+	return LightData;
+}
+
+void FScene::RegisterLightData(FLightData* LightData)
+{
+	if (!LightData)
+	{
+		return;
+	}
+
+	if (std::find(LightDataArray.begin(), LightDataArray.end(), LightData) == LightDataArray.end())
+	{
+		LightDataArray.push_back(LightData);
+	}
+}
+
 // ============================================================
 // RemovePrimitive — 프록시 해제 및 슬롯 반환
 // ============================================================

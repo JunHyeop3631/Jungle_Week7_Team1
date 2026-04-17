@@ -30,6 +30,7 @@ public:
 	void AddOBBEntry(FOBBEntry&& Entry);
 	void AddGridEntry(FGridEntry&& Entry);
 	void AddDebugLineEntry(FDebugLineEntry&& Entry);
+	void AddLightEntry(FLightData&& Entry);
 	void SetSceneEffectConstants(const FSceneEffectConstants& InConstants) { SceneEffectConstants = InConstants; }
 	void SetFogPostProcessConstants(const FFogPostProcessConstants& InConstants) { FogPostProcessConstants = InConstants; }
 
@@ -41,6 +42,7 @@ public:
 	const TArray<FOBBEntry>& GetOBBEntries() const { return OBBEntries; }
 	const TArray<FGridEntry>& GetGridEntries() const { return GridEntries; }
 	const TArray<FDebugLineEntry>& GetDebugLineEntries() const { return DebugLineEntries; }
+	const TArray<FLightData>& GetLightEntries() const { return LightEntries; }
 	const FSceneEffectConstants& GetSceneEffectConstants() const { return SceneEffectConstants; }
 	const FFogPostProcessConstants& GetFogPostProcessConstants() const { return FogPostProcessConstants; }
 
@@ -103,6 +105,7 @@ private:
 	TArray<FOBBEntry>   OBBEntries;
 	TArray<FGridEntry>  GridEntries;
 	TArray<FDebugLineEntry> DebugLineEntries;
+	TArray<FLightData> LightEntries;
 	FSceneEffectConstants SceneEffectConstants = {};
 	FFogPostProcessConstants FogPostProcessConstants = {};
 

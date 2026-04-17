@@ -280,6 +280,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Engine\Components\LightComponentBase.cpp" />
     <ClCompile Include="Source\Editor\EditorEngine.cpp" />
     <ClCompile Include="Source\Editor\EditorRenderPipeline.cpp" />
     <ClCompile Include="Source\Editor\Input\EditorGizmoTool.cpp" />
@@ -319,6 +320,7 @@
     <ClCompile Include="Source\Engine\Components\GizmoComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\MeshComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\MovementComponent.cpp" />
+    <ClCompile Include="Source\Engine\Components\PointLight.cpp" />
     <ClCompile Include="Source\Engine\Components\PrimitiveComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\ProjectileMovementComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\RotatingMovementComponent.cpp" />
@@ -458,8 +460,10 @@
     <ClInclude Include="Source\Engine\Components\ExponentialHeightFogComponent.h" />
     <ClInclude Include="Source\Engine\Components\FireBallComponent.h" />
     <ClInclude Include="Source\Engine\Components\GizmoComponent.h" />
+    <ClInclude Include="Source\Engine\Components\LightComponentBase.h" />
     <ClInclude Include="Source\Engine\Components\MeshComponent.h" />
     <ClInclude Include="Source\Engine\Components\MovementComponent.h" />
+    <ClInclude Include="Source\Engine\Components\PointLightComponent.h" />
     <ClInclude Include="Source\Engine\Components\PrimitiveComponent.h" />
     <ClInclude Include="Source\Engine\Components\ProjectileMovementComponent.h" />
     <ClInclude Include="Source\Engine\Components\RotatingMovementComponent.h" />

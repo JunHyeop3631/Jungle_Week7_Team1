@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Components/LightComponentBase.h"
 #include "Core/CoreTypes.h"
 #include "Render/Proxy/PrimitiveSceneProxy.h"
 
@@ -17,6 +18,11 @@ class FScene
 public:
 	FScene() = default;
 	~FScene();
+
+
+	FLightData* AddLight(ULightComponentBase* Component);
+	void RegisterLightData(FLightData* LightData);
+	TArray<FLightData*> GetLightArray() { return LightDataArray; };
 
 	// --- 프록시 등록/해제 ---
 	// Component의 CreateSceneProxy()를 호출하여 구체 프록시 생성 후 등록
@@ -87,4 +93,6 @@ private:
 	// FScene에 등록된 특수효과 목록. 현재는 고정 개수만큼 활성 효과를 순서대로 채웁니다.
 	TArray<ISceneEffectSource*> SceneEffectSources;
 	TArray<UExponentialHeightFogComponent*> FogComponents;
+
+	TArray<FLightData*> LightDataArray;
 };

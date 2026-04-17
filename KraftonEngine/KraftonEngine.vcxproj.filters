@@ -568,6 +568,10 @@
     <ClCompile Include="Source\Engine\Render\Proxy\DecalSceneProxy.cpp" />
     <ClCompile Include="Source\Engine\Render\Proxy\DecalGeometryChecker.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\SpotLightActor.cpp" />
+    <ClCompile Include="Source\Engine\Components\LightComponentBase.cpp">
+      <Filter>Source\Engine\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Engine\Components\PointLight.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Editor\EditorEngine.h">
@@ -1063,6 +1067,8 @@
     <ClInclude Include="Source\Engine\Render\Proxy\DecalSceneProxy.h" />
     <ClInclude Include="Source\Engine\Render\Proxy\DecalGeometryChecker.h" />
     <ClInclude Include="Source\Engine\GameFramework\SpotLightActor.h" />
+    <ClInclude Include="Source\Engine\Components\LightComponentBase.h" />
+    <ClInclude Include="Source\Engine\Components\PointLightComponent.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KraftonEngine.rc" />
