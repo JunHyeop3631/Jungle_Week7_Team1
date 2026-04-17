@@ -30,24 +30,194 @@ bool ShouldDiscardFontPixel(float sampledRed)
     return sampledRed < 0.1f;
 }
 
-float3 GetWorldNormal(PS_Input_Full input, Texture2D normalMap, SamplerState sam)
+float3 GetWorldNormal(PS_Lighting input, Texture2D normalMap, SamplerState sam)
 {
-    // 1. 노멀맵 샘플링 (0~1 범위를 -1~1 범위로 변환)
-    float3 mapNormal = normalMap.Sample(sam, input.texcoord).rgb;
+    float3 mapNormal = normalMap.Sample(sam, input.texCoord).rgb;
     mapNormal = mapNormal * 2.0f - 1.0f;
 
-    // 2. TBN 기저 벡터 구성
-    float3 N = normalize(input.normal);
-    float3 T = normalize(input.tangent.xyz);
-    
-    // 3. BiNormal 직접 계산 (Handedness 처리)
-    // CPU에서 계산해 넘겨준 tangent.w (-1 또는 1)를 곱해 뒤집힘 보정
-    float3 B = cross(N, T) * input.tangent.w;
-    
-    float3x3 TBN = float3x3(T, B, N);
+    float3 N = normalize(input.worldNormal);
+    float3 T = normalize(input.worldTangent);
+    float3 B = normalize(cross(N, T) * input.tangentSign);
 
-    // 4. 탄젠트 공간 노멀을 월드 공간으로 변환
+    float3x3 TBN = float3x3(T, B, N);
     return normalize(mul(mapNormal, TBN));
+}
+
+struct LightingResult
+{
+    float3 Diffuse;
+    float3 Specular;
+};
+
+//Lighting 관련 함수들
+LightingResult ComputeDirectionalLight_BlinnPhong(float3 cameraPos, float3 worldPos, float3 worldNormal, float exp)
+{
+    LightingResult result = (LightingResult) 0;
+    float3 diffuse = 0;
+    float3 specular = 0;
+    
+    float3 N = normalize(worldNormal);
+    float3 V = normalize(cameraPos - worldPos);
+    
+    float3 L = normalize(-Directional.Direction);
+    
+    float diffIntensity = max(dot(N, L), 0.0f);
+    diffuse += Directional.LightColor * diffIntensity;
+        
+    if (diffIntensity > 0.0f)
+    {
+        float3 halfDir = normalize(L + V);
+        float specIntensity = pow(max(dot(N, halfDir), 0.0f), exp);
+        specular = Directional.LightColor * specIntensity;
+    }
+    
+    result.Diffuse = diffuse;
+    result.Specular = specular;
+    return result;
+}
+
+LightingResult ComputePointLight_BlinnPhong(
+    float3 cameraPos,
+    float3 worldPos,
+    float3 worldNormal,
+    float shininess)
+{
+    LightingResult result = (LightingResult) 0;
+    float3 diffuse = 0.0f;
+    float3 specular = 0.0f;
+
+    float3 N = normalize(worldNormal);
+    float3 V = normalize(cameraPos - worldPos);
+
+    for (uint i = 0; i < NUM_POINT_LIGHT; ++i)
+    {
+        float3 toLight = PointLights[i].Position - worldPos;
+        float dist = length(toLight);
+        float3 L = toLight / max(dist, 0.0001f);
+
+        float NdotL = max(dot(N, L), 0.0f);
+        float distanceAtten = saturate(1.0f - dist / PointLights[i].AttenuationRadius);
+        distanceAtten = pow(distanceAtten, PointLights[i].FalloffExponent);
+        
+        float atten = distanceAtten;
+
+        diffuse += PointLights[i].LightColor.rgb * NdotL * atten;
+
+        if (NdotL > 0.0f && atten > 0.0f)
+        {
+            float3 H = normalize(L + V);
+            float spec = pow(max(dot(N, H), 0.0f), shininess);
+            specular += PointLights[i].LightColor.rgb * spec * atten;
+        }
+    }
+
+    result.Diffuse = diffuse;
+    result.Specular = specular;
+    return result;  
+}
+
+LightingResult ComputeSpotLight_BlinnPhong(
+    float3 cameraPos,
+    float3 worldPos,
+    float3 worldNormal,
+    float shininess)
+{
+    LightingResult result = (LightingResult) 0; 
+    float3 diffuse = 0.0f;
+    float3 specular = 0.0f;
+
+    float3 N = normalize(worldNormal);
+    float3 V = normalize(cameraPos - worldPos);
+
+    for (uint i = 0; i < NUM_SPOT_LIGHT; ++i)
+    {
+        float3 toLight = SpotLights[i].Position - worldPos;
+        float dist = length(toLight);
+        float3 L = toLight / max(dist, 0.0001f);
+
+        float NdotL = max(dot(N, L), 0.0f);
+
+        float3 lightDir = normalize(SpotLights[i].Direction);
+        float distanceAtten = saturate(1.0f - dist / SpotLights[i].AttenuationRadius);
+        float spotCos = dot(lightDir, -L);
+        float spotFactor = saturate(
+            (spotCos - SpotLights[i].OuterConeAngle) /
+            max(SpotLights[i].InnerConeAngle - SpotLights[i].OuterConeAngle, 0.0001f)
+        );
+
+        float atten = distanceAtten * spotFactor;
+
+        diffuse += SpotLights[i].LightColor.rgb * NdotL * atten;
+
+        if (NdotL > 0.0f && atten > 0.0f)
+        {
+            float3 H = normalize(L + V);
+            float spec = pow(max(dot(N, H), 0.0f), shininess);
+            specular += SpotLights[i].LightColor.rgb * spec * atten;
+        }
+    }
+
+    result.Diffuse = diffuse;
+    result.Specular = specular;
+    return result;  
+}
+
+LightingResult ComputeDirectLight_Lambert(float3 worldNormal)
+{
+    LightingResult result = (LightingResult) 0;
+    float3 diffuse = 0.0f;
+    float3 N = normalize(worldNormal);
+    float3 L = normalize(-Directional.Direction);
+    
+    float diffIntensity = max(dot(N, L), 0.0f);
+    diffuse += Directional.LightColor * diffIntensity;
+        
+    result.Diffuse = diffuse;
+    return result;
+}
+
+LightingResult ComputePointLight_Lambert(float3 worldPos, float3 worldNormal)
+{
+    LightingResult result = (LightingResult) 0;
+    float3 diffuse = 0.0f;
+    float3 N = normalize(worldNormal);
+    for (uint i = 0; i < NUM_POINT_LIGHT; ++i)
+    {
+        float3 toLight = PointLights[i].Position - worldPos;
+        float dist = length(toLight);
+        float3 L = toLight / max(dist, 0.0001f);
+        float NdotL = max(dot(N, L), 0.0f);
+        float distanceAtten = saturate(1.0f - dist / PointLights[i].AttenuationRadius);
+        distanceAtten = pow(distanceAtten, PointLights[i].FalloffExponent);
+        
+        diffuse += PointLights[i].LightColor.rgb * NdotL * distanceAtten;
+    }
+    result.Diffuse = diffuse;
+    return result;  
+}
+
+LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal)
+{
+    LightingResult result = (LightingResult) 0; 
+    float3 diffuse = 0.0f;
+    float3 N = normalize(worldNormal);
+    for (uint i = 0; i < NUM_SPOT_LIGHT; ++i)
+    {
+        float3 toLight = SpotLights[i].Position - worldPos;
+        float dist = length(toLight);
+        float3 L = toLight / max(dist, 0.0001f);
+        float NdotL = max(dot(N, L), 0.0f);
+        float3 lightDir = normalize(SpotLights[i].Direction);
+        float distanceAtten = saturate(1.0f - dist / SpotLights[i].AttenuationRadius);
+        float spotCos = dot(lightDir, -L);
+        float spotFactor = saturate(
+            (spotCos - SpotLights[i].OuterConeAngle) /
+            max(SpotLights[i].InnerConeAngle - SpotLights[i].OuterConeAngle, 0.0001f)
+        );
+        diffuse += SpotLights[i].LightColor.rgb * NdotL * distanceAtten * spotFactor;
+    }
+    result.Diffuse = diffuse;
+    return result;  
 }
 
 #endif // FUNCTIONS_HLSL

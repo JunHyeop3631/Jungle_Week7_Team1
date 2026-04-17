@@ -81,4 +81,16 @@ struct PS_Input_ColorWorld
     float3 worldPos : TEXCOORD0;
 };
 
+struct PS_Lighting
+{
+    float4 position : SV_POSITION;
+    float4 color : COLOR;
+    float3 worldPosition : TEXCOORD0;
+    float3 worldNormal : TEXCOORD1;
+    float2 texCoord : TEXCOORD2;
+    float3 worldTangent : TEXCOORD3;
+    float tangentSign : TEXCOORD4;
+    float3 vertexLighting : TEXCOORD5;
+};
+
 #endif // VERTEX_LAYOUTS_HLSL
