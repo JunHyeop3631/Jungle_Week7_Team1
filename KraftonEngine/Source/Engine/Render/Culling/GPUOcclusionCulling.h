@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Render/Types/RenderTypes.h"
 #include "Core/CoreTypes.h"
@@ -7,7 +7,8 @@
 
 class FPrimitiveSceneProxy;
 
-// GPU AABB layout — must match OcclusionTest.hlsl AABB struct
+// GPU AABB layout — must match OcclusionTest.
+// AABB struct
 struct FGPUOcclusionAABB
 {
 	float MinX, MinY, MinZ, _pad0;

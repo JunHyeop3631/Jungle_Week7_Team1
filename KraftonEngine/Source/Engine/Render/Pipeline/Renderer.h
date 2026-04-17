@@ -96,6 +96,7 @@ private:
 
 	//fireball 등 Fscene 효과용 상수버퍼 업데이트
 	void UpdateSceneEffectBuffer(ID3D11DeviceContext* Context, const FRenderBus& InRenderBus);
+	void UpdateLightBuffer(ID3D11DeviceContext* Context, const FRenderBus& InRenderBus);
 
 	// 프록시 패스 실행기 — FPrimitiveSceneProxy* 순회, 필드 직접 접근
  void ExecutePass(const TArray<const FPrimitiveSceneProxy*>& Proxies, const FRenderBus& Bus, ID3D11DeviceContext* Context);
@@ -193,4 +194,7 @@ private:
 	uint32 PostTargetWidth = 0;
 	uint32 PostTargetHeight = 0;
 	FFXAAConstants FXAAConstants = {};
+
+	ID3D11Buffer* LightDynamicBuffer = nullptr;
+	ID3D11ShaderResourceView* LightDynamicSRV = nullptr;
 };

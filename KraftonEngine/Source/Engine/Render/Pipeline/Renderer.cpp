@@ -86,6 +86,23 @@ void FRenderer::Create(HWND hWindow)
 
 	// GPU Profiler 초기화
 	FGPUProfiler::Get().Initialize(Device.GetDevice(), Device.GetDeviceContext());
+
+	D3D11_BUFFER_DESC desc = {};
+	desc.Usage = D3D11_USAGE_DYNAMIC;
+	desc.ByteWidth = sizeof(FLightData) * 100;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	desc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	desc.StructureByteStride = sizeof(FLightData);
+
+	Device.GetDevice()->CreateBuffer(&desc, nullptr, &LightDynamicBuffer);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	srvDesc.Buffer.FirstElement = 0;
+	srvDesc.Buffer.NumElements = 100;
+	Device.GetDevice()->CreateShaderResourceView(LightDynamicBuffer, &srvDesc, &LightDynamicSRV);
 }
 
 void FRenderer::Release()
@@ -321,6 +338,7 @@ void FRenderer::Render(const FRenderBus& InRenderBus)
 		SCOPE_STAT_CAT("UpdateFrameBuffer", "4_ExecutePass");
 		UpdateFrameBuffer(Context, InRenderBus);
 		UpdateSceneEffectBuffer(Context, InRenderBus);
+		UpdateLightBuffer(Context, InRenderBus);
 	}
 
 	// 패스 실행 순서:
@@ -1539,4 +1557,44 @@ void FRenderer::UpdateSceneEffectBuffer(ID3D11DeviceContext* Context, const FRen
 	ID3D11Buffer* b5 = Resources.SceneEffectBuffer.GetBuffer();
 	Context->VSSetConstantBuffers(ECBSlot::SceneEffect, 1, &b5);
 	Context->PSSetConstantBuffers(ECBSlot::SceneEffect, 1, &b5);
+}
+
+void FRenderer::UpdateLightBuffer(ID3D11DeviceContext* Context, const FRenderBus& InRenderBus)
+{
+	const TArray<FLightData>& CollectedLights = InRenderBus.GetLightEntries();
+	uint32 ActiveLightCount = static_cast<uint32>(CollectedLights.size());
+
+	if (ActiveLightCount > 0)
+	{
+		D3D11_MAPPED_SUBRESOURCE mapped;
+		HRESULT hr = Context->Map(LightDynamicBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+		if (SUCCEEDED(hr))
+		{
+			// 버퍼 오버플로우 방지 (생성할 때 100개로 만들었으니 100개 제한)
+			uint32 CopyCount = std::min(ActiveLightCount, 100u);
+			memcpy(mapped.pData, CollectedLights.data(), sizeof(FLightData) * CopyCount);
+			Context->Unmap(LightDynamicBuffer, 0);
+		}
+	}
+	
+
+	FConstantBuffer* LightCB = FConstantBufferPool::Get().GetBuffer(ECBSlot::Light, 16);
+	if (LightCB && LightCB->GetBuffer())
+	{
+		struct FLightConfig
+		{
+			uint32 Count;
+			float Pad[3];
+		} ConfigData = {ActiveLightCount, {0, 0, 0}};
+
+		LightCB->Update(Context, &ConfigData, sizeof(FLightConfig));
+
+		ID3D11Buffer* bLight = LightCB->GetBuffer();
+		Context->PSSetConstantBuffers(ECBSlot::Light, 1, &bLight);
+	}
+
+	if (LightDynamicSRV)
+	{
+		Context->PSSetShaderResources(1, 1, &LightDynamicSRV);
+	}
 }

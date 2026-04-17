@@ -12,13 +12,20 @@ public:
     void CreateRenderState() override;
 
 	float GetIntensiry() const { return Intensity; }
-	FColor GetLightColor() const { return LightColor; }
+	FVector GetLightColor() const { return LightColor; }
+	float GetRadius() const { return Radius; }
+
+    void SetIntensity(float InIntensity) { Intensity = InIntensity; }
+    void SetLightColor(FVector InColor) { LightColor = InColor; }
+    void SetRadius(float InRadius) { Radius = InRadius; }
+
 	bool IsVisible() const { return bVisible; }
 
 
 private:
     float Intensity = 0.f;
-    FColor LightColor = {0, 0, 0, 0};
+    FVector LightColor = {0, 0, 0};
+    float Radius = 0.0f;
     bool bVisible = false;
 
     FLightData* lightData = nullptr;

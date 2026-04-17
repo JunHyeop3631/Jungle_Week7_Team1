@@ -99,4 +99,18 @@ cbuffer PickingBuffer : register(b7)
     float3 _pickPad;
 }
 
+cbuffer LightConfig : register(b8)
+{
+    uint g_ActiveLightCount;
+    float3 padding;
+}
+
+struct FLightData
+{
+    float3 Position;
+    float3 Color;
+    float Range;
+    float Intensity;
+};
+
 #endif // CONSTANT_BUFFERS_HLSL

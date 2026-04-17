@@ -29,6 +29,7 @@ namespace ECBSlot
 	constexpr uint32 SceneEffect = 5;	// b5: scene-wide special effects
 	constexpr uint32 Fog = 6;			// b6: fog post-process params
 	constexpr uint32 Picking = 7;		// b7: ID picking
+	constexpr uint32 Light= 8;			// b8: Light
 
 
 	constexpr uint32 PostProcess_FXAA = 9;    // b9: FXAA effect params
@@ -253,9 +254,9 @@ struct FDebugLineEntry
 struct FLightData
 {
 	FVector Position;
-	FColor Color;
+	FVector Color;
+	float Radius;
 	float Intensity;
-	bool bVisible;
 };
 
 // 스크린 공간 텍스트 — Overlay Stats 등에서 사용

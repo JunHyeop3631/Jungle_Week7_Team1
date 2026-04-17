@@ -15,6 +15,7 @@
 #include "GameFramework/DecalActor.h"
 #include "GameFramework/SpotLightActor.h"
 #include "Components/BillboardComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Viewport/GameViewportClient.h"
 #include "Viewport/Viewport.h"
@@ -115,6 +116,7 @@ constexpr const char* GPlaceableIdCylinder = "basic_shape_cylinder";
 constexpr const char* GPlaceableIdDecal = "basic_actor_decal";
 constexpr const char* GPlaceableIdSpotLight = "basic_actor_spotlight";
 constexpr const char* GPlaceableIdEmptyActor = "basic_actor_empty";
+constexpr const char* GPlaceableIdPointLight = "basic_point_light";
 
 bool SpawnPlacedActors(
 	UWorld* InWorld,
@@ -1217,6 +1219,33 @@ void UEditorEngine::RegisterDefaultPlaceableActors()
 	}
 	});
 
+	RegisterPlaceableActor({
+	GPlaceableIdPointLight,
+	"Light",
+	[](UWorld* World) -> AActor*
+	{
+		return World ? static_cast<AActor*>(World->SpawnActor<AActor>()) : nullptr;
+	},
+	[](AActor* Actor) -> bool
+	{
+		if (!Actor)
+		{
+			return false;
+		}
+
+		UPointLightComponent* PointLightComponent = Actor->AddComponent<UPointLightComponent>();
+		if (!PointLightComponent)
+		{
+			return false;
+		}
+
+		Actor->SetRootComponent(PointLightComponent);
+		PointLightComponent->SetIntensity(1.0f);
+		PointLightComponent->SetLightColor({ 1.0f, 0.6f, 0.2f });
+		PointLightComponent->SetRadius(1000.0f);
+		return true;
+	}
+		});
 	
 }
 

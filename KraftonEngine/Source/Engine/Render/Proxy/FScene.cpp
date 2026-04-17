@@ -153,24 +153,30 @@ FLightData* FScene::AddLight(ULightComponentBase* Component)
 	if (!Component) return nullptr;
 
 	// 컴포넌트가 자신에 맞는 구체 프록시를 생성 (다형성)
-	FLightData* LightData = new FLightData{Component->GetWorldLocation(), Component->GetLightColor(), Component->GetIntensiry(), Component->IsVisible()};
+	FLightData* LightData = new FLightData{Component->GetWorldLocation(), Component->GetLightColor(), Component->GetRadius(), Component->GetIntensiry()};
 	if (!LightData) return nullptr;
 
-	RegisterLightData(LightData);
+	if (!Component)
+	{
+		return nullptr;
+	}
+
+	if (std::find(LightComponentDataArray.begin(), LightComponentDataArray.end(), Component) == LightComponentDataArray.end())
+	{
+		LightComponentDataArray.push_back(Component);
+	}
 	return LightData;
 }
 
-void FScene::RegisterLightData(FLightData* LightData)
+TArray<FLightData*> FScene::GetLightArray()
 {
-	if (!LightData)
+	TArray<FLightData*> LightDataArray;
+	for (auto it: LightComponentDataArray)
 	{
-		return;
-	}
-
-	if (std::find(LightDataArray.begin(), LightDataArray.end(), LightData) == LightDataArray.end())
-	{
+		FLightData* LightData = new FLightData{ it->GetWorldLocation(), it->GetLightColor(), it->GetRadius(), it->GetIntensiry() };
 		LightDataArray.push_back(LightData);
 	}
+	return LightDataArray;
 }
 
 // ============================================================

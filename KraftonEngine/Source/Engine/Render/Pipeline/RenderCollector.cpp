@@ -136,11 +136,10 @@ void FRenderCollector::CollectLight(const TArray<FLightData*>& Lights, FRenderBu
 {
 	for (const FLightData* Light : Lights)
 	{
-		if (!Light->bVisible) continue;
-
 		FLightData Entry = {};
 		Entry.Position = Light->Position;
 		Entry.Color = Light->Color;
+		Entry.Radius = Light->Radius;
 		Entry.Intensity = Light->Intensity;
 
 		RenderBus.AddLightEntry(std::move(Entry));

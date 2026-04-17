@@ -27,6 +27,7 @@ enum class EShaderType : uint32
 	IDPickBillboard,
 	IDPickStaticMesh,
 	IDPickDebugVisualize,
+	UberLit,
 	MAX,
 };
 

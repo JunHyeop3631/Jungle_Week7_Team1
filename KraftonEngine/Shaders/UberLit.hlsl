@@ -6,6 +6,7 @@ Texture2D g_txColor : register(t0);
 SamplerState g_Sample : register(s0);
 StructuredBuffer<FLightData> g_Lights : register(t1);
 
+
 PS_Input_Full VS(VS_Input_PNCT input)
 {
     PS_Input_Full output;
@@ -35,24 +36,12 @@ float4 PS(PS_Input_Full input) : SV_TARGET
         texColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    // 1. 픽셀의 기본 텍스처 색상 (Base Color)
-    float4 baseColor = texColor * input.color;
-
-    // --- 💡 여기서부터 조명 낑겨 넣은 부분 💡 ---
-    float3 litColor = float3(0, 0, 0);
-    float3 N = normalize(input.normal);
-
-    // C++에서 넘겨준 조명 개수만큼 루프를 돕니다
-    for (uint k = 0; k < g_ActiveLightCount; ++k)
-    {
-        litColor += CalculatePointLight(g_Lights[k], N, input.worldPos, baseColor.rgb);
-    }
-
-    // 최소한의 밝기를 보장하는 환경광(Ambient) 추가 (10% 정도)
-    litColor += baseColor.rgb * 0.1f;
-
-    // 2. 조명이 적용된 색상을 finalColor로 덮어씌움
-    float4 finalColor = float4(litColor, baseColor.a);
+    //float3 lightDir = normalize(float3(1.0f, -1.0f, 1.0f));
+    //float diffuse = max(dot(input.normal, -lightDir), 0.0f);
+    //float ambient = 0.2f;
+    
+    // 픽셀의 기본적인 색상
+    float4 finalColor = texColor * input.color /* * (diffuse + ambient)*/;
 
     for (uint i = 0; i < LocalTintCount; ++i)
     {
@@ -74,6 +63,21 @@ float4 PS(PS_Input_Full input) : SV_TARGET
 
     finalColor.rgb = saturate(finalColor.rgb);
     finalColor.a = texColor.a * input.color.a;
+
+    float3 N = normalize(input.normal);
+    
+    // 2. 누적할 최종 색상 초기화
+    float3 finalColor1 = float3(0, 0, 0);
+
+    // 3. 수집된 모든 조명 더하기
+    for (uint i = 0; i < g_ActiveLightCount; i++)
+    {
+        // 🚨 오타 수정 및 정규화된 노멀(N) 사용
+        finalColor1 += CalculatePointLight(g_Lights[i], N, input.worldPos, finalColor.rgb);
+    }
+
+    // 5. 최종 출력! (알파값은 원본 메쉬의 알파 유지)
+    return float4(finalColor1, finalColor.a);
 
     return float4(ApplyWireframe(finalColor.rgb), finalColor.a);
 }

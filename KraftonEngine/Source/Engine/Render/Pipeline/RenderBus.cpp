@@ -17,6 +17,7 @@ void FRenderBus::Clear()
 	OBBEntries.clear();
 	GridEntries.clear();
 	DebugLineEntries.clear();
+	LightEntries.clear();
 	SceneEffectConstants = {};
 	FogPostProcessConstants = {};
 

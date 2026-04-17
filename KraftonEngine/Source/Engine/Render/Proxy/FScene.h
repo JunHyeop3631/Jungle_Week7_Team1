@@ -21,8 +21,7 @@ public:
 
 
 	FLightData* AddLight(ULightComponentBase* Component);
-	void RegisterLightData(FLightData* LightData);
-	TArray<FLightData*> GetLightArray() { return LightDataArray; };
+	TArray<FLightData*> GetLightArray();
 
 	// --- 프록시 등록/해제 ---
 	// Component의 CreateSceneProxy()를 호출하여 구체 프록시 생성 후 등록
@@ -95,4 +94,5 @@ private:
 	TArray<UExponentialHeightFogComponent*> FogComponents;
 
 	TArray<FLightData*> LightDataArray;
+	TArray<ULightComponentBase*> LightComponentDataArray;
 };

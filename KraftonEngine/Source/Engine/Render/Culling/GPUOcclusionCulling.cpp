@@ -5,7 +5,8 @@
 #include <algorithm>
 #include <cstring>
 
-// ── CB layouts matching HLSL ──
+// ── CB layouts matching 
+// ──
 
 struct FHiZParamsCB
 {

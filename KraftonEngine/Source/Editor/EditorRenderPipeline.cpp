@@ -132,6 +132,7 @@ void FEditorRenderPipeline::RenderViewport(FLevelEditorViewportClient* VC, FRend
 		if (UGizmoComponent* Gizmo = Editor->GetGizmo())
 			Gizmo->UpdateAxisMask(Opts.ViewportType, Camera->IsOrthogonal());
 
+		Collector.CollectLight(World->GetScene().GetLightArray(), Bus);
 		Collector.CollectVisibleList(World, VisibleProxiesForViewport, Bus);
 
 		Collector.CollectGrid(Opts.GridSpacing, Opts.GridHalfLineCount, Bus);

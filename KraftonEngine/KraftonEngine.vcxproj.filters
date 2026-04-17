@@ -187,6 +187,7 @@
       <Filter>Shaders\Common</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\Decal.hlsl" />
+    <FxCompile Include="Shaders\UberLit.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Editor\EditorEngine.cpp">

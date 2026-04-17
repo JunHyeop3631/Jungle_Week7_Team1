@@ -30,3 +30,30 @@ bool ShouldDiscardFontPixel(float sampledRed)
 }
 
 #endif // FUNCTIONS_HLSL
+float3 CalculatePointLight(FLightData light, float3 normal, float3 worldPos, float3 baseColor)
+{
+    // 1. 빛의 방향과 거리 구하기
+    float3 lightDir = light.Position - worldPos;
+    float distance = length(lightDir);
+    
+    // 거리가 범위 밖이면 계산할 필요 없이 0 (검은색) 반환
+    if (distance > light.Range)
+    {
+        return float3(0, 0, 0);
+    }
+    
+    // 방향 벡터 정규화
+    lightDir = normalize(lightDir);
+
+    // 2. 거리 감쇄 (Attenuation) - 언리얼 엔진 스타일의 부드러운 감쇄
+    float attenuation = smoothstep(1.0f, 0.0f, distance / light.Range);
+
+    // 3. 난반사 (Diffuse - Lambertian)
+    // 빛을 정면으로 받을수록(dot값이 1에 가까울수록) 밝아짐
+    float nDotL = saturate(dot(normal, lightDir));
+    
+    // 4. 최종 계산: 본래 색상 * 빛 색상 * 밝기 * 각도 * 감쇄
+    float3 diffuse = baseColor * light.Color * light.Intensity * nDotL * attenuation;
+
+    return diffuse;
+}
