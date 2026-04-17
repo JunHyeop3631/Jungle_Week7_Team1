@@ -29,8 +29,7 @@ namespace ECBSlot
 	constexpr uint32 SceneEffect = 5;	// b5: scene-wide special effects
 	constexpr uint32 Fog = 6;			// b6: fog post-process params
 	constexpr uint32 Picking = 7;		// b7: ID picking
-
-
+	constexpr uint32 Lighting = 8;		// b8: Lighting data (Directional, Point 등)
 	constexpr uint32 PostProcess_FXAA = 9;    // b9: FXAA effect params
 	constexpr uint32 MaxLocalTintEffects = 8;
 	constexpr uint32 MaxFogComponents = FogRendering::MaxFogComponents;
@@ -109,8 +108,10 @@ struct FSceneEffectConstants
 
 struct FMaterialConstants
 {
-	uint32 bIsUVScroll;
-	float _pad[3];
+	uint32 bIsUVScroll = 0;
+	uint32 bHasNormalMap = 0;
+	float SpecularRoughness = 16.0f;
+	float SpecularIntensity = 1.0f;
 	FVector4 SectionColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 };
 
@@ -118,6 +119,49 @@ struct FPickingConstants
 {
 	uint32 PickingId = 0;
 	float _pad[3] = { 0.0f, 0.0f, 0.0f };
+};
+
+constexpr uint32 NUM_POINT_LIGHT = 4;
+constexpr uint32 NUM_SPOT_LIGHT = 4;
+
+struct FAmbientLightInfo
+{
+	FVector4 LightColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+};
+
+struct FDirectionalLightInfo
+{
+	FVector4 LightColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	FVector4 Direction = { 0.0f, -1.0f, 0.0f, 0.0f };
+};
+
+struct FPointLightInfo
+{
+	FVector4 LightColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+	FVector4 Position = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float AttenuationRadius = 1000.0f;
+	float FalloffExponent = 1.0f;
+	float pad[2] = { 0.0f, 0.0f }; // HLSL과 메모리 정렬을 맞추기 위한 8바이트 패딩
+};
+
+struct FSpotLightInfo
+{
+	FVector4 LightColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+	FVector4 Position = { 0.0f, 0.0f, 0.0f, 1.0f };
+	FVector4 Direction = { 0.0f, -1.0f, 0.0f, 0.0f };
+	float AttenuationRadius = 1000.0f;
+	float InnerConeAngle = 20.0f;
+	float OuterConeAngle = 40.0f;
+	float pad = 0.0f; // HLSL과 메모리 정렬을 맞추기 위한 4바이트 패딩
+};
+
+// [수정 완료] RenderBus와 Renderer가 주고받을 최종 조명 수납공간
+struct FLightingConstants
+{
+	FAmbientLightInfo Ambient;
+	FDirectionalLightInfo Directional;
+	FPointLightInfo PointLights[NUM_POINT_LIGHT];
+	FSpotLightInfo SpotLights[NUM_SPOT_LIGHT];
 };
 
 struct FGizmoConstants
@@ -299,6 +343,7 @@ struct FConstantBufferBinding
 struct FMeshSectionDraw
 {
 	ID3D11ShaderResourceView* DiffuseSRV = nullptr;
+	ID3D11ShaderResourceView* NormalMapSRV = nullptr;
 	FVector4 DiffuseColor = { 1.0f, 0.0f, 1.0f, 1.0f };		// 기본 마젠타 색
 	uint32 FirstIndex = 0;
 	uint32 IndexCount = 0;

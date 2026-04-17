@@ -321,6 +321,7 @@ void FRenderer::Render(const FRenderBus& InRenderBus)
 		SCOPE_STAT_CAT("UpdateFrameBuffer", "4_ExecutePass");
 		UpdateFrameBuffer(Context, InRenderBus);
 		UpdateSceneEffectBuffer(Context, InRenderBus);
+		UpdateLightingBuffer(Context, InRenderBus);
 	}
 
 	// 패스 실행 순서:
@@ -758,11 +759,13 @@ void FRenderer::DrawSections(const FPrimitiveSceneProxy& Proxy, ID3D11DeviceCont
 		if (Section.IndexCount == 0) continue;
 
 		// SRV 변경 시에만 바인딩
-		if (Section.DiffuseSRV != State.LastSRV)
+		if (Section.DiffuseSRV != State.LastSRV || Section.NormalMapSRV != State.LastNormalSRV)
 		{
-			ID3D11ShaderResourceView* srv = Section.DiffuseSRV;
-			Ctx->PSSetShaderResources(0, 1, &srv);
+			ID3D11ShaderResourceView* srvs[2] = { Section.DiffuseSRV, Section.NormalMapSRV };
+			Ctx->PSSetShaderResources(0, 2, srvs);
+
 			State.LastSRV = Section.DiffuseSRV;
+			State.LastNormalSRV = Section.NormalMapSRV;
 		}
 
 		// Material CB — SectionColor 또는 UVScroll 변경 시만 업데이트
@@ -773,6 +776,7 @@ void FRenderer::DrawSections(const FPrimitiveSceneProxy& Proxy, ID3D11DeviceCont
 			FMaterialConstants MatConstants = {};
 			MatConstants.bIsUVScroll = curUVScroll;
 			MatConstants.SectionColor = Section.DiffuseColor;
+			MatConstants.bHasNormalMap = (Section.NormalMapSRV != nullptr) ? 1 : 0;
 			MaterialCB->Update(Ctx, &MatConstants, sizeof(MatConstants));
 			State.LastUVScroll = curUVScroll;
 			State.LastSectionColor = Section.DiffuseColor;
@@ -815,11 +819,13 @@ void FRenderer::DrawSingleSection(const FPrimitiveSceneProxy& Proxy, ID3D11Devic
 	}
 
 	// SRV 변경 시에만 바인딩
-	if (Section.DiffuseSRV != State.LastSRV)
+	if (Section.DiffuseSRV != State.LastSRV || Section.NormalMapSRV != State.LastNormalSRV)
 	{
-		ID3D11ShaderResourceView* srv = Section.DiffuseSRV;
-		Ctx->PSSetShaderResources(0, 1, &srv);
+		ID3D11ShaderResourceView* srvs[2] = { Section.DiffuseSRV, Section.NormalMapSRV };
+		Ctx->PSSetShaderResources(0, 2, srvs);
+
 		State.LastSRV = Section.DiffuseSRV;
+		State.LastNormalSRV = Section.NormalMapSRV;
 	}
 
 	// Material CB — SectionColor 또는 UVScroll 변경 시만 업데이트
@@ -830,6 +836,7 @@ void FRenderer::DrawSingleSection(const FPrimitiveSceneProxy& Proxy, ID3D11Devic
 		FMaterialConstants MatConstants = {};
 		MatConstants.bIsUVScroll = curUVScroll;
 		MatConstants.SectionColor = Section.DiffuseColor;
+		MatConstants.bHasNormalMap = (Section.NormalMapSRV != nullptr) ? 1 : 0;
 		MaterialCB->Update(Ctx, &MatConstants, sizeof(MatConstants));
 		State.LastUVScroll = curUVScroll;
 		State.LastSectionColor = Section.DiffuseColor;
@@ -970,7 +977,6 @@ void FRenderer::ExecutePostProcessChain(const FRenderBus& Bus, ID3D11DeviceConte
 
 	//	기본 체인 순서: Fog -> Outline -> FXAA
 	const EPostEffectType Order[] = {
-		//EPostEffectType::Decal,
 		EPostEffectType::Fog,
 		EPostEffectType::Outline,
 		EPostEffectType::FXAA
@@ -1117,6 +1123,27 @@ void FRenderer::BlitSRVToRTV(ID3D11ShaderResourceView* SourceSRV, ID3D11RenderTa
 
 	SafeRelease(SrcResource);
 	SafeRelease(DstResource);
+}
+
+void FRenderer::UpdateLightingBuffer(ID3D11DeviceContext* Context, const FRenderBus& InRenderBus)
+{
+	// 1. RenderBus로부터 조명 데이터 뭉치를 가져옵니다.
+	const FLightingConstants& LightData = InRenderBus.GetLightingConstants();
+
+	// 2. 조명 데이터용 상수 버퍼(Constant Buffer)를 가져옵니다. (ECBSlot::Lighting = 8)
+	FConstantBuffer* LightCB = FConstantBufferPool::Get().GetBuffer(ECBSlot::Lighting, sizeof(FLightingConstants));
+	if (!LightCB)
+	{
+		return; // 버퍼를 가져오지 못했을 경우 안전 종료
+	}
+
+	// 3. GPU 메모리로 데이터 업로드
+	LightCB->Update(Context, &LightData, sizeof(FLightingConstants));
+	ID3D11Buffer* cb8 = LightCB->GetBuffer();
+
+	// 4. Vertex Shader와 Pixel Shader의 b8 레지스터 슬롯에 상수 버퍼를 바인딩합니다.
+	Context->VSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
+	Context->PSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
 }
 
 // ============================================================

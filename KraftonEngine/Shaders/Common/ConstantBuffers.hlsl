@@ -88,7 +88,9 @@ cbuffer FogPostProcessCB : register(b6)
 cbuffer MaterialBuffer : register(b4)
 {
     uint bIsUVScroll;
-    float3 _matPad;
+    uint bHasNormalMap; // 노멀맵 사용 여부
+    float SpecularRoughness; // Blinn-Phong Shininess
+    float SpecularIntensity; // 반사광 세기
     float4 SectionColor;
 }
 
@@ -98,5 +100,48 @@ cbuffer PickingBuffer : register(b7)
     uint PickingId;
     float3 _pickPad;
 }
+
+#define NUM_POINT_LIGHT 4
+#define NUM_SPOT_LIGHT 4
+
+struct FAmbientLightInfo
+{
+    float4 LightColor;
+};
+
+struct FDirectionalLightInfo
+{
+    float4 LightColor;
+    float4 Direction;
+};
+
+struct FPointLightInfo
+{
+    float4 LightColor;
+    float4 Position;
+    float AttenuationRadius;
+    float FalloffExponent;
+    float2 pad; // 16바이트 정렬을 위한 패딩
+};
+
+struct FSpotLightInfo
+{
+    float4 LightColor;
+    float4 Position;
+    float4 Direction;
+    float AttenuationRadius;
+    float InnerConeAngle;
+    float OuterConeAngle;
+    float pad; // 16바이트 정렬을 위한 패딩
+};
+
+// [수정 완료] 팀의 원래 기획 + 엔진의 b8 슬롯 결합
+cbuffer LightingBuffer : register(b8)
+{
+    FAmbientLightInfo Ambient;
+    FDirectionalLightInfo Directional;
+    FPointLightInfo PointLights[NUM_POINT_LIGHT];
+    FSpotLightInfo SpotLights[NUM_SPOT_LIGHT];
+};
 
 #endif // CONSTANT_BUFFERS_HLSL
