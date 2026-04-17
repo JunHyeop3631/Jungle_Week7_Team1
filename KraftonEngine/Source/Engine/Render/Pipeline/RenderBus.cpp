@@ -19,6 +19,7 @@ void FRenderBus::Clear()
 	DebugLineEntries.clear();
 	SceneEffectConstants = {};
 	FogPostProcessConstants = {};
+	LightingConstants = {};
 
 	ViewportRTV = nullptr;
 	ViewportDSV = nullptr;
