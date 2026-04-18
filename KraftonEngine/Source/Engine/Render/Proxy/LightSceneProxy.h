@@ -5,6 +5,11 @@
 #include "Components/LightComponentBase.h"
 
 class FRenderBus;
+class UAmbientLightComponent;
+class UDirectionalLightComponent;
+class ULocalLightComponent;
+class UPointLightComponent;
+class USpotLightComponent;
 // ============================================================
 // FLightSceneProxy — lighting constants 빌드용 mirror
 // ============================================================
@@ -15,7 +20,7 @@ class FRenderBus;
 class FLightSceneProxy
 {
 public:
-	FLightSceneProxy(ULightComponentBase* InComponent);
+	explicit FLightSceneProxy(ULightComponentBase* InComponent);
 	virtual ~FLightSceneProxy() = default;
 
 	// 가상 갱신 클래스
@@ -42,5 +47,70 @@ public:
 	FLinearColor CachedColor = FLinearColor(1.f, 1.f, 1.f, 1.f);
 	float CachedIntensity = 0.0f;
 	FTransform CachedTransform = {};
+};
+
+//======================================
+// Ambient Light Scene Proxy
+// - 해당 Proxy는 LightScene Proxy와 동일한 정보를 필요로 한다
+//======================================
+class FAmbientLightSceneProxy : public FLightSceneProxy
+{
+public:
+	explicit FAmbientLightSceneProxy(UAmbientLightComponent* InComponent);
+};
+
+//======================================
+// Directional Light Scene Proxy
+// - 해당 Proxy는 LightScene Proxy와 동일한 정보를 필요로 한다.	
+// - Direction 정보는 Transform에서 Rotation 정보를 사용한다
+//======================================
+class FDirectionalLightSceneProxy : public FLightSceneProxy
+{
+public:
+	explicit FDirectionalLightSceneProxy(UDirectionalLightComponent* InComponent);
+};
+
+//======================================
+// Local Light Scene Proxy
+// - 해당 Proxy는 LightScene Proxy 정보에 추가로 AttenuationRadius를 필요로함.
+// - 실제로 저장되는 Proxy는 아님. PointLight와 SpotLight프록시가 상속받는 부모 프록시
+//======================================
+class FLocalLightSceneProxy : public FLightSceneProxy
+{
+public:
+	explicit FLocalLightSceneProxy(ULocalLightComponent* InComponent);
+
+	void UpdateLightData() override;
+
+	float CachedAttenuationRadius = 1.0f;
+};
+
+//======================================
+// Point Light Scene Proxy
+// - 해당 Proxy는 Local Light Scene Proxy에 추가로 FalloffExponent를 필요로함.
+//======================================
+class FPointLightSceneProxy : public FLocalLightSceneProxy
+{
+public:
+	explicit FPointLightSceneProxy(UPointLightComponent* InComponent);
+
+	void UpdateLightData() override;
+
+	float CachedFalloffExponent = 1.0f;
+};
+
+//======================================
+// Spot Light Scene Proxy
+// - 해당 Proxy는 Local Light Scene Proxy에 추가로 Inner, Outer Angle을 필요로함.
+//======================================
+class FSpotLightSceneProxy : public FPointLightSceneProxy
+{
+public:
+	explicit FSpotLightSceneProxy(USpotLightComponent* InComponent);
+
+	void UpdateLightData() override;
+
+	float CachedInnerConeAngle = 0.0f;
+	float CachedOuterConeAngle = 30.0f;
 };
 
