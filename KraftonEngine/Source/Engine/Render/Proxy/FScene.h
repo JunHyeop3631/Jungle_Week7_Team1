@@ -55,6 +55,9 @@ public:
 	void UnregisterFogComponent(UExponentialHeightFogComponent* Component);
 	FFogPostProcessConstants GetFogPostProcessConstants() const;
 
+	// --- Light ---
+	FLightingConstants GetLightingConstants() const;
+
 	// --- 선택 ---
 	void SetProxySelected(FPrimitiveSceneProxy* Proxy, bool bSelected);
 	bool IsProxySelected(const FPrimitiveSceneProxy* Proxy) const;

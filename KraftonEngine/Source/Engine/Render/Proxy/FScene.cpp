@@ -1,11 +1,17 @@
 ﻿#include "Render/Proxy/FScene.h"
-#include "Components/SceneEffectSource.h"
-#include "Components/LightComponentBase.h"
-#include "Components/PrimitiveComponent.h"
+#include "Components/AmbientLightComponent.h"
+#include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "Components/LightComponentBase.h"
+#include "Components/PointLightComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Components/SceneEffectSource.h"
+#include "Components/SpotLightComponent.h"
+#include "Object/Object.h"
 #include "Render/Proxy/LightSceneProxy.h"
 #include "Profiling/Stats.h"
 #include <algorithm>
+#include <cmath>
 
 namespace
 {
@@ -95,6 +101,52 @@ namespace
 		}
 
 		return Result;
+	}
+
+	// ===============================================
+	// Light Scene Proxy Helper
+	// ===============================================
+	FVector4 BuildLightColor(const FLightSceneProxy* Proxy)
+	{
+		if (!Proxy)
+		{
+			return FVector4(0.f, 0.f, 0.f, 1.f);
+		}
+		const FVector4& Color = Proxy->CachedColor.ToVector4();
+		const float Intensity = Proxy->CachedIntensity;
+		return Color * Intensity;
+	}
+
+	FVector4 BuildLightPosition(const FLightSceneProxy* Proxy)
+	{
+		if (!Proxy)
+		{
+			return FVector4(0.f, 0.f, 0.f, 1.f);
+		}
+
+		const FVector& Position = Proxy->CachedTransform.Location;
+		return FVector4(Position.X, Position.Y, Position.Z, 1.0f);
+	}
+
+	FVector4 BuildLightDirection(const FLightSceneProxy* Proxy)
+	{
+		if (!Proxy)
+		{
+			return FVector4(0.0f, -1.0f, 0.0f, 0.0f);
+		}
+
+		const FVector Direction = Proxy->CachedTransform.Rotation.GetForwardVector().Normalized();
+		return FVector4(Direction.X, Direction.Y, Direction.Z, 0.0f);
+	}
+
+	float DegreesToConeCos(float Degrees)
+	{
+		return cosf(Degrees * FMath::DegToRad);
+	}
+
+	bool ShouldWriteLight(const FLightSceneProxy* Proxy)
+	{
+		return Proxy && Proxy->bVisible && Proxy->CachedIntensity > 0.0f;
 	}
 }
 
@@ -466,6 +518,80 @@ FSceneEffectConstants FScene::GetSceneEffectConstants() const
 	}
 
 	Result.LocalTintCount = LocalTintIndex;
+
+	return Result;
+}
+
+FLightingConstants FScene::GetLightingConstants() const
+{
+	FLightingConstants Result = {};
+
+	bool bHasAmbient = false;
+	bool bHasDirectional = false;
+	uint32 PointCount = 0;
+	uint32 SpotCount = 0;
+
+	for (const FLightSceneProxy* Proxy : LightProxies)
+	{
+		if (!ShouldWriteLight(Proxy))
+		{
+			continue;
+		}
+
+		ULightComponentBase* LightOwner = Proxy->Owner;
+		if (!LightOwner)
+		{
+			continue;
+		}
+
+		if (!bHasAmbient && Cast<UAmbientLightComponent>(LightOwner))
+		{
+			Result.Ambient.LightColor = BuildLightColor(Proxy);
+			bHasAmbient = true;
+			continue;
+		}
+
+		if (!bHasDirectional && Cast<UDirectionalLightComponent>(LightOwner))
+		{
+			Result.Directional.LightColor = BuildLightColor(Proxy);
+			Result.Directional.Direction = BuildLightDirection(Proxy);
+			bHasDirectional = true;
+			continue;
+		}
+
+		if (const USpotLightComponent* SpotOwner = Cast<USpotLightComponent>(LightOwner))
+		{
+			if (SpotCount >= NUM_SPOT_LIGHT)
+			{
+				continue;
+			}
+
+			const FSpotLightSceneProxy* SpotProxy = static_cast<const FSpotLightSceneProxy*>(Proxy);
+			FSpotLightInfo& SpotInfo = Result.SpotLights[SpotCount++];
+			SpotInfo.LightColor = BuildLightColor(SpotProxy);
+			SpotInfo.Position = BuildLightPosition(SpotProxy);
+			SpotInfo.Direction = BuildLightDirection(SpotProxy);
+			SpotInfo.AttenuationRadius = SpotProxy->CachedAttenuationRadius;
+			SpotInfo.InnerConeAngle = DegreesToConeCos(SpotOwner->GetInnerConeAngle());
+			SpotInfo.OuterConeAngle = DegreesToConeCos(SpotOwner->GetOuterConeAngle());
+			continue;
+		}
+
+		if (const UPointLightComponent* PointOwner = Cast<UPointLightComponent>(LightOwner))
+		{
+			if (PointCount >= NUM_POINT_LIGHT)
+			{
+				continue;
+			}
+
+			const FPointLightSceneProxy* PointProxy = static_cast<const FPointLightSceneProxy*>(Proxy);
+			FPointLightInfo& PointInfo = Result.PointLights[PointCount++];
+			PointInfo.LightColor = BuildLightColor(PointProxy);
+			PointInfo.Position = BuildLightPosition(PointProxy);
+			PointInfo.AttenuationRadius = PointProxy->CachedAttenuationRadius;
+			PointInfo.FalloffExponent = PointOwner->GetLightFalloffExponent();
+		}
+	}
 
 	return Result;
 }
