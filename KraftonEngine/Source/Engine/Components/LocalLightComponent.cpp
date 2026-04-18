@@ -20,8 +20,3 @@ void ULocalLightComponent::Serialize(FArchive& Ar)
 	ULightComponent::Serialize(Ar);
 	Ar << AttenuationRadius;
 }
-
-void ULocalLightComponent::SetTintColor()
-{
-
-}
