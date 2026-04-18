@@ -12,16 +12,6 @@ class FRenderBus;
 // 이후 DirtyFlags가 켜진 필드만 가상 함수를 통해 갱신.
 // Light Constant를 갱신하는데 사용
 
-enum class ELightType
-{
-	None,
-	Ambient,
-	Directional,
-	Point,
-	SpotLight,
-	MAX
-};
-
 class FLightSceneProxy
 {
 public:
@@ -38,7 +28,6 @@ public:
 	uint32 ProxyId = UINT32_MAX;			// FScene내 Index
 	bool bQueuedForDirtyUpdate = false;		// Dirty 갱신을 위한 Queue에 있다
 	bool bVisible = true;
-	ELightType LightType = ELightType::None;
 
 	// --- Dirty 관리 ---
 	void MarkDirty(EDirtyFlag Flag) { DirtyFlags |= Flag; }
