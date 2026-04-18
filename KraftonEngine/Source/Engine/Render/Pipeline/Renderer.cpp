@@ -325,6 +325,9 @@ void FRenderer::Render(const FRenderBus& InRenderBus)
 		UpdateLightingBuffer(Context, InRenderBus);
 	}
 
+	ExecuteDepthPrePass(InRenderBus, Context);
+	ExecuteLightCullingCS(InRenderBus, Context);
+
 	// 패스 실행 순서:
 	// - Grid/Axis가 PostProcess/Font 위를 덮지 않도록 Grid를 먼저 그린다.
 	// - SelectionMask는 PostProcess 내부에서만 실행한다.
@@ -1035,6 +1038,46 @@ void FRenderer::ExecutePostProcessChain(const FRenderBus& Bus, ID3D11DeviceConte
 	}
 
 	Context->OMSetRenderTargets(1, &ViewportRTV, ViewportDSV);
+}
+
+void FRenderer::ExecuteDepthPrePass(const FRenderBus& Bus, ID3D11DeviceContext* Context)
+{
+	SCOPE_STAT_CAT("DepthPrePass", "4_ExecutePass");
+	GPU_SCOPE_STAT("DepthPrePass");
+
+	const auto& OpaqueProxies = Bus.GetProxies(ERenderPass::Opaque);
+	if (OpaqueProxies.empty()) return;
+
+	ID3D11RenderTargetView* NullRTV = nullptr;
+	ID3D11DepthStencilView* DSV = Bus.GetViewportDSV();
+	Context->OMSetRenderTargets(1, &NullRTV, DSV);
+
+	ApplyPassRenderState(ERenderPass::Opaque, Context, Bus.GetViewMode());
+
+	SortProxies(OpaqueProxies);
+	FDrawState State;
+
+	for (const FPrimitiveSceneProxy* RawProxy : SortedProxyBuffer)
+	{
+		const FPrimitiveSceneProxy& Proxy = *RawProxy;
+		if (!Proxy.MeshBuffer || !Proxy.MeshBuffer->IsValid()) continue;
+
+		BindShader(Proxy, Bus, Context, State);
+		Context->PSSetShader(nullptr, nullptr, 0); // DepthPrePass에서는 픽셀 셰이더를 사용하지 않음
+		BindPerObjectCB(Proxy, Context, State);
+		BindMeshBuffer(Proxy.MeshBuffer, Context, State);
+		uint32 indexCount = Proxy.MeshBuffer->GetIndexBuffer().GetIndexCount();
+		if (indexCount > 0)
+			Context->DrawIndexed(indexCount, 0, 0);
+		else
+			Context->Draw(Proxy.MeshBuffer->GetVertexBuffer().GetVertexCount(), 0);
+	}
+	ID3D11RenderTargetView* RTV = Bus.GetViewportRTV();
+	Context->OMSetRenderTargets(1, &RTV, DSV);
+}
+
+void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext* Context)
+{
 }
 
 void FRenderer::EnsurePostProcessTargets(const FRenderBus& Bus)
