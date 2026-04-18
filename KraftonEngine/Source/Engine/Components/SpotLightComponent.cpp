@@ -1,6 +1,7 @@
-﻿#include "SpotLightComponent.h"
+#include "SpotLightComponent.h"
 #include "Render/Pipeline/RenderConstants.h"
 #include "Render/Pipeline/RenderBus.h"
+#include "Render/Proxy/LightSceneProxy.h"
 #include "Object/ObjectFactory.h"
 #include "Serialization/Archive.h"
 
@@ -125,6 +126,11 @@ namespace
 }
 IMPLEMENT_CLASS(USpotLightComponent, UPointLightComponent)
 
+FLightSceneProxy* USpotLightComponent::CreateLightSceneProxy()
+{
+	return new FSpotLightSceneProxy(this);
+}
+
 void USpotLightComponent::CollectEditorVisualizations(FRenderBus& RenderBus) const
 {
 	const FVector Location = GetWorldLocation();
@@ -153,6 +159,11 @@ void USpotLightComponent::GetEditableProperties(TArray<FPropertyDescriptor>& Out
 void USpotLightComponent::PostEditProperty(const char* PropertyName)
 {
 	UPointLightComponent::PostEditProperty(PropertyName);
+
+	if (strcmp(PropertyName, "InnerConeAngle") == 0 || strcmp(PropertyName, "OuterConeAngle") == 0)
+	{
+		MarkProxyDirty(EDirtyFlag::LightData);
+	}
 }
 
 void USpotLightComponent::Serialize(FArchive& Ar)

@@ -8,7 +8,9 @@ public:
 
 	// Getter Setter
 	float	GetAttenuationRadius() const { return AttenuationRadius; }
-	void	SetAttenuationRadius(float NewRadius) { AttenuationRadius = NewRadius; }
+	void	SetAttenuationRadius(float NewRadius) { AttenuationRadius = NewRadius; MarkProxyDirty(EDirtyFlag::LightData); }
+
+	FLightSceneProxy* CreateLightSceneProxy() override;
 
 	// Override
 	void	GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;

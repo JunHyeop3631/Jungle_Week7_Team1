@@ -1,8 +1,9 @@
-﻿#include "PointLightComponent.h"
+#include "PointLightComponent.h"
 #include "Serialization/Archive.h"
 #include "Object/ObjectFactory.h"
 #include "Render/Pipeline/RenderBus.h"
 #include "Render/Pipeline/RenderConstants.h"
+#include "Render/Proxy/LightSceneProxy.h"
 
 #include <cmath>
 
@@ -56,6 +57,11 @@ namespace
 }
 IMPLEMENT_CLASS(UPointLightComponent, ULocalLightComponent)
 
+FLightSceneProxy* UPointLightComponent::CreateLightSceneProxy()
+{
+	return new FPointLightSceneProxy(this);
+}
+
 void UPointLightComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
 {
 	ULocalLightComponent::GetEditableProperties(OutProps);
@@ -65,6 +71,11 @@ void UPointLightComponent::GetEditableProperties(TArray<FPropertyDescriptor>& Ou
 void UPointLightComponent::PostEditProperty(const char* PropertyName)
 {
 	ULocalLightComponent::PostEditProperty(PropertyName);
+
+	if (strcmp(PropertyName, "LightFalloffExponent") == 0)
+	{
+		MarkProxyDirty(EDirtyFlag::LightData);
+	}
 }
 
 void UPointLightComponent::Serialize(FArchive& Ar)

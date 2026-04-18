@@ -4,5 +4,7 @@ class UAmbientLightComponent : public ULightComponent
 {
 public:
 	DECLARE_CLASS(UAmbientLightComponent, ULightComponent)
+
+	FLightSceneProxy* CreateLightSceneProxy() override;
 };
 

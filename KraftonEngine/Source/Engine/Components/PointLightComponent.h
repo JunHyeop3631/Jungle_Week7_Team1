@@ -8,7 +8,9 @@ public:
 
 	// Getter Setter
 	float GetLightFalloffExponent() const { return LightFalloffExponent; }
-	void SetLightFalloffExponent(float NewFalloff) { LightFalloffExponent = NewFalloff; }
+	void SetLightFalloffExponent(float NewFalloff) { LightFalloffExponent = NewFalloff; MarkProxyDirty(EDirtyFlag::LightData); }
+
+	FLightSceneProxy* CreateLightSceneProxy() override;
 
 	// Override
 	void GetEditableProperties(TArray<FPropertyDescriptor>& OutProps) override;
