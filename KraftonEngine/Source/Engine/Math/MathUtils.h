@@ -5,6 +5,7 @@
 namespace FMath
 {
 	constexpr float Pi = 3.14159265358979323846f;
+	constexpr float TwoPi = Pi * 2.0f;
 	constexpr float DegToRad = Pi / 180.0f;
 	constexpr float RadToDeg = 180.0f / Pi;
 	constexpr float Epsilon = 1e-4f;

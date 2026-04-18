@@ -7,9 +7,11 @@ public:
 
 	// Getter Setter
 	float GetInnerConeAngle() const {return InnerConeAngle;}
-	void SetInnerConeAngle(float NewInnerConeAngle) { InnerConeAngle = NewInnerConeAngle; }
+	void SetInnerConeAngle(float NewInnerConeAngle) { InnerConeAngle = NewInnerConeAngle; MarkProxyDirty(EDirtyFlag::LightData); }
 	float GetOuterConeAngle() const { return OuterConeAngle; }
-	void SetOuterConeAngle(float NewOuterConeangle) { OuterConeAngle = NewOuterConeangle; }
+	void SetOuterConeAngle(float NewOuterConeangle) { OuterConeAngle = NewOuterConeangle; MarkProxyDirty(EDirtyFlag::LightData); }
+
+	FLightSceneProxy* CreateLightSceneProxy() override;
 
 	void CollectEditorVisualizations(FRenderBus& RenderBus) const override;
 

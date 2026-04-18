@@ -1,6 +1,7 @@
 ﻿#include "SpotLightComponent.h"
 #include "Render/Pipeline/RenderConstants.h"
 #include "Render/Pipeline/RenderBus.h"
+#include "Render/Proxy/LightSceneProxy.h"
 #include "Object/ObjectFactory.h"
 #include "Serialization/Archive.h"
 
@@ -9,9 +10,6 @@
 namespace
 {	
 #pragma region 디버그라인
-	constexpr float Pi = 3.14159265f;
-	constexpr float TwoPi = Pi * 2.0f;
-	constexpr float DegreesToRadians = Pi / 180.0f;
 	constexpr float MinConeLength = 1e-6f;
 	constexpr int32 ConeSegmentCount = 24;
 	constexpr int32 ConeSideCount = 24;
@@ -78,8 +76,8 @@ namespace
 		}
 
 		const FVector NormalizedDirection = Direction / DirectionLength;
-		const float ConeAngleRadians = InConeAngle * DegreesToRadians;
-		if (ConeAngleRadians >= (Pi * 0.5f) - 1e-3f)
+		const float ConeAngleRadians = InConeAngle * FMath::DegToRad;
+		if (ConeAngleRadians >= (FMath::Pi * 0.5f) - 1e-3f)
 		{
 			return;
 		}
@@ -99,7 +97,7 @@ namespace
 
 		for (int32 SegmentIndex = 0; SegmentIndex < ConeSegmentCount; ++SegmentIndex)
 		{
-			const float Angle = (TwoPi * static_cast<float>(SegmentIndex)) / static_cast<float>(ConeSegmentCount);
+			const float Angle = (FMath::TwoPi * static_cast<float>(SegmentIndex)) / static_cast<float>(ConeSegmentCount);
 			const float CosAngle = cosf(Angle);
 			const float SinAngle = sinf(Angle);
 			CirclePoints[SegmentIndex] = BaseCenter
@@ -124,6 +122,11 @@ namespace
 #pragma endregion
 }
 IMPLEMENT_CLASS(USpotLightComponent, UPointLightComponent)
+
+FLightSceneProxy* USpotLightComponent::CreateLightSceneProxy()
+{
+	return new FSpotLightSceneProxy(this);
+}
 
 void USpotLightComponent::CollectEditorVisualizations(FRenderBus& RenderBus) const
 {
@@ -153,6 +156,11 @@ void USpotLightComponent::GetEditableProperties(TArray<FPropertyDescriptor>& Out
 void USpotLightComponent::PostEditProperty(const char* PropertyName)
 {
 	UPointLightComponent::PostEditProperty(PropertyName);
+
+	if (strcmp(PropertyName, "InnerConeAngle") == 0 || strcmp(PropertyName, "OuterConeAngle") == 0)
+	{
+		MarkProxyDirty(EDirtyFlag::LightData);
+	}
 }
 
 void USpotLightComponent::Serialize(FArchive& Ar)

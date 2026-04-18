@@ -41,7 +41,7 @@ namespace
 
 UDecalComponent::UDecalComponent()
 {
-	bTickEnable = true;
+	PrimaryComponentTick.bTickEnabled = true;
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.bStartWithTickEnabled = true;
    OriginalAlpha = DecalColor.A;
