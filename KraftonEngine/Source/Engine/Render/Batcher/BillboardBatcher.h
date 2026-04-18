@@ -24,8 +24,9 @@ public:
 		const FVector& CamRight,
 		const FVector& CamUp,
 		const FVector& WorldScale,
-		float Width  = 1.0f,
-       float Height = 1.0f,
+		float Width = 1.0f,
+		float Height = 1.0f,
+		FVector4 Color = FVector4(1.f, 1.f, 1.f, 1.f),
 		bool bSelected = false);
 
 	void Clear();
@@ -36,10 +37,10 @@ public:
 	uint32 GetSelectedSpriteCount() const { return static_cast<uint32>(SelectedVertices.size() / 4); }
 
 private:
-	TArray<FTextureVertex> Vertices;
+	TArray<FVertexPNCT>	   Vertices;
 	TArray<uint32>         Indices;
 	TArray<FSRVBatch>      Batches;
-	TArray<FTextureVertex> SelectedVertices;
+	TArray<FVertexPNCT>	   SelectedVertices;
 	TArray<uint32>         SelectedIndices;
 	TArray<FSRVBatch>      SelectedBatches;
 

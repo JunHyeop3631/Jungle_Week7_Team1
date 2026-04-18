@@ -252,7 +252,8 @@ void FRenderer::PrepareBatchers(const FRenderBus& Bus)
 					Bus.GetCameraUp(),
 					BillboardVisualScale,
 					Entry.Billboard.Width,
-                  Entry.Billboard.Height,
+					Entry.Billboard.Height,
+					Entry.Billboard.Color,
 					Entry.bSelected
 				);
 			}
