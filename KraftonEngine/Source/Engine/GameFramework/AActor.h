@@ -43,11 +43,7 @@ public:
 		}
 
 		T* Comp = UObjectManager::Get().CreateObject<T>(this);
-		Comp->SetOwner(this);
-		OwnedComponents.push_back(Comp);
-		bPrimitiveCacheDirty = true;
-		Comp->CreateRenderState();
-		MarkPickingDirty();
+		RegisterComponent(Comp);
 		return Comp;
 	}
 

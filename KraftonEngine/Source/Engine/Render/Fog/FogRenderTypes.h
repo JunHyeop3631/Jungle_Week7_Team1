@@ -3,13 +3,6 @@
 #include "Core/CoreTypes.h"
 #include "Math/Vector.h"
 
-namespace FogRendering
-{
-	constexpr uint32 MaxFogComponents = 8;
-	constexpr float DensityScale = 0.1f;
-	constexpr float FarDepthFallbackDistance = 1000.0f;
-}
-
 // UExponentialHeightFogComponent와 FogPostProcess.hlsl이 공유하는 포맷입니다.
 struct FFogUniformParameters
 {
@@ -20,7 +13,7 @@ struct FFogUniformParameters
 
 struct FFogPostProcessConstants
 {
-	FFogUniformParameters Fogs[FogRendering::MaxFogComponents];
+	FFogUniformParameters Fogs[8];
 	uint32 FogCount = 0;
 	float _pad[3] = {};
 };

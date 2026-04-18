@@ -1659,7 +1659,7 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 		FEditorSettings& Settings = FEditorSettings::Get();
 		if (bPIEPossessed)
 		{
-			static const char* ViewModeNames[] = { "Lit", "Unlit", "Wireframe", "Depth", "Scene Depth" };
+			static const char* ViewModeNames[] = { "Lit_Gouraud","Lit_Lambert","Lit_Phong", "Unlit", "Wireframe", "WorldNormal", "Depth", "Scene Depth" };
 			int32 ViewModeIdx = static_cast<int32>(Opts.ViewMode);
 			if (ViewModeIdx < 0 || ViewModeIdx >= static_cast<int32>(IM_ARRAYSIZE(ViewModeNames)))
 			{
@@ -1891,11 +1891,18 @@ void FLevelViewportLayout::RenderPaneToolbar(int32 SlotIndex)
 		{
 			ImGui::Text("View Mode");
 			int32 CurrentMode = static_cast<int32>(Opts.ViewMode);
-			ImGui::RadioButton("Lit", &CurrentMode, static_cast<int32>(EViewMode::Lit));
+			ImGui::RadioButton("Lit_Gouraud", &CurrentMode, static_cast<int32>(EViewMode::Lit_Gouraud));
+			ImGui::SameLine();
+			ImGui::RadioButton("Lit_Lambert", &CurrentMode, static_cast<int32>(EViewMode::Lit_Lambert));
+			ImGui::SameLine();
+			ImGui::RadioButton("Lit_Phong", &CurrentMode, static_cast<int32>(EViewMode::Lit_Phong));
 			ImGui::SameLine();
 			ImGui::RadioButton("Unlit", &CurrentMode, static_cast<int32>(EViewMode::Unlit));
-			ImGui::SameLine();
+			//ImGui::SameLine();	
+			ImGui::Separator();
 			ImGui::RadioButton("Wireframe", &CurrentMode, static_cast<int32>(EViewMode::Wireframe));
+			ImGui::SameLine();
+			ImGui::RadioButton("World Normal", &CurrentMode, static_cast<int32>(EViewMode::WorldNormal));
 			ImGui::SameLine();
 			ImGui::RadioButton("Depth", &CurrentMode, static_cast<int32>(EViewMode::Depth));
 			ImGui::SameLine();

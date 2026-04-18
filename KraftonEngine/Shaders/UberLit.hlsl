@@ -14,6 +14,7 @@ PS_Lighting VS(VS_Input_PNCT input)
     output.texCoord = input.texcoord;
     
     output.worldNormal = normalize(mul(input.normal, (float3x3) NormalMatrix));
+    float3 worldTanXYZ = normalize(mul(input.tangent.xyz, (float3x3) Model));
     output.worldTangent = normalize(mul(input.tangent.rgb, (float3x3) Model));
     
 //    //구루 쉐이딩
@@ -45,6 +46,9 @@ float4 PS(PS_Lighting input)
     if (bHasNormalMap != 0)
         worldNormal = GetWorldNormal(input, g_txNormal, g_Sample);
     
+#if VIEWMODE_NORMAL
+    return float4(worldNormal * 0.5f + 0.5f, 1.0f);
+#endif
     LightingResult lightingResult = (LightingResult) 0;
     //고로쉐이딩
 #if LIGHTING_MODEL_GOURAUD
@@ -57,7 +61,7 @@ float4 PS(PS_Lighting input)
     float3 albedo = texColor.rgb * input.color.rgb;
 
     float3 ambient = Ambient.LightColor.rgb * 0.1f * albedo;
-    float3 diffuse  = lightingResult.Diffuse * albedo;
+    float3 diffuse  = lightingResult.Diffuse * albedo * SectionColor.rgb;
 
     float3 final = ambient + diffuse;
 
@@ -72,7 +76,7 @@ float4 PS(PS_Lighting input)
     float3 albedo = texColor.rgb * input.color.rgb;
     
     float3 ambient = Ambient.LightColor.rgb * 0.1f * albedo;
-    float3 diffuse  = lightingResult.Diffuse * albedo;
+    float3 diffuse  = lightingResult.Diffuse * albedo * SectionColor.rgb;
     float3 specular = lightingResult.Specular;
 
     float3 final = ambient + diffuse + specular;

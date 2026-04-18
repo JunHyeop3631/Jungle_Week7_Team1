@@ -42,6 +42,7 @@ public:
 	// BeginPlay이후부터 바로 Tick함수 실행
 	bool bStartWithTickEnabled = true;
 	bool bRegistered = false;
+	bool bTickInEditor = false;
 
 	//현재상태 변수
 	//현재 틱을 사용할건지 여부
@@ -50,6 +51,10 @@ public:
 public:
     virtual ~FTickFunction() = default;
 
+	virtual bool IsTargetValid() const = 0;
+	virtual bool HasBegunPlay() const = 0;
+
+	bool IsTickFunctionRegistered() const { return bRegistered; }
 	void SetTickGroup(ETickingGroup InGroup) {TickGroup = InGroup;}
 	void SetEndTickGroup(ETickingGroup InGroup) {EndTickGroup = InGroup;}
 	void SetTickInterval(float InInterval) {TickInterval = (InInterval > 0.0f) ? InInterval : 0.0f; }
@@ -66,47 +71,21 @@ public:
 	void RegisterTickFunction();
 	void UnRegisterTickFunction();
 
-	bool ConsumeInterval(float DeltaTime)
-	{
-		if (TickInterval <= 0.0f)
-		{
-			return true;
-		}
-
-		TickAccumulator += DeltaTime;
-		if (TickAccumulator < TickInterval)
-		{
-			return false;
-		}
-
-		TickAccumulator -= TickInterval;
-		return true;
-	}
+	bool ConsumeInterval(float DeltaTime, float& OutDeltaTime);
 
 	void SetTickEnabled(bool bInEnabled)
 	{
 		bTickEnabled = bInEnabled;
 	}
 
+	void SetTickInEditor(bool bInEnabled) { bTickInEditor = bInEnabled; }
+
 	void ResetInterval()
 	{
 		TickAccumulator = 0.0f;
 	}
 
-	bool CanTick(ELevelTick TickType) const
-	{
-		if (!bCanEverTick || !bTickEnabled || !bRegistered)
-		{
-			return false;
-		}
-
-		if (TickType == LEVELTICK_PauseTick && !bTickEvenWhenPaused)
-		{
-			return false;
-		}
-
-		return true;
-	}
+	bool CanTick(ELevelTick TickType) const;
 };
 
 class FTickManager
@@ -119,7 +98,7 @@ private:
 	void GatherTickFunctions(UWorld* World, ELevelTick TickType);
 	void QueueTickFunction(FTickFunction& TickFunction);
 
-	TArray<FTickFunction*> TickFunctions;
+	TArray<FTickFunction*> TickFunctionsByGroup[TG_MAX];
 };
 
 struct FActorTickFunction :public FTickFunction {
@@ -136,6 +115,10 @@ public:
 
 	// FTickFunction을(를) 통해 상속됨
 	const char* GetDebugName() const override;
+
+	// FTickFunction을(를) 통해 상속됨
+	bool IsTargetValid() const override;
+	bool HasBegunPlay() const override;
 };
 
 struct FActorComponentTickFunction : public FTickFunction {
@@ -147,4 +130,8 @@ public:
 
 	// FTickFunction을(를) 통해 상속됨
 	const char* GetDebugName() const override;
+
+	// FTickFunction을(를) 통해 상속됨
+	bool IsTargetValid() const override;
+	bool HasBegunPlay() const override;
 };

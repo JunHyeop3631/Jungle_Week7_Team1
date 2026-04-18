@@ -24,7 +24,7 @@ void FDefaultRenderPipeline::Execute(float DeltaTime, FRenderer& Renderer)
 	if (Camera)
 	{
 		FShowFlags ShowFlags;
-		EViewMode ViewMode = EViewMode::Lit;
+		EViewMode ViewMode = EViewMode::Unlit;
 
 		Bus.SetCameraInfo(Camera);
 		Bus.SetRenderSettings(ViewMode, ShowFlags);
