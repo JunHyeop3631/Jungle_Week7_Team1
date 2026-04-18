@@ -18,6 +18,7 @@ AActor::AActor()
 	PrimaryActorTick.SetTarget(this);
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bTickEnabled = true;
+	PrimaryActorTick.bTickInEditor = false;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 }
 
@@ -56,11 +57,7 @@ UActorComponent* AActor::AddComponentByClass(const FTypeInfo* Class)
 		return nullptr;
 	}
 
-	Comp->SetOwner(this);
-	OwnedComponents.push_back(Comp);
-	bPrimitiveCacheDirty = true;
-	Comp->CreateRenderState();
-	MarkPickingDirty();
+	RegisterComponent(Comp);
 	return Comp;
 }
 
@@ -76,6 +73,12 @@ void AActor::RegisterComponent(UActorComponent* Comp)
 		bPrimitiveCacheDirty = true;
 		MarkPickingDirty();
 		Comp->CreateRenderState();
+		Comp->PrimaryComponentTick.RegisterTickFunction();
+
+		if (bActorHasBegunPlay)
+		{
+			Comp->BeginPlay();
+		}
 	}
 }
 
@@ -177,6 +180,7 @@ void AActor::BeginPlay()
 {
 	// 재진입 방지 — UE의 HasActorBegunPlay() 가드 대응.
 	if (bActorHasBegunPlay) return;
+	PrimaryActorTick.RegisterTickFunction();
 	bActorHasBegunPlay = true;
 
 	// UE 순서: 컴포넌트 BeginPlay 먼저, 그다음 Actor 본인 (오버라이드 측 Super 호출 시).
@@ -270,6 +274,7 @@ void AActor::Serialize(FArchive& Ar)
 	// 소유 포인터(OwnedComponents/RootComponent/Outer)는 직렬화 제외 — 복제 단계에서 재구성.
 	Ar << bVisible;
 	Ar << bNeedsTick;
+	Ar << bTickInEditor;
 }
 
 // SceneComponent 서브트리를 재귀 복제. 부모 → 자식 순으로 만들되,

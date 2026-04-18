@@ -127,12 +127,6 @@ void UEngine::WorldTick(float DeltaTime)
 		UWorld* World = Ctx.World;
 		if (!World) continue;
 
-		// PIE 활성 시 Editor 월드는 완전히 skip
-		if (bHasPIEWorld && Ctx.WorldType == EWorldType::Editor)
-		{
-			continue;
-		}
-
 		const ELevelTick TickType = ToLevelTickType(Ctx.WorldType);
 
 		// 월드 단위 업데이트 (FlushPrimitive / VisibleProxies / DebugDraw /s TickManager)
