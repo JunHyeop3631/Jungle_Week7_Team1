@@ -15,7 +15,7 @@ PS_Lighting VS(VS_Input_PNCT input)
     
     output.worldNormal = normalize(mul(input.normal, (float3x3) NormalMatrix));
     float3 worldTanXYZ = normalize(mul(input.tangent.xyz, (float3x3) Model));
-    output.worldTangent = normalize(mul(input.tangent.rgb, (float3x3) Model));
+    output.worldTangent = float4(worldTanXYZ, input.tangent.w);
     
 //    //구루 쉐이딩
 #if LIGHTING_MODEL_GOURAUD
