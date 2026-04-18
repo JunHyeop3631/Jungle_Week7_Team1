@@ -45,6 +45,7 @@ cbuffer PerObjectBuffer : register(b1)
 {
     float4x4 Model;
     float4 PrimitiveColor;
+    float4x4 NormalMatrix;
 };
 
 // b2: 기즈모 전용

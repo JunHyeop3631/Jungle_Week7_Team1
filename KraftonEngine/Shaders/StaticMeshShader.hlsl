@@ -58,7 +58,7 @@ float4 PS(PS_Input_Full input) : SV_TARGET
         float localTintWeight = saturate(LocalTints[i].Params.x * attenuation);
         finalColor.rgb = lerp(finalColor.rgb, LocalTints[i].Color.rgb, localTintWeight);
     }
-
+                                                                                             
     finalColor.rgb = saturate(finalColor.rgb);
     finalColor.a = texColor.a * input.color.a;
 

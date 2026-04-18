@@ -30,7 +30,7 @@ namespace
 
 		const FVector Direction = ScaledVelocity / VelocityLength;
 		const FVector End = Start + ScaledVelocity;
-		const FColor ArrowColor(135, 206, 235);
+		const FVector4 ArrowColor = FColor(135, 206, 235).ToVector4();
 
 		FDebugLineEntry Shaft;
 		Shaft.Start = Start;

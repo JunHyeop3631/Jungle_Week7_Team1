@@ -31,9 +31,9 @@ void ULightComponentBase::MarkProxyDirty(EDirtyFlag flag) const
 void ULightComponentBase::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
 {
 	USceneComponent::GetEditableProperties(OutProps);
-	OutProps.push_back({ "Intensity", EPropertyType::Float, &Intensity });
-	// OutProps.push_back({ "Light Color", EPropertyType::Color, &LightColor });
-	OutProps.push_back({ "bVisible" , EPropertyType::Bool, &bVisible });
+	OutProps.push_back({ "Intensity", EPropertyType::Float, &Intensity, 0.f, 20.f });
+	OutProps.push_back({ "LightColor", EPropertyType::Vec4, &LightColor });
+	OutProps.push_back({ "Visible" , EPropertyType::Bool, &bVisible });
 }
 
 void ULightComponentBase::PostEditProperty(const char* PropertyName)

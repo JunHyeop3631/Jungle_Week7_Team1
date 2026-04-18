@@ -42,6 +42,10 @@ public:
 	FMeshBuffer* GetMeshBuffer() const override { return &FMeshBufferManager::Get().GetMeshBuffer(EMeshShape::Quad); }
 	const FMeshData* GetMeshData() const override { return &FMeshBufferManager::Get().GetMeshData(EMeshShape::Quad); }
 
+	// --- Icon Tint ---
+	FLinearColor GetIconTint() const { return CachedIconTint; }
+	void SetIconTint(FLinearColor InTint) { CachedIconTint = InTint; }
+
 protected:
 	bool bIsBillboard = true;
 
@@ -50,5 +54,9 @@ protected:
 
 	float Width  = 1.0f;
 	float Height = 1.0f;
+	
+// LightColor를 Billboard에 동기 시키기 위해 설정
+private:
+	FLinearColor CachedIconTint;
 };
 

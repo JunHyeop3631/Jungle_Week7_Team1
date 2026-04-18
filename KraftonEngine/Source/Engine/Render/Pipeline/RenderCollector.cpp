@@ -67,7 +67,7 @@ void FRenderCollector::CollectDebugDraw(const FDebugDrawQueue& Queue, FRenderBus
 		FDebugLineEntry Entry;
 		Entry.Start = Item.Start;
 		Entry.End = Item.End;
-		Entry.Color = Item.Color;
+		Entry.Color = Item.Color.ToVector4();
 		RenderBus.AddDebugLineEntry(std::move(Entry));
 	}
 }
@@ -119,7 +119,7 @@ void FRenderCollector::CollectOctreeDebug(const FOctree* Node, FRenderBus& Rende
 		FDebugLineEntry Entry;
 		Entry.Start = V[E[0]];
 		Entry.End = V[E[1]];
-		Entry.Color = Color;
+		Entry.Color = Color.ToVector4();
 		RenderBus.AddDebugLineEntry(std::move(Entry));
 	}
 

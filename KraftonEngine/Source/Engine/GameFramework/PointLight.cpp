@@ -13,5 +13,5 @@ APointLight::APointLight()
 	SpriteComponent = AddComponent<UBillboardComponent>();
 	SpriteComponent->AttachToComponent(PointLight);
 	SpriteComponent->SetTexture(FName("PointLightIcon"));
-	PointLight->SetBillboard(SpriteComponent);
+	PointLight->SetEditorIconBillboard(SpriteComponent);
 }
