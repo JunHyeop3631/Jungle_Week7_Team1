@@ -19,20 +19,28 @@ public:
 	FString VertexShaderFilePath; // 예: "Shaders/Default_VS.hlsl"
 	FString PixelShaderFilePath;  // 예: "Shaders/Default_PS.hlsl"
 
+	FString NormalTextureFilePath;
+	UTexture2D* NormalTexture = nullptr;
+
 	// 런타임 DX11 리소스 (직렬화 안 함, 런타임에 로드/컴파일)
 	ID3D11VertexShader* VertexShader = nullptr;
 	ID3D11PixelShader* PixelShader = nullptr;
 	ID3D11InputLayout* InputLayout = nullptr;
+
+	
 
 	virtual EMaterialType GetMaterialType() const override { return EMaterialType::Master; }
 
 	// 인터페이스 구현
     UTexture2D* GetDiffuseTexture() const override { return DiffuseTexture; }
 	FVector4 GetDiffuseColor() const override { return DiffuseColor; }
+	UTexture2D* GetNormalTexture() const override { return NormalTexture; }
 	ID3D11VertexShader* GetVertexShader() const override { return VertexShader; }
 	ID3D11PixelShader* GetPixelShader() const override { return PixelShader; }
 	ID3D11InputLayout* GetInputLayout() const override { return InputLayout; }
 
-public:
     void Serialize(FArchive& Ar) override;
+
+private:
+	
 };

@@ -88,7 +88,7 @@ struct PS_Lighting
     float3 worldPosition : TEXCOORD0;
     float3 worldNormal : TEXCOORD1;
     float2 texCoord : TEXCOORD2;
-    float3 worldTangent : TEXCOORD3;
+    float4 worldTangent : TEXCOORD3;
     float3 vertexLighting : TEXCOORD4;
 };
 

@@ -76,6 +76,7 @@ void UStaticMesh::InitResources(ID3D11Device* InDevice)
 		FVertexPNCT RenderVert;
 		RenderVert.Position = RawVert.pos;
 		RenderVert.Normal = RawVert.normal;
+		RenderVert.Tangent = RawVert.tangent;
 		RenderVert.Color = RawVert.color;
 		RenderVert.UV = RawVert.tex;
 		RenderMeshData.Vertices.push_back(RenderVert);

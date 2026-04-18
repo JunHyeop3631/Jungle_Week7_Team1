@@ -137,7 +137,7 @@ void FStaticMeshSceneProxy::RebuildSectionDraws()
 			Draw.IndexCount = Section.NumTriangles * 3;
 
 			int32 i = Section.MaterialIndex;
-         if (i >= 0 && i < static_cast<int32>(Slots.size()))
+			if (i >= 0 && i < static_cast<int32>(Slots.size()))
 			{
                UMaterialInterface* Mat = nullptr;
 
@@ -150,6 +150,10 @@ void FStaticMeshSceneProxy::RebuildSectionDraws()
 				{
                     if (UTexture2D* DiffuseTexture = Mat->GetDiffuseTexture())
 						Draw.DiffuseSRV = DiffuseTexture->GetSRV();
+
+					if (UTexture2D* NormalTex = Mat->GetNormalTexture())
+						Draw.NormalMapSRV = NormalTex->GetSRV();
+
 					Draw.DiffuseColor = Mat->GetDiffuseColor();
 				}
 			}

@@ -23,6 +23,10 @@ public:
 	FString OverriddenDiffuseTexturePath;
 	UTexture2D* OverriddenDiffuseTexture = nullptr; // 런타임 캐싱 포인터
 
+	bool bOverride_NormalTexture = false;
+	FString OverriddenNormalTexturePath;
+	UTexture2D* OverriddenNormalTexture = nullptr;
+
 	virtual EMaterialType GetMaterialType() const override { return EMaterialType::Instance; }
 
 	// --- UMaterialInterface 가상 함수 구현 (위임 로직) ---
@@ -52,6 +56,12 @@ public:
 	virtual ID3D11InputLayout* GetInputLayout() const override
 	{
 		return Parent ? Parent->GetInputLayout() : nullptr;
+	}
+
+	virtual UTexture2D* GetNormalTexture() const override
+	{
+		if (bOverride_NormalTexture) return OverriddenNormalTexture;
+		return Parent ? Parent->GetNormalTexture() : nullptr;
 	}
 
 	// 직렬화
