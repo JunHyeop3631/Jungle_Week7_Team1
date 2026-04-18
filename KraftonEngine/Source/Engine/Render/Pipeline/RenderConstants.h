@@ -34,20 +34,6 @@ namespace ECBSlot
 	constexpr uint32 MaxLocalTintEffects = 8;
 }
 
-//PerObject
-struct FPerObjectConstants
-{
-	FMatrix Model;
-	FVector4 Color;
-	FMatrix InvModel;
-
-	// 기본 PerObject: WorldMatrix + White + InverseWorldMatrix
-	static FPerObjectConstants FromWorldMatrix(const FMatrix& WorldMatrix)
-	{
-		return { WorldMatrix, FVector4(1.0f, 1.0f, 1.0f, 1.0f), WorldMatrix.GetInverse() };
-	}
-};
-
 struct FGPUFloat4x4
 {
 	float M[4][4] = {};
@@ -62,6 +48,20 @@ struct FGPUFloat4x4
 	{
 		std::memcpy(M, InMatrix.M, sizeof(M));
 		return *this;
+	}
+};
+
+//PerObject
+struct FPerObjectConstants
+{
+	FMatrix Model;
+	FVector4 Color;
+	FGPUFloat4x4 InvModel;
+
+	// 기본 PerObject: WorldMatrix + White + InverseWorldMatrix
+	static FPerObjectConstants FromWorldMatrix(const FMatrix& WorldMatrix)
+	{
+		return { WorldMatrix, FVector4(1.0f, 1.0f, 1.0f, 1.0f), WorldMatrix.GetInverse().GetTransposed()};
 	}
 };
 
