@@ -88,15 +88,18 @@ float4 PS(PS_Input_Full input) : SV_TARGET
     finalColor.a = texColor.a * input.color.a;
 
 
-    /*float heat = saturate((float) lightCountInTile / 10.0f);
+    if (g_bShowLightComplexity != 0)
+    {
+	     float heat = saturate((float) lightCountInTile / 10.0f);
     
-    // 타일 경계선을 시각적으로 확인하고 싶다면 덤프 추가
-    bool bIsBorder = (pixelPos.x % TILE_SIZE == 0) || (pixelPos.y % TILE_SIZE == 0);
-    if (bIsBorder)
-        return float4(0, 1, 0, 1); // 타일 경계는 초록색 선으로 출력
+	    // 타일 경계선을 시각적으로 확인하고 싶다면 덤프 추가
+	    bool bIsBorder = (pixelPos.x % TILE_SIZE == 0) || (pixelPos.y % TILE_SIZE == 0);
+	    if (bIsBorder)
+	        return float4(0, 1, 0, 1); // 타일 경계는 초록색 선으로 출력
 
-    return float4(heat, 0.0f, 0.0f, 1.0f); // 빛 개수에 비례한 붉은색 출력*/
+		return float4(heat, 0.0f, 0.0f, 1.0f); // 빛 개수에 비례한 붉은색 출력
 
     // ✂️ 기존 리턴문은 잠시 주석 처리
+    }
     return float4(ApplyWireframe(finalColor.rgb), finalColor.a);
 }

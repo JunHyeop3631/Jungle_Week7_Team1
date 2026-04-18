@@ -452,6 +452,7 @@ void FRenderer::Render(const FRenderBus& InRenderBus)
 {
 	FDrawCallStats::Reset();
 
+
 	ID3D11DeviceContext* Context = Device.GetDeviceContext();
 	EnsurePostProcessTargets(InRenderBus);
 	{
@@ -1735,8 +1736,31 @@ void FRenderer::UpdateLightBuffer(ID3D11DeviceContext* Context, const FRenderBus
 		{
 			uint32 Count;
 			uint32 NumTilesX;
-			float Pad[2];
-		} ConfigData = {ActiveLightCount, numTilesX, {0, 0}};
+			uint32 bShowLightComplexity;
+			float Pad;
+		};
+		
+		static bool bShowDebug = false;  // 현재 켜져 있는지 상태 저장
+		static bool bIsGPressed = false; // G키를 누르고 있는 중인지 체크 (연속 눌림 방지)
+
+		// 'G' 키 (가상 키 코드 'G'는 0x47)가 눌렸는지 확인
+		if (GetAsyncKeyState('G') & 0x8000)
+		{
+			// 키를 처음 누른 순간에만 상태를 뒤집음 (한 번 누르면 켜지고, 다시 누르면 꺼짐)
+			if (!bIsGPressed)
+			{
+				bShowDebug = !bShowDebug;
+				bIsGPressed = true;
+			}
+		}
+		else
+		{
+			// 손을 떼면 다시 누를 수 있게 리셋
+			bIsGPressed = false;
+		}
+
+		// 💡 구조체에 값 넣기 (true면 1, false면 0)
+		FLightConfig ConfigData = { ActiveLightCount, numTilesX, bShowDebug ? 1u : 0u, 0.0f };
 
 		LightCB->Update(Context, &ConfigData, sizeof(FLightConfig));
 

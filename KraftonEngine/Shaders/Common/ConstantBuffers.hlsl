@@ -103,7 +103,8 @@ cbuffer LightConfig : register(b8)
 {
     uint g_ActiveLightCount;
     uint g_NumTilesX;
-    float2 padding;
+    uint g_bShowLightComplexity;
+    float padding;
 }
 
 struct FLightData
