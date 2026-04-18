@@ -56,7 +56,7 @@ struct FImportOptions
 {
 	float Scale = 1.0f;
 	EForwardAxis ForwardAxis = EForwardAxis::NegY;  // Blender 기본: Z-up, -Y Forward
-	EWindingOrder WindingOrder = EWindingOrder::CCW_to_CW;
+	EWindingOrder WindingOrder = EWindingOrder::Keep;
 	static FImportOptions Default() { return {}; }
 };
 

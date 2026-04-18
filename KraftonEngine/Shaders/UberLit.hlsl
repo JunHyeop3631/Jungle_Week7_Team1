@@ -71,7 +71,7 @@ float4 PS(PS_Lighting input) : SV_TARGET
     
 // 램버트 쉐이딩
 #elif LIGHTING_MODEL_LAMBERT
-tempLighting = ComputeDirectionalLight_Lambert(worldNormal);
+    tempLighting = ComputeDirectionalLight_Lambert(worldNormal);
     totalLighting.Diffuse += tempLighting.Diffuse;
     tempLighting = ComputePointLight_Lambert(input.worldPosition, worldNormal);
     totalLighting.Diffuse += tempLighting.Diffuse;
@@ -85,7 +85,7 @@ tempLighting = ComputeDirectionalLight_Lambert(worldNormal);
     finalColor = float4(final, input.color.a * texColor.a);
     
 #elif LIGHTING_MODEL_PHONG
-float shininess = SpecularRoughness;
+    float shininess = SpecularRoughness;
     
     tempLighting = ComputeDirectionalLight_BlinnPhong(CameraPosition.xyz, input.worldPosition, worldNormal, shininess);
     totalLighting.Diffuse += tempLighting.Diffuse;
