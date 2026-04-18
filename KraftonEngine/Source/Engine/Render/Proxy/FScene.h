@@ -10,9 +10,9 @@ class UExponentialHeightFogComponent;
 class FLightSceneProxy;
 
 // ============================================================
-// FScene — FPrimitiveSceneProxy의 소유자 겸 변경 추적 컨테이너
+// FScene — FPrimitiveSceneProxy, FLightSceneProxy의 소유자 겸 변경 추적 컨테이너
 // ============================================================
-// UWorld와 1:1 대응. PrimitiveComponent 등록/해제 시 프록시를 관리하고,
+// UWorld와 1:1 대응. PrimitiveComponent, FLightSceneProxy 등록/해제 시 프록시를 관리하고,
 // 프레임마다 DirtyList의 프록시만 갱신한 뒤 Renderer에 전달한다.
 class FScene
 {
