@@ -1078,6 +1078,59 @@ void FRenderer::ExecuteDepthPrePass(const FRenderBus& Bus, ID3D11DeviceContext* 
 
 void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext* Context)
 {
+	if (Bus.GetPointLights().empty() && Bus.GetSpotLights().empty()) return;
+
+	SCOPE_STAT_CAT("LightCulling", "4_ExecutePass");
+	GPU_SCOPE_STAT("LightCullingCS");
+
+	uint32 ViewportWidth = static_cast<uint32>(Bus.GetViewportWidth());
+	uint32 ViewportHeight = static_cast<uint32>(Bus.GetViewportHeight());
+	uint32 ThreadGroupX = (ViewportWidth + 15) / 16;
+	uint32 ThreadGroupY = (ViewportHeight + 15) / 16;
+
+	ID3D11ShaderResourceView* DepthSRV = Bus.GetViewportDepthSRV();
+
+	// PointLight
+	if (!Bus.GetPointLights().empty())
+	{
+		FShader* PointCullingShader = FShaderManager::Get().GetShader(EShaderType::LightCullingCS_Point);
+		if (PointCullingShader)
+		{
+			PointCullingShader->BindCompute(Context);
+
+			ID3D11ShaderResourceView* PointSRVs[2] = { Resources.LightCulling.PointLightDataSRV, DepthSRV };
+			Context->CSSetShaderResources(0, 2, PointSRVs);
+
+			ID3D11UnorderedAccessView* PointUAVs[2] = { Resources.LightCulling.PointLightIndicesUAV, Resources.LightCulling.PointLightCountsUAV };
+			Context->CSSetUnorderedAccessViews(0, 2, PointUAVs, nullptr);
+
+			Context->Dispatch(ThreadGroupX, ThreadGroupY, 1);
+		}
+	}
+
+	// SpotLight
+	if (!Bus.GetSpotLights().empty())
+	{
+		FShader* SpotCullingShader = FShaderManager::Get().GetShader(EShaderType::LightCullingCS_Spot);
+		if (SpotCullingShader)
+		{
+			SpotCullingShader->BindCompute(Context);
+
+			ID3D11ShaderResourceView* SpotSRVs[2] = { Resources.LightCulling.SpotLightDataSRV, DepthSRV };
+			Context->CSSetShaderResources(0, 2, SpotSRVs);
+
+			ID3D11UnorderedAccessView* SpotUAVs[2] = { Resources.LightCulling.SpotLightIndicesUAV, Resources.LightCulling.SpotLightCountsUAV };
+			Context->CSSetUnorderedAccessViews(0, 2, SpotUAVs, nullptr);
+
+			Context->Dispatch(ThreadGroupX, ThreadGroupY, 1);
+		}
+	}
+
+	ID3D11UnorderedAccessView* NullUAVs[2] = { nullptr, nullptr };
+	Context->CSSetUnorderedAccessViews(0, 2, NullUAVs, nullptr);
+
+	ID3D11ShaderResourceView* NullSRVs[2] = { nullptr, nullptr };
+	Context->CSSetShaderResources(0, 2, NullSRVs);
 }
 
 void FRenderer::EnsurePostProcessTargets(const FRenderBus& Bus)
