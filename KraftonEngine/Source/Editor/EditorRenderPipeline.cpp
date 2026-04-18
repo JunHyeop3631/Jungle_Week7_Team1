@@ -119,7 +119,7 @@ void FEditorRenderPipeline::RenderViewport(FLevelEditorViewportClient* VC, FRend
 	Bus.SetCameraInfo(Camera);
 	Bus.SetRenderSettings(ViewMode, EffectiveShowFlags);
 	World->GetScene().UpdateDirtyLightProxies();
-	Bus.SetLightingConstants(World->GetScene().GetLightingConstants());
+	Bus.SetLightingData(World->GetScene().GetLightingData());
 	PopulateScenePostProcessConstants(World, Bus);
 	Bus.SetViewportInfo(VP);
 	Bus.SetViewportType(Opts.ViewportType);

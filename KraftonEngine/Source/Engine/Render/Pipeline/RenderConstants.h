@@ -123,6 +123,7 @@ struct FPickingConstants
 
 constexpr uint32 NUM_POINT_LIGHT = 4;
 constexpr uint32 NUM_SPOT_LIGHT = 4;
+constexpr uint32 TILE_SIZE = 16;
 
 struct FAmbientLightInfo
 {
@@ -160,8 +161,13 @@ struct FLightingConstants
 {
 	FAmbientLightInfo Ambient;
 	FDirectionalLightInfo Directional;
-	FPointLightInfo PointLights[NUM_POINT_LIGHT];
-	FSpotLightInfo SpotLights[NUM_SPOT_LIGHT];
+};
+
+struct FCollectedLightData
+{
+	FLightingConstants Constants;
+	TArray<FPointLightInfo> PointLights;
+	TArray<FSpotLightInfo> SpotLights;
 };
 
 struct FGizmoConstants

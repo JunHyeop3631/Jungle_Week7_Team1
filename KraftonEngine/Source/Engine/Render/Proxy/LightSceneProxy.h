@@ -21,8 +21,6 @@ class USpotLightComponent;
 
 struct FLightingBuildContext
 {
-	uint32 PointCount = 0;
-	uint32 SpotCount = 0;
 	bool bHasAmbient = false;
 	bool bHasDirectional = false;
 };
@@ -39,7 +37,7 @@ public:
 	virtual void UpdateLightData();
 
 	// 각 Component 별 상수 버퍼를 채우는 함수. 자식에서 Override해서 사용한다.
-	virtual void CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult) {}
+	virtual void CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult) {}
 	
 	// --- 식별 ---
 	ULightComponentBase* Owner = nullptr;	// 소유 컴포넌트 (역참조용)
@@ -71,7 +69,7 @@ class FAmbientLightSceneProxy : public FLightSceneProxy
 public:
 	explicit FAmbientLightSceneProxy(UAmbientLightComponent* InComponent);
 
-	virtual void CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult) override;
+	virtual void CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult) override;
 
 };
 
@@ -85,7 +83,7 @@ class FDirectionalLightSceneProxy : public FLightSceneProxy
 public:
 	explicit FDirectionalLightSceneProxy(UDirectionalLightComponent* InComponent);
 
-	virtual void CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult) override;
+	virtual void CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult) override;
 
 };
 
@@ -114,7 +112,7 @@ public:
 	explicit FPointLightSceneProxy(UPointLightComponent* InComponent);
 
 	void UpdateLightData() override;
-	virtual void CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult) override;
+	virtual void CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult) override;
 
 	float CachedFalloffExponent = 1.0f;
 };
@@ -129,7 +127,7 @@ public:
 	explicit FSpotLightSceneProxy(USpotLightComponent* InComponent);
 
 	void UpdateLightData() override;
-	virtual void CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult) override;
+	virtual void CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult) override;
 
 	float CachedInnerConeAngle = 0.0f;
 	float CachedOuterConeAngle = 30.0f;
