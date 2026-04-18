@@ -102,7 +102,8 @@ cbuffer PickingBuffer : register(b7)
 cbuffer LightConfig : register(b8)
 {
     uint g_ActiveLightCount;
-    float3 padding;
+    uint g_NumTilesX;
+    float2 padding;
 }
 
 struct FLightData

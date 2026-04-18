@@ -1240,9 +1240,9 @@ void UEditorEngine::RegisterDefaultPlaceableActors()
 		}
 
 		Actor->SetRootComponent(PointLightComponent);
-		PointLightComponent->SetIntensity(1.0f);
+		PointLightComponent->SetIntensity(50.0f);
 		PointLightComponent->SetLightColor({ 1.0f, 0.6f, 0.2f });
-		PointLightComponent->SetRadius(1000.0f);
+		PointLightComponent->SetRadius(5);
 		return true;
 	}
 		});

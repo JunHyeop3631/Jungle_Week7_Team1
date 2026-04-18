@@ -7,14 +7,18 @@ FShader::FShader(FShader&& Other) noexcept
 	: VertexShader(Other.VertexShader)
 	, PixelShader(Other.PixelShader)
 	, InputLayout(Other.InputLayout)
+	,ComputeShader(Other.ComputeShader)
 	, CachedVertexShaderSize(Other.CachedVertexShaderSize)
 	, CachedPixelShaderSize(Other.CachedPixelShaderSize)
+	, CachedComputeShaderSize(Other.CachedComputeShaderSize)
 {
 	Other.VertexShader = nullptr;
 	Other.PixelShader = nullptr;
 	Other.InputLayout = nullptr;
+	Other.ComputeShader = nullptr;
 	Other.CachedVertexShaderSize = 0;
 	Other.CachedPixelShaderSize = 0;
+	Other.CachedComputeShaderSize = 0;
 }
 
 FShader& FShader::operator=(FShader&& Other) noexcept
@@ -30,8 +34,10 @@ FShader& FShader::operator=(FShader&& Other) noexcept
 		Other.VertexShader = nullptr;
 		Other.PixelShader = nullptr;
 		Other.InputLayout = nullptr;
+		Other.ComputeShader = nullptr;
 		Other.CachedVertexShaderSize = 0;
 		Other.CachedPixelShaderSize = 0;
+		Other.CachedComputeShaderSize = 0;
 	}
 	return *this;
 }
@@ -59,16 +65,19 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 	}
 
 	// Pixel Shader 컴파일
-	hr = D3DCompileFromFile(InFilePath, InDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InPSEntryPoint, "ps_5_0", 0, 0, &pixelShaderCSO, &errorBlob);
-	if (FAILED(hr))
+	if (InPSEntryPoint != nullptr)
 	{
-		if (errorBlob)
+		hr = D3DCompileFromFile(InFilePath, InDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InPSEntryPoint, "ps_5_0", 0, 0, &pixelShaderCSO, &errorBlob);
+		if (FAILED(hr))
 		{
-			MessageBoxA(nullptr, (char*)errorBlob->GetBufferPointer(), "Pixel Shader Compile Error", MB_OK | MB_ICONERROR);
-			errorBlob->Release();
+			if (errorBlob)
+			{
+				MessageBoxA(nullptr, (char*)errorBlob->GetBufferPointer(), "Pixel Shader Compile Error", MB_OK | MB_ICONERROR);
+				errorBlob->Release();
+			}
+			vertexShaderCSO->Release();
+			return;
 		}
-		vertexShaderCSO->Release();
-		return;
 	}
 
 	// Vertex Shader 생성
@@ -85,18 +94,21 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 	MemoryStats::AddVertexShaderMemory(static_cast<uint32>(CachedVertexShaderSize));
 
 	// Pixel Shader 생성
-	hr = InDevice->CreatePixelShader(pixelShaderCSO->GetBufferPointer(), pixelShaderCSO->GetBufferSize(), nullptr, &PixelShader);
-	if (FAILED(hr))
+	if (InPSEntryPoint != nullptr)
 	{
-		std::cerr << "Failed to create Pixel Shader (HRESULT: " << hr << ")" << std::endl;
-		Release();
-		vertexShaderCSO->Release();
-		pixelShaderCSO->Release();
-		return;
-	}
+		hr = InDevice->CreatePixelShader(pixelShaderCSO->GetBufferPointer(), pixelShaderCSO->GetBufferSize(), nullptr, &PixelShader);
+		if (FAILED(hr))
+		{
+			std::cerr << "Failed to create Pixel Shader (HRESULT: " << hr << ")" << std::endl;
+			Release();
+			vertexShaderCSO->Release();
+			pixelShaderCSO->Release();
+			return;
+		}
 
-	CachedPixelShaderSize = pixelShaderCSO->GetBufferSize();
-	MemoryStats::AddPixelShaderMemory(static_cast<uint32>(CachedPixelShaderSize));
+		CachedPixelShaderSize = pixelShaderCSO->GetBufferSize();
+		MemoryStats::AddPixelShaderMemory(static_cast<uint32>(CachedPixelShaderSize));
+	}
 
 	// Input Layout 생성 (fullscreen quad 등 vertex buffer 없는 셰이더는 스킵)
 	if (InInputElements && InInputElementCount > 0)
@@ -113,7 +125,39 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 	}
 
 	vertexShaderCSO->Release();
-	pixelShaderCSO->Release();
+	if (pixelShaderCSO) pixelShaderCSO->Release();
+}
+
+void FShader::CreateComputeShader(ID3D11Device* InDevice, const wchar_t* InFilePath, const char* InCSEntryPoint,
+	const D3D_SHADER_MACRO* InDefines)
+{
+	Release();
+
+	ID3DBlob* computeShaderCSO = nullptr;
+	ID3DBlob* errorBlob = nullptr;
+
+	HRESULT hr = D3DCompileFromFile(InFilePath, InDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InCSEntryPoint, "cs_5_0", 0, 0, &computeShaderCSO, &errorBlob);
+	if (FAILED(hr))
+	{
+		if (errorBlob)
+		{
+			MessageBoxA(nullptr, (char*)errorBlob->GetBufferPointer(), "Compute Shader Compile Error", MB_OK | MB_ICONERROR);
+			errorBlob->Release();
+		}
+		return;
+	}
+
+	hr = InDevice->CreateComputeShader(computeShaderCSO->GetBufferPointer(), computeShaderCSO->GetBufferSize(), nullptr, &ComputeShader);
+	if (FAILED(hr))
+	{
+		std::cerr << "Failed to create Compute Shader (HRESULT: " << hr << ")" << std::endl;
+		computeShaderCSO->Release();
+		return;
+	}
+
+	CachedComputeShaderSize = computeShaderCSO->GetBufferSize();
+
+	computeShaderCSO->Release();
 }
 
 void FShader::Release()
@@ -139,11 +183,25 @@ void FShader::Release()
 		VertexShader->Release();
 		VertexShader = nullptr;
 	}
+	if (ComputeShader)
+	{
+		CachedComputeShaderSize = 0;
+
+		ComputeShader->Release();
+		ComputeShader = nullptr;
+	}
 }
 
 void FShader::Bind(ID3D11DeviceContext* InDeviceContext) const
 {
-	InDeviceContext->IASetInputLayout(InputLayout);
-	InDeviceContext->VSSetShader(VertexShader, nullptr, 0);
-	InDeviceContext->PSSetShader(PixelShader, nullptr, 0);
+	if (ComputeShader)
+	{
+		InDeviceContext->CSSetShader(ComputeShader, nullptr, 0);
+	}
+	else
+	{
+		InDeviceContext->IASetInputLayout(InputLayout);
+		InDeviceContext->VSSetShader(VertexShader, nullptr, 0);
+		InDeviceContext->PSSetShader(PixelShader, nullptr, 0);
+	}
 }

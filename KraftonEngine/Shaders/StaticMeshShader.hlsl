@@ -6,6 +6,12 @@ Texture2D g_txColor : register(t0);
 SamplerState g_Sample : register(s0);
 StructuredBuffer<FLightData> g_Lights : register(t1);
 
+StructuredBuffer<uint> TileLightIndices : register(t2);
+StructuredBuffer<uint> TileLightCounts : register(t3);
+
+#define TILE_SIZE 16
+#define MAX_LIGHTS_PER_TILE 64
+
 PS_Input_Full VS(VS_Input_PNCT input)
 {
     PS_Input_Full output;
@@ -37,15 +43,21 @@ float4 PS(PS_Input_Full input) : SV_TARGET
 
     // 1. 픽셀의 기본 텍스처 색상 (Base Color)
     float4 baseColor = texColor * input.color;
-
-    // --- 💡 여기서부터 조명 낑겨 넣은 부분 💡 ---
+    
     float3 litColor = float3(0, 0, 0);
     float3 N = normalize(input.normal);
 
+    uint2 pixelPos = uint2(input.position.xy);
+    uint2 tilePos = pixelPos / TILE_SIZE;
+    uint tileIndex = tilePos.y * g_NumTilesX + tilePos.x;
+
+    uint lightCountInTile = TileLightCounts[tileIndex];
+
     // C++에서 넘겨준 조명 개수만큼 루프를 돕니다
-    for (uint k = 0; k < g_ActiveLightCount; ++k)
+    for (uint i = 0; i < lightCountInTile; ++i)
     {
-        litColor += CalculatePointLight(g_Lights[k], N, input.worldPos, baseColor.rgb);
+        uint actualLightIndex = TileLightIndices[tileIndex * MAX_LIGHTS_PER_TILE + i];
+        litColor += CalculatePointLight(g_Lights[actualLightIndex], N, input.worldPos, baseColor.rgb);
     }
 
     // 최소한의 밝기를 보장하는 환경광(Ambient) 추가 (10% 정도)
@@ -75,5 +87,16 @@ float4 PS(PS_Input_Full input) : SV_TARGET
     finalColor.rgb = saturate(finalColor.rgb);
     finalColor.a = texColor.a * input.color.a;
 
+
+    /*float heat = saturate((float) lightCountInTile / 10.0f);
+    
+    // 타일 경계선을 시각적으로 확인하고 싶다면 덤프 추가
+    bool bIsBorder = (pixelPos.x % TILE_SIZE == 0) || (pixelPos.y % TILE_SIZE == 0);
+    if (bIsBorder)
+        return float4(0, 1, 0, 1); // 타일 경계는 초록색 선으로 출력
+
+    return float4(heat, 0.0f, 0.0f, 1.0f); // 빛 개수에 비례한 붉은색 출력*/
+
+    // ✂️ 기존 리턴문은 잠시 주석 처리
     return float4(ApplyWireframe(finalColor.rgb), finalColor.a);
 }

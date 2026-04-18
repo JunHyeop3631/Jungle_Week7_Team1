@@ -69,6 +69,8 @@ public:
 
 	void PrepareBatchers(const FRenderBus& InRenderBus);
 	void BeginFrame();
+	void ExecuteDepthPrepass(const TArray<const FPrimitiveSceneProxy*>& Proxies, ID3D11DeviceContext* Context);
+	void ExecuteLightCullingCS(ID3D11DeviceContext* Context, const FRenderBus& InRenderBus);
 	void Render(const FRenderBus& InRenderBus);
 	void EndFrame();
 
@@ -195,6 +197,16 @@ private:
 	uint32 PostTargetHeight = 0;
 	FFXAAConstants FXAAConstants = {};
 
+	// Light 버퍼들. 추후 싹 다 변경 예정 - 여기 브랜치는 쓰레기통.
 	ID3D11Buffer* LightDynamicBuffer = nullptr;
 	ID3D11ShaderResourceView* LightDynamicSRV = nullptr;
+
+	ID3D11Buffer* TileLightIndicesBuffer = nullptr;
+	ID3D11UnorderedAccessView* TileLightIndicesUAV = nullptr;
+	ID3D11ShaderResourceView* TileLightIndicesSRV = nullptr;
+
+	ID3D11Buffer* TileLightCountsBuffer = nullptr;
+	ID3D11UnorderedAccessView* TileLightCountsUAV = nullptr;
+	ID3D11ShaderResourceView* TileLightCountsSRV = nullptr;
+
 };

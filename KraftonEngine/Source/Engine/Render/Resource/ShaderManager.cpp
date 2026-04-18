@@ -59,6 +59,10 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 		"VS", "PS", nullptr, 0);
 	Shaders[(uint32)EShaderType::UberLit].Create(InDevice, L"Shaders/UberLit.hlsl",
 		"VS", "PS", FVertexPNCTInputLayout, ARRAYSIZE(FVertexPNCTInputLayout));
+	Shaders[(uint32)EShaderType::DepthOnly].Create(InDevice, L"Shaders/DepthOnly.hlsl",
+		"VS", nullptr, FVertexDepthOnlyInputLayout, ARRAYSIZE(FVertexDepthOnlyInputLayout));
+	Shaders[(uint32)EShaderType::LightCullingCS].CreateComputeShader(InDevice, L"Shaders/LightCulling.hlsl",
+		"CS");
 	bIsInitialized = true;
 }
 

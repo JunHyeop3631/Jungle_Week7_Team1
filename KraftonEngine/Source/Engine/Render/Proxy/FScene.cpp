@@ -168,13 +168,17 @@ FLightData* FScene::AddLight(ULightComponentBase* Component)
 	return LightData;
 }
 
-TArray<FLightData*> FScene::GetLightArray()
+TArray<FLightData> FScene::GetLightArray()
 {
-	TArray<FLightData*> LightDataArray;
-	for (auto it: LightComponentDataArray)
+	TArray<FLightData> LightDataArray;
+	for (auto it : LightComponentDataArray)
 	{
-		FLightData* LightData = new FLightData{ it->GetWorldLocation(), it->GetLightColor(), it->GetRadius(), it->GetIntensiry() };
-		LightDataArray.push_back(LightData);
+		LightDataArray.push_back({
+			it->GetWorldLocation(),
+			it->GetLightColor(),
+			it->GetRadius(),
+			it->GetIntensiry()
+			});
 	}
 	return LightDataArray;
 }

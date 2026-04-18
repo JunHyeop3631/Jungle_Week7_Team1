@@ -21,7 +21,7 @@ public:
 
 
 	FLightData* AddLight(ULightComponentBase* Component);
-	TArray<FLightData*> GetLightArray();
+	TArray<FLightData> GetLightArray();
 
 	// --- 프록시 등록/해제 ---
 	// Component의 CreateSceneProxy()를 호출하여 구체 프록시 생성 후 등록

@@ -103,6 +103,61 @@ void FRenderer::Create(HWND hWindow)
 	srvDesc.Buffer.FirstElement = 0;
 	srvDesc.Buffer.NumElements = 100;
 	Device.GetDevice()->CreateShaderResourceView(LightDynamicBuffer, &srvDesc, &LightDynamicSRV);
+
+	// Light Culling용 UAV 버퍼 생성
+	const uint32_t PixelSize = 16;
+	const uint32_t MaxTilePerLightCount = 64;
+
+	uint32_t numTilesX = (Device.GetViewport().Width + PixelSize - 1) / PixelSize;
+	uint32_t numTilesY = (Device.GetViewport().Height + PixelSize - 1) / PixelSize;
+	uint32_t totalTiles = numTilesX * numTilesY;
+
+	D3D11_BUFFER_DESC TileLightIndicesBufferDesc = {};
+	TileLightIndicesBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	TileLightIndicesBufferDesc.ByteWidth = totalTiles * MaxTilePerLightCount * sizeof(uint32_t);
+	TileLightIndicesBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	TileLightIndicesBufferDesc.CPUAccessFlags = 0;
+	TileLightIndicesBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	TileLightIndicesBufferDesc.StructureByteStride = sizeof(uint32_t);
+	Device.GetDevice()->CreateBuffer(&TileLightIndicesBufferDesc, nullptr, &TileLightIndicesBuffer);
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC TileLightIndicesUAVDesc = {};
+	TileLightIndicesUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	TileLightIndicesUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	TileLightIndicesUAVDesc.Buffer.FirstElement = 0;
+	TileLightIndicesUAVDesc.Buffer.NumElements = totalTiles * MaxTilePerLightCount;
+	Device.GetDevice()->CreateUnorderedAccessView(TileLightIndicesBuffer, &TileLightIndicesUAVDesc, &TileLightIndicesUAV);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC TileLightIndicesSRVDesc = {};
+	TileLightIndicesSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	TileLightIndicesSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	TileLightIndicesSRVDesc.Buffer.FirstElement = 0;
+	TileLightIndicesSRVDesc.Buffer.NumElements = totalTiles * MaxTilePerLightCount;
+	Device.GetDevice()->CreateShaderResourceView(TileLightIndicesBuffer, &TileLightIndicesSRVDesc, &TileLightIndicesSRV);
+
+	// 타일 라이트 개수 버퍼 생성
+	D3D11_BUFFER_DESC TileLightCountsBufferDesc = {};
+	TileLightCountsBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	TileLightCountsBufferDesc.ByteWidth = totalTiles * sizeof(uint32_t);
+	TileLightCountsBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	TileLightCountsBufferDesc.CPUAccessFlags = 0;
+	TileLightCountsBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	TileLightCountsBufferDesc.StructureByteStride = sizeof(uint32_t);
+	Device.GetDevice()->CreateBuffer(&TileLightCountsBufferDesc, nullptr, &TileLightCountsBuffer);
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC TileLightCountsUAVDesc = {};
+	TileLightCountsUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	TileLightCountsUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+	TileLightCountsUAVDesc.Buffer.FirstElement = 0;
+	TileLightCountsUAVDesc.Buffer.NumElements = totalTiles;
+	Device.GetDevice()->CreateUnorderedAccessView(TileLightCountsBuffer, &TileLightCountsUAVDesc, &TileLightCountsUAV);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC TileLightCountsSRVDesc = {};
+	TileLightCountsSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
+	TileLightCountsSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	TileLightCountsSRVDesc.Buffer.FirstElement = 0;
+	TileLightCountsSRVDesc.Buffer.NumElements = totalTiles;
+	Device.GetDevice()->CreateShaderResourceView(TileLightCountsBuffer, &TileLightCountsSRVDesc, &TileLightCountsSRV);
 }
 
 void FRenderer::Release()
@@ -292,6 +347,71 @@ void FRenderer::BeginFrame()
 	Context->OMSetRenderTargets(1, &RTV, DSV);
 }
 
+void FRenderer::ExecuteDepthPrepass(const TArray<const FPrimitiveSceneProxy*>& Proxies, ID3D11DeviceContext* Context)
+{
+	FShader* DepthOnlyShader = FShaderManager::Get().GetShader(EShaderType::DepthOnly);
+	if (!DepthOnlyShader) return;
+
+	DepthOnlyShader->Bind(Context);
+	FDrawState State;
+	State.LastShader = DepthOnlyShader;
+
+	for (const FPrimitiveSceneProxy* Proxy : Proxies)
+	{
+		if (!Proxy->MeshBuffer || !Proxy->MeshBuffer->IsValid()) continue;
+
+		BindPerObjectCB(*Proxy, Context ,State);
+		BindMeshBuffer(Proxy->MeshBuffer, Context, State);
+
+		uint32 indexCount = Proxy->MeshBuffer->GetIndexBuffer().GetIndexCount();
+		if (indexCount > 0) Context->DrawIndexed(indexCount, 0, 0);
+		else Context->Draw(Proxy->MeshBuffer->GetVertexBuffer().GetVertexCount(), 0);
+	}
+}
+
+void FRenderer::ExecuteLightCullingCS(ID3D11DeviceContext* Context, const FRenderBus& InRenderBus)
+{
+	ID3D11ShaderResourceView* NullSRVsForPS[2] = { nullptr, nullptr };
+	Context->PSSetShaderResources(2, 2, NullSRVsForPS);
+
+	ID3D11RenderTargetView* NullRTV = nullptr;
+	Context->OMSetRenderTargets(1, &NullRTV, nullptr);
+
+	FShader* LightCullingShader = FShaderManager::Get().GetShader(EShaderType::LightCullingCS);
+	if (!LightCullingShader) return;
+
+	LightCullingShader->Bind(Context);
+
+	ID3D11Buffer* FrameCB = Resources.FrameBuffer.GetBuffer();
+	Context->CSSetConstantBuffers(ECBSlot::Frame, 1, &FrameCB);
+
+	FConstantBuffer* LightCB = FConstantBufferPool::Get().GetBuffer(ECBSlot::Light, 16);
+	if (LightCB && LightCB->GetBuffer())
+	{
+		ID3D11Buffer* bLight = LightCB->GetBuffer();
+		Context->CSSetConstantBuffers(ECBSlot::Light, 1, &bLight);
+	}
+
+	ID3D11ShaderResourceView* DepthSRV = InRenderBus.GetViewportDepthSRV();
+	ID3D11ShaderResourceView* CS_SRVs[2] = {LightDynamicSRV, DepthSRV};
+	Context->CSSetShaderResources(0, 2, CS_SRVs);
+
+	ID3D11UnorderedAccessView* CS_UAVs[2] = {TileLightIndicesUAV, TileLightCountsUAV};
+	Context->CSSetUnorderedAccessViews(0, 2, CS_UAVs, nullptr);
+
+	const D3D11_VIEWPORT& VP = Device.GetViewport();
+	uint32 numGroupsX = (static_cast<uint32>(VP.Width) + 15) / 16;
+	uint32 numGroupsY = (static_cast<uint32>(VP.Height) + 15) / 16;
+
+	Context->Dispatch(numGroupsX, numGroupsY, 1);
+
+	ID3D11UnorderedAccessView* NullUAVs[2] = {nullptr, nullptr};
+	Context->CSSetUnorderedAccessViews(0, 2, NullUAVs, nullptr);
+
+	ID3D11ShaderResourceView* NullSRVs[2] = { nullptr, nullptr };
+	Context->CSSetShaderResources(0, 2, NullSRVs);
+}
+
 void FRenderer::RegisterPostEffect(EPostEffectType Type, FPostEffectCallback Callback)
 {
 	//	팀원이 개별 post 효과를 주입하는 등록 지점
@@ -340,6 +460,32 @@ void FRenderer::Render(const FRenderBus& InRenderBus)
 		UpdateSceneEffectBuffer(Context, InRenderBus);
 		UpdateLightBuffer(Context, InRenderBus);
 	}
+
+	ID3D11RenderTargetView* ViewportRTV = InRenderBus.GetViewportRTV();
+	ID3D11DepthStencilView* ViewportDSV = InRenderBus.GetViewportDSV();
+
+	if (!ViewportRTV) ViewportRTV = Device.GetFrameBufferRTV();
+	if (!ViewportDSV) ViewportDSV = Device.GetDepthStencilView();
+
+	ID3D11RenderTargetView* NullRTV = nullptr;
+	Context->OMSetRenderTargets(1, &NullRTV, ViewportDSV);
+
+	Device.SetDepthStencilState(EDepthStencilState::Default);
+	Device.SetBlendState(EBlendState::Opaque);
+	Device.SetRasterizerState(ERasterizerState::SolidBackCull);
+
+	const auto& OpaqueProxies = InRenderBus.GetProxies(ERenderPass::Opaque);
+	ExecuteDepthPrepass(OpaqueProxies, Context);
+
+	ExecuteLightCullingCS(Context, InRenderBus);
+
+	if (TileLightIndicesSRV && TileLightCountsSRV)
+	{
+		ID3D11ShaderResourceView* TileSRVs[2] = { TileLightIndicesSRV, TileLightCountsSRV };
+		Context->PSSetShaderResources(2, 2, TileSRVs);
+	}
+
+	Context->OMSetRenderTargets(1, &ViewportRTV, ViewportDSV);
 
 	// 패스 실행 순서:
 	// - Grid/Axis가 PostProcess/Font 위를 덮지 않도록 Grid를 먼저 그린다.
@@ -1581,11 +1727,16 @@ void FRenderer::UpdateLightBuffer(ID3D11DeviceContext* Context, const FRenderBus
 	FConstantBuffer* LightCB = FConstantBufferPool::Get().GetBuffer(ECBSlot::Light, 16);
 	if (LightCB && LightCB->GetBuffer())
 	{
+		float ViewportWidth = InRenderBus.GetViewportWidth();
+		float ViewportHeight = InRenderBus.GetViewportHeight();
+		const uint32 TileSize = 16;
+		uint32 numTilesX = (static_cast<uint32>(ViewportWidth) + TileSize - 1) / TileSize;
 		struct FLightConfig
 		{
 			uint32 Count;
-			float Pad[3];
-		} ConfigData = {ActiveLightCount, {0, 0, 0}};
+			uint32 NumTilesX;
+			float Pad[2];
+		} ConfigData = {ActiveLightCount, numTilesX, {0, 0}};
 
 		LightCB->Update(Context, &ConfigData, sizeof(FLightConfig));
 

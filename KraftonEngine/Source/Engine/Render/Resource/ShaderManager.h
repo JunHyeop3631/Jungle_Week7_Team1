@@ -28,6 +28,8 @@ enum class EShaderType : uint32
 	IDPickStaticMesh,
 	IDPickDebugVisualize,
 	UberLit,
+	DepthOnly,
+	LightCullingCS,
 	MAX,
 };
 

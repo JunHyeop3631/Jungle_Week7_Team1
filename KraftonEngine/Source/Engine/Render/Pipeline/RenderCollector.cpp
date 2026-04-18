@@ -132,15 +132,15 @@ void FRenderCollector::CollectOctreeDebug(const FOctree* Node, FRenderBus& Rende
 	}
 }
 
-void FRenderCollector::CollectLight(const TArray<FLightData*>& Lights, FRenderBus& RenderBus)
+void FRenderCollector::CollectLight(const TArray<FLightData>& Lights, FRenderBus& RenderBus)
 {
-	for (const FLightData* Light : Lights)
+	for (const FLightData Light : Lights)
 	{
 		FLightData Entry = {};
-		Entry.Position = Light->Position;
-		Entry.Color = Light->Color;
-		Entry.Radius = Light->Radius;
-		Entry.Intensity = Light->Intensity;
+		Entry.Position = Light.Position;
+		Entry.Color = Light.Color;
+		Entry.Radius = Light.Radius;
+		Entry.Intensity = Light.Intensity;
 
 		RenderBus.AddLightEntry(std::move(Entry));
 	}

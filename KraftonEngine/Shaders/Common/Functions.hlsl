@@ -32,21 +32,34 @@ bool ShouldDiscardFontPixel(float sampledRed)
 #endif // FUNCTIONS_HLSL
 float3 CalculatePointLight(FLightData light, float3 normal, float3 worldPos, float3 baseColor)
 {
-    // 1. 빛의 방향과 거리 구하기
+    // 1. 빛의 방향과 거리(제곱) 구하기
     float3 lightDir = light.Position - worldPos;
-    float distance = length(lightDir);
+    
+    // 🚀 [최적화] length() 대신 dot()을 사용해 거리의 '제곱'을 바로 구합니다. (sqrt 절약)
+    float distSqr = dot(lightDir, lightDir);
+    float rangeSqr = light.Range * light.Range;
     
     // 거리가 범위 밖이면 계산할 필요 없이 0 (검은색) 반환
-    if (distance > light.Range)
+    if (distSqr > rangeSqr)
     {
         return float3(0, 0, 0);
     }
     
-    // 방향 벡터 정규화
-    lightDir = normalize(lightDir);
+    // 방향 벡터 정규화 (여기서만 sqrt를 한 번 씁니다)
+    float distance = sqrt(distSqr);
+    lightDir = lightDir / distance;
 
-    // 2. 거리 감쇄 (Attenuation) - 언리얼 엔진 스타일의 부드러운 감쇄
-    float attenuation = smoothstep(1.0f, 0.0f, distance / light.Range);
+    // 2. 거리 감쇄 (Attenuation) - Unreal Engine 4/5 PBR 스타일 🚀
+    // a. 물리 기반 역제곱 법칙 (Inverse Square Law)
+    // 거리가 0일 때 빛이 무한대로 폭발하는 것을 막기 위해 최소값(0.0001f)을 둡니다.
+    float distanceAttenuation = 1.0f / max(distSqr, 0.0001f);
+    
+    // b. Falloff (Windowing) 함수: Light Range의 끝부분에서 빛을 부드럽게 0으로 소멸시킵니다.
+    float distRatioSqr = distSqr / rangeSqr;
+    float falloff = saturate(1.0f - (distRatioSqr * distRatioSqr));
+    
+    // 최종 감쇄율 = 역제곱 * (Falloff의 제곱)
+    float attenuation = distanceAttenuation * (falloff * falloff);
 
     // 3. 난반사 (Diffuse - Lambertian)
     // 빛을 정면으로 받을수록(dot값이 1에 가까울수록) 밝아짐
