@@ -1,0 +1,14 @@
+﻿#include "AmbientLight.h"
+#include "Components/AmbientLightComponent.h"
+#include "Components/BillboardComponent.h"
+
+AAmbientLight::AAmbientLight()
+{
+	AmbientLight = AddComponent<UAmbientLightComponent>();
+	SetRootComponent(AmbientLight);
+
+	SpriteComponent = AddComponent<UBillboardComponent>();
+	SpriteComponent->AttachToComponent(AmbientLight);
+	SpriteComponent->SetTexture(FName("AmbientLightIcon"));
+	AmbientLight->SetEditorIconBillboard(SpriteComponent);
+}

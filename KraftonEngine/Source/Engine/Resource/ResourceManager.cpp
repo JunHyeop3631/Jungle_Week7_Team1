@@ -28,6 +28,13 @@ namespace
 	constexpr const char* EmptyActorIconTextureName = "EmptyActorIcon";
 	constexpr const wchar_t* EmptyActorIconPath = L"Asset\\Editor\\Icon\\EmptyActor.png";
 	constexpr const wchar_t* EmptyActorIconFallbackPath = L"Asset\\Editor\\Icons\\EmptyActor.png";
+
+	// Ambient Light
+	constexpr const char* AmbientLightIconTextureName = "AmbientLightIcon";
+	constexpr const wchar_t* AmbientLightIconPath = L"Asset\\Editor\\Icons\\AmbientLight_64x.png";
+	// Directional Light
+	constexpr const char* DirectionalLightIconTextureName = "DirectionalLightIcon";
+	constexpr const wchar_t* DirectionalLightIconPath = L"Asset\\Editor\\Icons\\DirectionalLight_64x.png";
 	
 	constexpr const char* DefaultFontName = "Default";
 	constexpr const char* DefaultFontPath = "Asset/Font/FontAtlas.dds";
@@ -122,6 +129,8 @@ void FResourceManager::LoadDefaultResources(ID3D11Device* InDevice)
 	RegisterEditorIconTexture(PawnIconTextureName, PawnIconPath);
 	RegisterEditorIconTexture(PointLightIconTextureName, PointLightIconPath);
 	RegisterEditorIconTexture(SpotLightIconTextureName, SpotLightIconPath);
+	RegisterEditorIconTexture(AmbientLightIconTextureName, AmbientLightIconPath);
+	RegisterEditorIconTexture(DirectionalLightIconTextureName, DirectionalLightIconPath);
 	RegisterEditorIconTexture(EmptyActorIconTextureName, EmptyActorIconPath);
 	RegisterEditorIconTexture(EmptyActorIconTextureName, EmptyActorIconFallbackPath);
 

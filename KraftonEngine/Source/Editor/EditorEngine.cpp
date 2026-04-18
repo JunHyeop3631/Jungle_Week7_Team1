@@ -32,6 +32,8 @@
 #include "ImGui/imgui.h"
 #include "GameFramework/SpotLight.h"
 #include "GameFramework/PointLight.h"
+#include "GameFramework/AmbientLight.h"
+#include "GameFramework/DirectionalLight.h"
 
 IMPLEMENT_CLASS(UEditorEngine, UEngine)
 
@@ -117,6 +119,8 @@ constexpr const char* GPlaceableIdCylinder = "basic_shape_cylinder";
 constexpr const char* GPlaceableIdDecal = "basic_actor_decal";
 constexpr const char* GPlaceableIdSpotLight = "basic_actor_spotlight";
 constexpr const char* GPlaceableIdPointLight = "basic_actor_pointlight";
+constexpr const char* GPlaceableIdAmbientLight = "basic_actor_ambientlight";
+constexpr const char* GPlaceableIdDirectionalLight = "basic_actor_directionallight";
 constexpr const char* GPlaceableIdEmptyActor = "basic_actor_empty";
 
 bool SpawnPlacedActors(
@@ -1232,6 +1236,44 @@ void UEditorEngine::RegisterDefaultPlaceableActors()
 		{
 			APointLight* PointLightActor = Cast<APointLight>(Actor);
 			if (!PointLightActor)
+			{
+				return false;
+			}
+
+			return true;
+		}
+		});
+	RegisterPlaceableActor({
+		GPlaceableIdAmbientLight,
+		"AmbientLight",
+		[](UWorld* World) -> AActor*
+		{
+			// AAmbientLight 클래스가 구현되어 있다고 가정합니다.
+			return World ? static_cast<AActor*>(World->SpawnActor<AAmbientLight>()) : nullptr;
+		},
+		[](AActor* Actor) -> bool
+		{
+			AAmbientLight* AmbientLightActor = Cast<AAmbientLight>(Actor);
+			if (!AmbientLightActor)
+			{
+				return false;
+			}
+
+			return true;
+		}
+		});
+	RegisterPlaceableActor({
+		GPlaceableIdDirectionalLight,
+		"DirectionalLight",
+		[](UWorld* World) -> AActor*
+		{
+			// ADirectionalLight 클래스가 구현되어 있다고 가정합니다.
+			return World ? static_cast<AActor*>(World->SpawnActor<ADirectionalLight>()) : nullptr;
+		},
+		[](AActor* Actor) -> bool
+		{
+			ADirectionalLight* DirectionalLightActor = Cast<ADirectionalLight>(Actor);
+			if (!DirectionalLightActor)
 			{
 				return false;
 			}
