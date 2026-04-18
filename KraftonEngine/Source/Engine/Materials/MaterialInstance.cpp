@@ -25,6 +25,12 @@ void UMaterialInstance::Serialize(FArchive& Ar)
 		Ar << OverriddenDiffuseTexturePath;
 	}
 
+	Ar << bOverride_NormalTexture;
+	if (bOverride_NormalTexture)
+	{
+		Ar << OverriddenNormalTexturePath;
+	}
+
 	// 주의: 포인터인 Parent나 OverriddenDiffuseTexture는 주소값이므로 직렬화하지 않습니다.
 	// 이 포인터들은 로딩이 끝난 후 ObjManager나 PostLoad 단계에서 Path 정보를 바탕으로 복구됩니다.
 }

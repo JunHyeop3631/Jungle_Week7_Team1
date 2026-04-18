@@ -31,6 +31,8 @@ public:
 	virtual UTexture2D* GetDiffuseTexture() const;
 	virtual FVector4 GetDiffuseColor() const;
 
+	virtual UTexture2D* GetNormalTexture() const = 0;
+
 	// 셰이더 Getter (렌더러가 파이프라인에 바인딩할 때 사용)
     virtual ID3D11VertexShader* GetVertexShader() const;
 	virtual ID3D11PixelShader* GetPixelShader() const;
