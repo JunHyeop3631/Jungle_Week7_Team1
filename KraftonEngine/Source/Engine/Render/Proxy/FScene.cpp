@@ -1,9 +1,17 @@
 ﻿#include "Render/Proxy/FScene.h"
-#include "Components/SceneEffectSource.h"
-#include "Components/PrimitiveComponent.h"
+#include "Components/AmbientLightComponent.h"
+#include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
+#include "Components/LightComponentBase.h"
+#include "Components/PointLightComponent.h"
+#include "Components/PrimitiveComponent.h"
+#include "Components/SceneEffectSource.h"
+#include "Components/SpotLightComponent.h"
+#include "Object/Object.h"
+#include "Render/Proxy/LightSceneProxy.h"
 #include "Profiling/Stats.h"
 #include <algorithm>
+#include <cmath>
 
 namespace
 {
@@ -36,6 +44,17 @@ namespace
 
 		SelectedList.pop_back();
 		Proxy->SelectedListIndex = UINT32_MAX;
+	}
+
+	void EnqueueDirtyLightProxy(TArray<FLightSceneProxy*>& DirtyList, FLightSceneProxy* Proxy)
+	{
+		if (!Proxy || Proxy->bQueuedForDirtyUpdate)
+		{
+			return;
+		}
+
+		Proxy->bQueuedForDirtyUpdate = true;
+		DirtyList.push_back(Proxy);
 	}
 
 	void AddUniqueFogComponent(TArray<UExponentialHeightFogComponent*>& FogList, UExponentialHeightFogComponent* Component)
@@ -83,6 +102,52 @@ namespace
 
 		return Result;
 	}
+
+	// ===============================================
+	// Light Scene Proxy Helper
+	// ===============================================
+	FVector4 BuildLightColor(const FLightSceneProxy* Proxy)
+	{
+		if (!Proxy)
+		{
+			return FVector4(0.f, 0.f, 0.f, 1.f);
+		}
+		const FVector4& Color = Proxy->CachedColor.ToVector4();
+		const float Intensity = Proxy->CachedIntensity;
+		return Color * Intensity;
+	}
+
+	FVector4 BuildLightPosition(const FLightSceneProxy* Proxy)
+	{
+		if (!Proxy)
+		{
+			return FVector4(0.f, 0.f, 0.f, 1.f);
+		}
+
+		const FVector& Position = Proxy->CachedTransform.Location;
+		return FVector4(Position.X, Position.Y, Position.Z, 1.0f);
+	}
+
+	FVector4 BuildLightDirection(const FLightSceneProxy* Proxy)
+	{
+		if (!Proxy)
+		{
+			return FVector4(0.0f, -1.0f, 0.0f, 0.0f);
+		}
+
+		const FVector Direction = Proxy->CachedTransform.Rotation.GetForwardVector().Normalized();
+		return FVector4(Direction.X, Direction.Y, Direction.Z, 0.0f);
+	}
+
+	float DegreesToConeCos(float Degrees)
+	{
+		return cosf(Degrees * FMath::DegToRad);
+	}
+
+	bool ShouldWriteLight(const FLightSceneProxy* Proxy)
+	{
+		return Proxy && Proxy->bVisible && Proxy->CachedIntensity > 0.0f;
+	}
 }
 
 // ============================================================
@@ -94,11 +159,18 @@ FScene::~FScene()
 	{
 		delete Proxy;
 	}
+	for (FLightSceneProxy* Proxy : LightProxies)
+	{
+		delete Proxy;
+	}
 	Proxies.clear();
+	LightProxies.clear();
 	DirtyProxies.clear();
+	DirtyLightProxies.clear();
 	SelectedProxies.clear();
 	NeverCullProxies.clear();
 	FreeSlots.clear();
+	FreeLightSlots.clear();
 	VisibleProxies.clear();
 	SceneEffectSources.clear();
 	FogComponents.clear();
@@ -146,6 +218,48 @@ FPrimitiveSceneProxy* FScene::AddPrimitive(UPrimitiveComponent* Component)
 
 	RegisterProxy(Proxy);
 	return Proxy;
+}
+
+FLightSceneProxy* FScene::AddLight(ULightComponentBase* Component)
+{
+	if (!Component)
+	{
+		return nullptr;
+	}
+
+	FLightSceneProxy* Proxy = Component->CreateLightSceneProxy();
+	if (!Proxy)
+	{
+		return nullptr;
+	}
+
+	RegisterLightProxy(Proxy);
+	return Proxy;
+}
+
+void FScene::RegisterLightProxy(FLightSceneProxy* Proxy)
+{
+	if (!Proxy)
+	{
+		return;
+	}
+
+	Proxy->DirtyFlags = EDirtyFlag::All;
+
+	if (!FreeLightSlots.empty())
+	{
+		const uint32 Slot = FreeLightSlots.back();
+		FreeLightSlots.pop_back();
+		Proxy->ProxyId = Slot;
+		LightProxies[Slot] = Proxy;
+	}
+	else
+	{
+		Proxy->ProxyId = static_cast<uint32>(LightProxies.size());
+		LightProxies.push_back(Proxy);
+	}
+
+	EnqueueDirtyLightProxy(DirtyLightProxies, Proxy);
 }
 
 // ============================================================
@@ -207,6 +321,34 @@ void FScene::RemovePrimitive(FPrimitiveSceneProxy* Proxy)
 	delete Proxy;
 }
 
+void FScene::RemoveLight(FLightSceneProxy* Proxy)
+{
+	if (!Proxy || Proxy->ProxyId == UINT32_MAX)
+	{
+		return;
+	}
+
+	const uint32 Slot = Proxy->ProxyId;
+	if (Proxy->bQueuedForDirtyUpdate)
+	{
+		auto DirtyIt = std::find(DirtyLightProxies.begin(), DirtyLightProxies.end(), Proxy);
+		if (DirtyIt != DirtyLightProxies.end())
+		{
+			*DirtyIt = DirtyLightProxies.back();
+			DirtyLightProxies.pop_back();
+		}
+		Proxy->bQueuedForDirtyUpdate = false;
+	}
+
+	if (Slot < LightProxies.size())
+	{
+		LightProxies[Slot] = nullptr;
+		FreeLightSlots.push_back(Slot);
+	}
+
+	delete Proxy;
+}
+
 // ============================================================
 // UpdateDirtyProxies — 변경된 프록시만 갱신 (프레임당 1회)
 // ============================================================
@@ -256,6 +398,44 @@ void FScene::UpdateDirtyProxies()
 	}
 }
 
+void FScene::UpdateDirtyLightProxies()
+{
+	SCOPE_STAT_CAT("UpdateDirtyLightProxies", "3_Collect");
+
+	TArray<FLightSceneProxy*> PendingDirtyProxies = std::move(DirtyLightProxies);
+	DirtyLightProxies.clear();
+
+	for (FLightSceneProxy* Proxy : PendingDirtyProxies)
+	{
+		if (!Proxy)
+		{
+			continue;
+		}
+
+		Proxy->bQueuedForDirtyUpdate = false;
+		if (!Proxy->Owner)
+		{
+			continue;
+		}
+
+		const EDirtyFlag FlagsToProcess = Proxy->DirtyFlags;
+		Proxy->DirtyFlags = EDirtyFlag::None;
+
+		if (HasFlag(FlagsToProcess, EDirtyFlag::Transform))
+		{
+			Proxy->UpdateTransform();
+		}
+		if (HasFlag(FlagsToProcess, EDirtyFlag::Visibility))
+		{
+			Proxy->UpdateVisibility();
+		}
+		if (HasFlag(FlagsToProcess, EDirtyFlag::LightData))
+		{
+			Proxy->UpdateLightData();
+		}
+	}
+}
+
 // ============================================================
 // MarkProxyDirty — 외부에서 프록시의 특정 필드를 dirty로 마킹
 // ============================================================
@@ -264,6 +444,17 @@ void FScene::MarkProxyDirty(FPrimitiveSceneProxy* Proxy, EDirtyFlag Flag)
 	if (!Proxy) return;
 	Proxy->MarkDirty(Flag);
 	EnqueueDirtyProxy(DirtyProxies, Proxy);
+}
+
+void FScene::MarkLightProxyDirty(FLightSceneProxy* Proxy, EDirtyFlag Flag)
+{
+	if (!Proxy)
+	{
+		return;
+	}
+
+	Proxy->MarkDirty(Flag);
+	EnqueueDirtyLightProxy(DirtyLightProxies, Proxy);
 }
 
 void FScene::MarkAllPerObjectCBDirty()
@@ -327,6 +518,80 @@ FSceneEffectConstants FScene::GetSceneEffectConstants() const
 	}
 
 	Result.LocalTintCount = LocalTintIndex;
+
+	return Result;
+}
+
+FLightingConstants FScene::GetLightingConstants() const
+{
+	FLightingConstants Result = {};
+
+	bool bHasAmbient = false;
+	bool bHasDirectional = false;
+	uint32 PointCount = 0;
+	uint32 SpotCount = 0;
+
+	for (const FLightSceneProxy* Proxy : LightProxies)
+	{
+		if (!ShouldWriteLight(Proxy))
+		{
+			continue;
+		}
+
+		ULightComponentBase* LightOwner = Proxy->Owner;
+		if (!LightOwner)
+		{
+			continue;
+		}
+
+		if (!bHasAmbient && Cast<UAmbientLightComponent>(LightOwner))
+		{
+			Result.Ambient.LightColor = BuildLightColor(Proxy);
+			bHasAmbient = true;
+			continue;
+		}
+
+		if (!bHasDirectional && Cast<UDirectionalLightComponent>(LightOwner))
+		{
+			Result.Directional.LightColor = BuildLightColor(Proxy);
+			Result.Directional.Direction = BuildLightDirection(Proxy);
+			bHasDirectional = true;
+			continue;
+		}
+
+		if (const USpotLightComponent* SpotOwner = Cast<USpotLightComponent>(LightOwner))
+		{
+			if (SpotCount >= NUM_SPOT_LIGHT)
+			{
+				continue;
+			}
+
+			const FSpotLightSceneProxy* SpotProxy = static_cast<const FSpotLightSceneProxy*>(Proxy);
+			FSpotLightInfo& SpotInfo = Result.SpotLights[SpotCount++];
+			SpotInfo.LightColor = BuildLightColor(SpotProxy);
+			SpotInfo.Position = BuildLightPosition(SpotProxy);
+			SpotInfo.Direction = BuildLightDirection(SpotProxy);
+			SpotInfo.AttenuationRadius = SpotProxy->CachedAttenuationRadius;
+			SpotInfo.InnerConeAngle = DegreesToConeCos(SpotOwner->GetInnerConeAngle());
+			SpotInfo.OuterConeAngle = DegreesToConeCos(SpotOwner->GetOuterConeAngle());
+			continue;
+		}
+
+		if (const UPointLightComponent* PointOwner = Cast<UPointLightComponent>(LightOwner))
+		{
+			if (PointCount >= NUM_POINT_LIGHT)
+			{
+				continue;
+			}
+
+			const FPointLightSceneProxy* PointProxy = static_cast<const FPointLightSceneProxy*>(Proxy);
+			FPointLightInfo& PointInfo = Result.PointLights[PointCount++];
+			PointInfo.LightColor = BuildLightColor(PointProxy);
+			PointInfo.Position = BuildLightPosition(PointProxy);
+			PointInfo.AttenuationRadius = PointProxy->CachedAttenuationRadius;
+			PointInfo.FalloffExponent = PointOwner->GetLightFalloffExponent();
+		}
+	}
 
 	return Result;
 }

@@ -4,13 +4,15 @@
 #include "Render/Proxy/PrimitiveSceneProxy.h"
 
 class UPrimitiveComponent;
+class ULightComponentBase;
 class ISceneEffectSource;
 class UExponentialHeightFogComponent;
+class FLightSceneProxy;
 
 // ============================================================
-// FScene — FPrimitiveSceneProxy의 소유자 겸 변경 추적 컨테이너
+// FScene — FPrimitiveSceneProxy, FLightSceneProxy의 소유자 겸 변경 추적 컨테이너
 // ============================================================
-// UWorld와 1:1 대응. PrimitiveComponent 등록/해제 시 프록시를 관리하고,
+// UWorld와 1:1 대응. PrimitiveComponent, FLightSceneProxy 등록/해제 시 프록시를 관리하고,
 // 프레임마다 DirtyList의 프록시만 갱신한 뒤 Renderer에 전달한다.
 class FScene
 {
@@ -21,19 +23,24 @@ public:
 	// --- 프록시 등록/해제 ---
 	// Component의 CreateSceneProxy()를 호출하여 구체 프록시 생성 후 등록
 	FPrimitiveSceneProxy* AddPrimitive(UPrimitiveComponent* Component);
+	FLightSceneProxy* AddLight(ULightComponentBase* Component);
 
 	// 이미 생성된 프록시를 직접 등록 (Gizmo Inner 등 추가 프록시용)
 	void RegisterProxy(FPrimitiveSceneProxy* Proxy);
+	void RegisterLightProxy(FLightSceneProxy* Proxy);
 
 	// Component가 EndPlay 또는 소멸 시 호출
 	void RemovePrimitive(FPrimitiveSceneProxy* Proxy);
+	void RemoveLight(FLightSceneProxy* Proxy);
 
 	// --- 프레임 갱신 ---
 	// 매 프레임 Render 직전에 호출 — DirtyList의 프록시만 갱신
 	void UpdateDirtyProxies();
+	void UpdateDirtyLightProxies();
 
 	// 외부에서 프록시를 Dirty로 마킹 (SceneComponent::MarkTransformDirty 등에서 호출)
 	void MarkProxyDirty(FPrimitiveSceneProxy* Proxy, EDirtyFlag Flag);
+	void MarkLightProxyDirty(FLightSceneProxy* Proxy, EDirtyFlag Flag);
 
 	// 모든 프록시의 PerObjectCB를 dirty로 마킹 — PIE 전환 시 Renderer의
 	// PerObjectCBPool(ProxyId 인덱싱, 월드 간 공유)이 타 월드 값으로 오염된 상태를
@@ -47,6 +54,9 @@ public:
 	void RegisterFogComponent(UExponentialHeightFogComponent* Component);
 	void UnregisterFogComponent(UExponentialHeightFogComponent* Component);
 	FFogPostProcessConstants GetFogPostProcessConstants() const;
+
+	// --- Light ---
+	FLightingConstants GetLightingConstants() const;
 
 	// --- 선택 ---
 	void SetProxySelected(FPrimitiveSceneProxy* Proxy, bool bSelected);
@@ -67,9 +77,11 @@ public:
 private:
 	// 전체 프록시 목록 (ProxyId = 인덱스)
 	TArray<FPrimitiveSceneProxy*> Proxies;
+	TArray<FLightSceneProxy*> LightProxies;
 
 	// 프레임 내 변경된 프록시 dense 목록
 	TArray<FPrimitiveSceneProxy*> DirtyProxies;
+	TArray<FLightSceneProxy*> DirtyLightProxies;
 
 	// 선택된 프록시 dense 목록
 	TArray<FPrimitiveSceneProxy*> SelectedProxies;
@@ -79,6 +91,7 @@ private:
 
 	// 삭제된 슬롯 재활용
 	TArray<uint32> FreeSlots;
+	TArray<uint32> FreeLightSlots;
 
 	// 매 프레임 frustum culling 결과 캐시 (World::UpdateVisibleProxies가 채움)
 	TArray<FPrimitiveSceneProxy*> VisibleProxies;
