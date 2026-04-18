@@ -3,6 +3,7 @@
 #include "DirtyFlag.h"
 #include "Math/Transform.h"
 #include "Components/LightComponentBase.h"
+#include "../Pipeline/RenderConstants.h"
 
 class FRenderBus;
 class UAmbientLightComponent;
@@ -10,12 +11,21 @@ class UDirectionalLightComponent;
 class ULocalLightComponent;
 class UPointLightComponent;
 class USpotLightComponent;
+
 // ============================================================
 // FLightSceneProxy — lighting constants 빌드용 mirror
 // ============================================================
 // 컴포넌트 등록 시 CreateSceneProxy()로 1회 생성.
 // 이후 DirtyFlags가 켜진 필드만 가상 함수를 통해 갱신.
 // Light Constant를 갱신하는데 사용
+
+struct FLightingBuildContext
+{
+	uint32 PointCount = 0;
+	uint32 SpotCount = 0;
+	bool bHasAmbient = false;
+	bool bHasDirectional = false;
+};
 
 class FLightSceneProxy
 {
@@ -27,6 +37,9 @@ public:
 	virtual void UpdateTransform();
 	virtual void UpdateVisibility();
 	virtual void UpdateLightData();
+
+	// 각 Component 별 상수 버퍼를 채우는 함수. 자식에서 Override해서 사용한다.
+	virtual void CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult) {}
 	
 	// --- 식별 ---
 	ULightComponentBase* Owner = nullptr;	// 소유 컴포넌트 (역참조용)
@@ -57,6 +70,9 @@ class FAmbientLightSceneProxy : public FLightSceneProxy
 {
 public:
 	explicit FAmbientLightSceneProxy(UAmbientLightComponent* InComponent);
+
+	virtual void CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult) override;
+
 };
 
 //======================================
@@ -68,6 +84,9 @@ class FDirectionalLightSceneProxy : public FLightSceneProxy
 {
 public:
 	explicit FDirectionalLightSceneProxy(UDirectionalLightComponent* InComponent);
+
+	virtual void CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult) override;
+
 };
 
 //======================================
@@ -95,6 +114,7 @@ public:
 	explicit FPointLightSceneProxy(UPointLightComponent* InComponent);
 
 	void UpdateLightData() override;
+	virtual void CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult) override;
 
 	float CachedFalloffExponent = 1.0f;
 };
@@ -109,6 +129,7 @@ public:
 	explicit FSpotLightSceneProxy(USpotLightComponent* InComponent);
 
 	void UpdateLightData() override;
+	virtual void CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult) override;
 
 	float CachedInnerConeAngle = 0.0f;
 	float CachedOuterConeAngle = 30.0f;
