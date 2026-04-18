@@ -6,7 +6,7 @@
 
 void FBillboardBatcher::Create(ID3D11Device* InDevice)
 {
-	CreateBuffers(InDevice, 256, sizeof(FTextureVertex), 384);
+	CreateBuffers(InDevice, 256, sizeof(FVertexPNCT), 384);
 	if (!Device) return;
 
 	D3D11_SAMPLER_DESC sampDesc = {};
@@ -30,7 +30,8 @@ void FBillboardBatcher::AddSprite(ID3D11ShaderResourceView* SRV,
 								  const FVector& CamUp,
 								  const FVector& WorldScale,
 								  float Width,
-                               float Height,
+								  float Height,
+								  FVector4 Color,
 								  bool bSelected)
 {
 	if (Batches.empty() || Batches.back().SRV != SRV)
@@ -55,10 +56,10 @@ void FBillboardBatcher::AddSprite(ID3D11ShaderResourceView* SRV,
 		- static_cast<uint32>(Batches.back().BaseVertex);
 
 	// 풀 쿼드 UV (0~1)
-	Vertices.push_back({ v0, { 0.0f, 0.0f } });
-	Vertices.push_back({ v1, { 1.0f, 0.0f } });
-	Vertices.push_back({ v2, { 0.0f, 1.0f } });
-	Vertices.push_back({ v3, { 1.0f, 1.0f } });
+	Vertices.push_back({ v0, {}, {}, Color, { 0.0f, 0.0f } });
+	Vertices.push_back({ v1, {}, {}, Color,  { 1.0f, 0.0f } });
+	Vertices.push_back({ v2, {}, {}, Color,  { 0.0f, 1.0f } });
+	Vertices.push_back({ v3, {}, {}, Color,  { 1.0f, 1.0f } });
 
 	Indices.push_back(LocalBase + 0); Indices.push_back(LocalBase + 1); Indices.push_back(LocalBase + 2);
 	Indices.push_back(LocalBase + 1); Indices.push_back(LocalBase + 3); Indices.push_back(LocalBase + 2);
@@ -80,10 +81,10 @@ void FBillboardBatcher::AddSprite(ID3D11ShaderResourceView* SRV,
 		uint32 SelectedLocalBase = static_cast<uint32>(SelectedVertices.size())
 			- static_cast<uint32>(SelectedBatches.back().BaseVertex);
 
-		SelectedVertices.push_back({ v0, { 0.0f, 0.0f } });
-		SelectedVertices.push_back({ v1, { 1.0f, 0.0f } });
-		SelectedVertices.push_back({ v2, { 0.0f, 1.0f } });
-		SelectedVertices.push_back({ v3, { 1.0f, 1.0f } });
+		SelectedVertices.push_back({ v0, {}, {}, Color, { 0.0f, 0.0f } });
+		SelectedVertices.push_back({ v1, {}, {}, Color,  { 1.0f, 0.0f } });
+		SelectedVertices.push_back({ v2, {}, {}, Color,  { 0.0f, 1.0f } });
+		SelectedVertices.push_back({ v3, {}, {}, Color,  { 1.0f, 1.0f } });
 
 		SelectedIndices.push_back(SelectedLocalBase + 0); SelectedIndices.push_back(SelectedLocalBase + 1); SelectedIndices.push_back(SelectedLocalBase + 2);
 		SelectedIndices.push_back(SelectedLocalBase + 1); SelectedIndices.push_back(SelectedLocalBase + 3); SelectedIndices.push_back(SelectedLocalBase + 2);
@@ -97,7 +98,7 @@ void FBillboardBatcher::Clear()
 	Vertices.clear();
 	Indices.clear();
 	Batches.clear();
-   SelectedVertices.clear();
+	SelectedVertices.clear();
 	SelectedIndices.clear();
 	SelectedBatches.clear();
 }

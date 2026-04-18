@@ -246,6 +246,7 @@ struct FBillboardConstants
 	const FTextureResource* Texture = nullptr;
 	float Width  = 1.0f;
 	float Height = 1.0f;
+	FVector4 Color = FVector4(1.f, 1.f, 1.f, 1.f);
 };
 
 // ============================================================
@@ -292,7 +293,7 @@ struct FDebugLineEntry
 {
 	FVector Start;
 	FVector End;
-	FColor  Color;
+	FVector4  Color;
 };
 
 // 스크린 공간 텍스트 — Overlay Stats 등에서 사용

@@ -13,7 +13,7 @@ ASpotLight::ASpotLight()
 	SpriteComponent = AddComponent<UBillboardComponent>();
 	SpriteComponent->AttachToComponent(SpotLight);
 	SpriteComponent->SetTexture(FName("SpotLightIcon"));
-	SpotLight->SetBillboard(SpriteComponent);
+	SpotLight->SetEditorIconBillboard(SpriteComponent);
 }
 
 

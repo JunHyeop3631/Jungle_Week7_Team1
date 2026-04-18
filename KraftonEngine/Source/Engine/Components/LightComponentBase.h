@@ -16,9 +16,8 @@ public:
 	float GetIntensity() const { return Intensity; }
 	void SetIntensity(float NewIntensity) { Intensity = NewIntensity; }
 
-	FColor GetLightColor() const { return LightColor; }
-	FVector4 GetLightLinearColor() const { return LightColor.ToVector4(); }
-	void SetLightColor(FColor NewLightColor) { LightColor = NewLightColor; }
+	FLinearColor GetLightColor() const { return LightColor; }
+	void SetLightColor(FLinearColor NewLightColor) { LightColor = NewLightColor; }
 
 	bool IsVisible() const { return bVisible; }
 
@@ -29,7 +28,7 @@ public:
 
 protected:
 	float Intensity = 0.f;
-	FColor LightColor = FColor(0, 0, 0, 0);
+	FLinearColor LightColor = FLinearColor(1.f, 1.f, 1.f, 1.f);
 	bool bVisible = true;
 };
 

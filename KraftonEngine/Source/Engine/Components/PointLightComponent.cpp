@@ -14,12 +14,12 @@ namespace
 	constexpr int32 SphereSegmentCount = 24;
 	constexpr float MinSphereRadius = 1e-6f;
 
-	void AddDebugLine(FRenderBus& RenderBus, const FVector& Start, const FVector& End, const FColor& Color)
+	void AddDebugLine(FRenderBus& RenderBus, const FVector& Start, const FVector& End, const FLinearColor& Color)
 	{
 		FDebugLineEntry Line;
 		Line.Start = Start;
 		Line.End = End;
-		Line.Color = Color;
+		Line.Color = Color.ToVector4();
 		RenderBus.AddDebugLineEntry(std::move(Line));
 	}
 
@@ -30,7 +30,7 @@ namespace
 			return;
 		}
 
-		const FColor SphereColor = FColor::Yellow();
+		const FLinearColor SphereColor = FLinearColor::White();
 
 		auto AddCircle = [&](const FVector& AxisA, const FVector& AxisB)
 		{

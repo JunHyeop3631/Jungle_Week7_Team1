@@ -77,6 +77,7 @@ void FBillboardSceneProxy::CollectEntries(FRenderBus& Bus)
 	Entry.Billboard.Texture = Texture;
 	Entry.Billboard.Width   = Comp->GetWidth();
 	Entry.Billboard.Height  = Comp->GetHeight();
+	Entry.Billboard.Color	= Comp->GetIconTint().ToVector4();
     Entry.bSelected = bSelected;
 	Bus.AddBillboardEntry(std::move(Entry));
 }
