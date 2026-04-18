@@ -437,6 +437,44 @@ bool FObjImporter::ParseMtl(const FString& MtlFilePath, TArray<FObjMaterialInfo>
 				OutMtlInfos.back().map_Kd = FPaths::ResolveAssetPath(MtlFilePath, TextureFileName);
 			}
 		}
+		else if (Prefix == "map_Bump" || Prefix == "norm")
+		{
+			if (OutMtlInfos.empty()) continue;
+
+			std::string TextureFileName;
+			while (!Line.empty())
+			{
+				std::string_view LineBeforeToken = Line;
+				std::string_view Token = FStringParser::GetNextWhitespaceToken(Line);
+				if (Token.empty()) break;
+
+				if (Token[0] == '-')
+				{
+					int32 ArgsToSkip = 0;
+					if (Token == "-s" || Token == "-o" || Token == "-t") ArgsToSkip = 3;
+					else if (Token == "-mm") ArgsToSkip = 2;
+					else if (Token == "-bm" || Token == "-boost" || Token == "-texres" ||
+						Token == "-blendu" || Token == "-blendv" || Token == "-clamp" ||
+						Token == "-cc" || Token == "-imfchan") ArgsToSkip = 1;
+
+					for (int32 i = 0; i < ArgsToSkip; ++i) FStringParser::GetNextWhitespaceToken(Line);
+				}
+				else
+				{
+					FStringParser::TrimLeft(LineBeforeToken);
+					TextureFileName = FString(LineBeforeToken);
+					break;
+				}
+			}
+
+			size_t LastNonSpace = TextureFileName.find_last_not_of(" \t");
+			if (LastNonSpace != FString::npos) TextureFileName.erase(LastNonSpace + 1);
+
+			if (!TextureFileName.empty())
+			{
+				OutMtlInfos.back().map_Bump = FPaths::ResolveAssetPath(MtlFilePath, TextureFileName);
+			}
+		}
 	}
 
 	return true;
@@ -528,6 +566,11 @@ bool FObjImporter::Convert(const FObjInfo& ObjInfo, const TArray<FObjMaterialInf
 				else
 				{
 					MaterialObject->DiffuseColor = { MatchedMaterial->Kd.X, MatchedMaterial->Kd.Y, MatchedMaterial->Kd.Z, 1.0f };
+				}
+
+				if (!MatchedMaterial->map_Bump.empty())
+				{
+					MaterialObject->NormalTextureFilePath = MatchedMaterial->map_Bump;
 				}
 			}
 

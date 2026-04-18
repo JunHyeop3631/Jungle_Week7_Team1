@@ -39,7 +39,7 @@ struct FStaticMeshSection
 struct FStaticMaterial
 {
 	// std::shared_ptr<class UMaterialInterface> MaterialInterface;
-   UMaterialInterface* MaterialInterface;
+	UMaterialInterface* MaterialInterface;
 	FString MaterialSlotName = "None"; // "None"은 특별한 슬롯 이름으로, OBJ 파일에서 머티리얼이 지정되지 않은 섹션에 할당됩니다.
 	bool bIsUVScroll = false;
 
@@ -59,6 +59,7 @@ struct FStaticMaterial
 		// 3. 머티리얼 속성을 인라인으로 직렬화 (.mbin 없이도 복구 가능)
 		FString InlinePathFileName;
 		FString InlineTexturePath;
+		FString InlineNormalTexturePath;
 		FVector4 InlineDiffuseColor = { 1.0f, 0.0f, 1.0f, 1.0f };
 
 		if (Ar.IsSaving() && Mat.MaterialInterface)
@@ -74,6 +75,7 @@ struct FStaticMaterial
 				{
 					UMaterial* MasterMat = static_cast<UMaterial*>(Mat.MaterialInterface);
 					InlineTexturePath = MasterMat->DiffuseTextureFilePath;
+					InlineNormalTexturePath = MasterMat->NormalTextureFilePath;
 				}
 				// 인스턴스일 경우 인라인 텍스처 경로는 저장하지 않거나(부모를 참조하므로), 
 				// 필요하다면 오버라이드된 경로를 가져오도록 처리합니다.
@@ -82,6 +84,7 @@ struct FStaticMaterial
 
 		Ar << InlinePathFileName;
 		Ar << InlineTexturePath;
+		Ar << InlineNormalTexturePath;
 		Ar << InlineDiffuseColor;
 
 		// 4. 로딩 시 머티리얼 복원
@@ -103,6 +106,7 @@ struct FStaticMaterial
               if (UMaterial* ConcreteMaterial = Cast<UMaterial>(Mat.MaterialInterface))
 				{
 					ConcreteMaterial->DiffuseTextureFilePath = InlineTexturePath;
+					ConcreteMaterial->NormalTextureFilePath = InlineNormalTexturePath;
 					ConcreteMaterial->DiffuseColor = InlineDiffuseColor;
 				}
 			}
