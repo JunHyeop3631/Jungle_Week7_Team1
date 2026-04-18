@@ -36,11 +36,11 @@ float3 GetWorldNormal(PS_Lighting input, Texture2D normalMap, SamplerState sam)
     mapNormal = mapNormal * 2.0f - 1.0f;
 
     float3 N = normalize(input.worldNormal);
-    float3 T = normalize(input.worldTangent);
-    float3 B = normalize(cross(N, T) * input.tangentSign);
+    float3 T = normalize(input.worldTangent - N * dot(N, input.worldTangent));
+    float3 B = normalize(cross(N, T));
 
     float3x3 TBN = float3x3(T, B, N);
-    return normalize(mul(mapNormal, TBN));
+    return mul(mapNormal, TBN);
 }
 
 struct LightingResult
@@ -162,7 +162,7 @@ LightingResult ComputeSpotLight_BlinnPhong(
     return result;  
 }
 
-LightingResult ComputeDirectLight_Lambert(float3 worldNormal)
+LightingResult ComputeDirectionalLight_Lambert(float3 worldNormal)
 {
     LightingResult result = (LightingResult) 0;
     float3 diffuse = 0.0f;

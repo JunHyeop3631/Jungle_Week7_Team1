@@ -9,20 +9,19 @@ SamplerState g_Sample : register(s0);
 PS_Lighting VS(VS_Input_PNCT input)
 {
     PS_Lighting output;
-    output.position = ApplyMVP(input.position);
-    output.worldNormal = normalize(mul(input.normal, (float3x3) Model));
+    output.position = ApplyMVP(input.position);;
     output.worldPosition = mul(float4(input.position, 1.0f), Model).xyz;
     output.texCoord = input.texcoord;
     
+    output.worldNormal = normalize(mul(input.normal, (float3x3) NormalMatrix));
     output.worldTangent = normalize(mul(input.tangent.rgb, (float3x3) Model));
-    output.tangentSign = input.tangent.w;
     
 //    //구루 쉐이딩
 #if LIGHTING_MODEL_GOURAUD
     float3 AmbientColor = 0;
     LightingResult lightingResult = (LightingResult) 0;
     
-    AmbientColor = Ambient.LightColor; // 간단한 앰비언트 조명
+    AmbientColor = Ambient.LightColor * 0.1f; // 간단한 앰비언트 조명
     float shininess = SpecularRoughness;
     
     lightingResult += ComputeDirectionalLight_BlinnPhong(CameraPosition.xyz, output.worldPosition, output.worldNormal, shininess);
@@ -51,13 +50,13 @@ float4 PS(PS_Lighting input)
 #if LIGHTING_MODEL_GOURAUD
     finalColor = texColor * input.color * float4(input.vertexLighting, 1.0f);   
 #elif LIGHTING_MODEL_LAMBERT
-    lightingResult += ComputeDirectLight_Lambert(worldNormal);
+    lightingResult += ComputeDirectionalLight_Lambert(worldNormal);
     lightingResult += ComputePointLight_Lambert(input.worldPosition, worldNormal);
     lightingResult += ComputeSpotLight_Lambert(input.worldPosition, worldNormal);
     
     float3 albedo = texColor.rgb * input.color.rgb;
 
-    float3 ambient = Ambient.LightColor.rgb * albedo;
+    float3 ambient = Ambient.LightColor.rgb * 0.1f * albedo;
     float3 diffuse  = lightingResult.Diffuse * albedo;
 
     float3 final = ambient + diffuse;
@@ -72,7 +71,7 @@ float4 PS(PS_Lighting input)
     
     float3 albedo = texColor.rgb * input.color.rgb;
     
-    float3 ambient = Ambient.LightColor.rgb * albedo;
+    float3 ambient = Ambient.LightColor.rgb * 0.1f * albedo;
     float3 diffuse  = lightingResult.Diffuse * albedo;
     float3 specular = lightingResult.Specular;
 

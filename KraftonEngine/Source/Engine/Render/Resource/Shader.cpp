@@ -3,6 +3,27 @@
 
 #include <iostream>
 
+static D3D_SHADER_MACRO defines_Gouraud[] =
+{
+	{ "LIGHTING_MODEL_GOURAUD", "1" },
+	// { "USE_GREEN_COLOR", "1" }, // 초록색을 사용하려면 이 줄을 활성화
+	{ nullptr, nullptr } // 반드시 마지막은 null로 종료
+};
+
+static D3D_SHADER_MACRO defines_Phong[] =
+{
+	{ "LIGHTING_MODEL_PHONG", "1" },
+	// { "USE_GREEN_COLOR", "1" }, // 초록색을 사용하려면 이 줄을 활성화
+	{ nullptr, nullptr } // 반드시 마지막은 null로 종료
+};
+
+static D3D_SHADER_MACRO defines_Lambert[] =
+{
+	{ "LIGHTING_MODEL_LAMBERT", "1" },
+	// { "USE_GREEN_COLOR", "1" }, // 초록색을 사용하려면 이 줄을 활성화
+	{ nullptr, nullptr } // 반드시 마지막은 null로 종료
+};
+
 FShader::FShader(FShader&& Other) noexcept
 	: VertexShader(Other.VertexShader)
 	, PixelShader(Other.PixelShader)

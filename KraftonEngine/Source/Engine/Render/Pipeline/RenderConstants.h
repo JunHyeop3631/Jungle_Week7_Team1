@@ -40,11 +40,12 @@ struct FPerObjectConstants
 {
 	FMatrix Model;
 	FVector4 Color;
+	FMatrix InvModel;
 
-	// 기본 PerObject: WorldMatrix + White
+	// 기본 PerObject: WorldMatrix + White + InverseWorldMatrix
 	static FPerObjectConstants FromWorldMatrix(const FMatrix& WorldMatrix)
 	{
-		return { WorldMatrix, FVector4(1.0f, 1.0f, 1.0f, 1.0f) };
+		return { WorldMatrix, FVector4(1.0f, 1.0f, 1.0f, 1.0f), WorldMatrix.GetInverse() };
 	}
 };
 

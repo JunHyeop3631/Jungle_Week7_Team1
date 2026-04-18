@@ -89,8 +89,7 @@ struct PS_Lighting
     float3 worldNormal : TEXCOORD1;
     float2 texCoord : TEXCOORD2;
     float3 worldTangent : TEXCOORD3;
-    float tangentSign : TEXCOORD4;
-    float3 vertexLighting : TEXCOORD5;
+    float3 vertexLighting : TEXCOORD4;
 };
 
 #endif // VERTEX_LAYOUTS_HLSL
