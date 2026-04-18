@@ -710,6 +710,77 @@ bool FObjImporter::Convert(const FObjInfo& ObjInfo, const TArray<FObjMaterialInf
 		OutMesh.Sections.push_back(NewSection);
 	}
 
+	// =================================================================
+	// Tangent & Bitangent 계산 (Gram-Schmidt 직교화 포함)
+	// =================================================================
+	size_t VertexCount = OutMesh.Vertices.size();
+	TArray<FVector> TempTangents(VertexCount, FVector(0.0f, 0.0f, 0.0f));
+	TArray<FVector> TempBitangents(VertexCount, FVector(0.0f, 0.0f, 0.0f));
+
+	// 1. 모든 삼각형(Triangle)을 순회하며 Face Tangent를 계산하여 누적
+	for (size_t i = 0; i < OutMesh.Indices.size(); i += 3)
+	{
+		uint32 i0 = OutMesh.Indices[i];
+		uint32 i1 = OutMesh.Indices[i + 1];
+		uint32 i2 = OutMesh.Indices[i + 2];
+
+		const FVector& v0 = OutMesh.Vertices[i0].pos;
+		const FVector& v1 = OutMesh.Vertices[i1].pos;
+		const FVector& v2 = OutMesh.Vertices[i2].pos;
+
+		const FVector2& uv0 = OutMesh.Vertices[i0].tex;
+		const FVector2& uv1 = OutMesh.Vertices[i1].tex;
+		const FVector2& uv2 = OutMesh.Vertices[i2].tex;
+
+		// 위치와 UV의 델타(Delta) 값 계산 (Vector.h의 operator 오버로딩 활용)
+		FVector Edge1 = v1 - v0;
+		FVector Edge2 = v2 - v0;
+		FVector2 DeltaUV1 = uv1 - uv0;
+		FVector2 DeltaUV2 = uv2 - uv0;
+
+		// X, Y 멤버 접근 보장 (FVector2의 union 구조체 활용)
+		float f = 1.0f / (DeltaUV1.X * DeltaUV2.Y - DeltaUV2.X * DeltaUV1.Y);
+
+		FVector Tangent;
+		Tangent.X = f * (DeltaUV2.Y * Edge1.X - DeltaUV1.Y * Edge2.X);
+		Tangent.Y = f * (DeltaUV2.Y * Edge1.Y - DeltaUV1.Y * Edge2.Y);
+		Tangent.Z = f * (DeltaUV2.Y * Edge1.Z - DeltaUV1.Y * Edge2.Z);
+
+		FVector Bitangent;
+		Bitangent.X = f * (-DeltaUV2.X * Edge1.X + DeltaUV1.X * Edge2.X);
+		Bitangent.Y = f * (-DeltaUV2.X * Edge1.Y + DeltaUV1.X * Edge2.Y);
+		Bitangent.Z = f * (-DeltaUV2.X * Edge1.Z + DeltaUV1.X * Edge2.Z);
+
+		// 해당 삼각형을 공유하는 정점들에 누적(Accumulate)
+		TempTangents[i0] = TempTangents[i0] + Tangent;
+		TempTangents[i1] = TempTangents[i1] + Tangent;
+		TempTangents[i2] = TempTangents[i2] + Tangent;
+
+		TempBitangents[i0] = TempBitangents[i0] + Bitangent;
+		TempBitangents[i1] = TempBitangents[i1] + Bitangent;
+		TempBitangents[i2] = TempBitangents[i2] + Bitangent;
+	}
+
+	// 2. 각 정점별로 직교화(Orthogonalize) 및 Handedness(W값) 결정
+	for (size_t i = 0; i < VertexCount; ++i)
+	{
+		const FVector& n = OutMesh.Vertices[i].normal;
+		const FVector& t = TempTangents[i];
+		const FVector& b = TempBitangents[i];
+
+		// Gram-Schmidt 직교화: t = normalize(t - n * dot(n, t))
+		float dotNT = n.Dot(t);                     // 엔진의 멤버 함수 Dot 활용
+		FVector orthogonalT = t - n * dotNT;        // 엔진의 operator- 및 operator* 활용
+		orthogonalT.Normalize();                    // 엔진의 멤버 함수 Normalize 활용
+
+		// 뒤집힘(Handedness) 판별: N과 T의 외적 결과와 B의 내적을 확인
+		FVector crossNT = FVector::Cross(n, orthogonalT);  // 엔진의 static Cross 함수 활용
+		float handedness = (crossNT.Dot(b) < 0.0f) ? -1.0f : 1.0f;
+
+		// 최종 계산된 Tangent와 W값을 렌더링용 정점 구조체에 저장
+		OutMesh.Vertices[i].tangent = FVector4(orthogonalT.X, orthogonalT.Y, orthogonalT.Z, handedness);
+	}
+
     return true;
 }
 

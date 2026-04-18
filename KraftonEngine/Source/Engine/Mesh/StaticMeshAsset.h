@@ -16,6 +16,7 @@ struct FNormalVertex
 {
 	FVector pos;
 	FVector normal;
+	FVector4 tangent;
 	FVector4 color;
 	FVector2 tex;
 };

@@ -1,4 +1,4 @@
-#include "Mesh/MeshSimplifier.h"
+﻿#include "Mesh/MeshSimplifier.h"
 
 #include <algorithm>
 #include <vector>
@@ -340,6 +340,22 @@ FSimplifiedMesh FMeshSimplifier::Simplify(
 				V[Keep].normal = V[Keep].normal*(1-T) + V[Rem].normal*T;
 				float NLen = V[Keep].normal.Length();
 				if (NLen > 1e-8f) V[Keep].normal = V[Keep].normal / NLen;
+
+				V[Keep].tangent.X = V[Keep].tangent.X * (1 - T) + V[Rem].tangent.X * T;
+				V[Keep].tangent.Y = V[Keep].tangent.Y * (1 - T) + V[Rem].tangent.Y * T;
+				V[Keep].tangent.Z = V[Keep].tangent.Z * (1 - T) + V[Rem].tangent.Z * T;
+
+				float TLen = std::sqrt(V[Keep].tangent.X * V[Keep].tangent.X +
+					V[Keep].tangent.Y * V[Keep].tangent.Y +
+					V[Keep].tangent.Z * V[Keep].tangent.Z);
+				if (TLen > 1e-8f)
+				{
+					V[Keep].tangent.X /= TLen;
+					V[Keep].tangent.Y /= TLen;
+					V[Keep].tangent.Z /= TLen;
+				}
+				// Handedness(뒤집힘) 유지
+				V[Keep].tangent.W = (V[Keep].tangent.W + V[Rem].tangent.W >= 0.0f) ? 1.0f : -1.0f;
 
 				V[Keep].color.X = V[Keep].color.X*(1-T)+V[Rem].color.X*T;
 				V[Keep].color.Y = V[Keep].color.Y*(1-T)+V[Rem].color.Y*T;

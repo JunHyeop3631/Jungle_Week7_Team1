@@ -32,7 +32,6 @@ namespace ECBSlot
 	constexpr uint32 Lighting = 8;		// b8: Lighting data (Directional, Point 등)
 	constexpr uint32 PostProcess_FXAA = 9;    // b9: FXAA effect params
 	constexpr uint32 MaxLocalTintEffects = 8;
-	constexpr uint32 MaxFogComponents = FogRendering::MaxFogComponents;
 }
 
 //PerObject
