@@ -43,7 +43,7 @@ PS_Lighting VS(VS_Input_PNCT input)
     totalLighting.Diffuse += tempLighting.Diffuse;
     totalLighting.Specular += tempLighting.Specular;
     
-    output.vertexLighting = AmbientColor + totalLighting.Diffuse + totalLighting.Specular;
+    output.vertexLighting = AmbientColor + totalLighting.Diffuse + (totalLighting.Specular * SpecularIntensity);
 #endif
     
     return output;
@@ -52,7 +52,6 @@ PS_Lighting VS(VS_Input_PNCT input)
 float4 PS(PS_Lighting input) : SV_TARGET
 {
     float4 finalColor = float4(1.0f, 0.0f, 1.0f, 1.0f);
-    
     float4 texColor = g_txColor.Sample(g_Sample, input.texCoord) * SectionColor;
     float3 worldNormal = normalize(input.worldNormal);
     
@@ -72,24 +71,21 @@ float4 PS(PS_Lighting input) : SV_TARGET
     
 // 램버트 쉐이딩
 #elif LIGHTING_MODEL_LAMBERT
-    tempLighting = ComputeDirectionalLight_Lambert(worldNormal);
+tempLighting = ComputeDirectionalLight_Lambert(worldNormal);
     totalLighting.Diffuse += tempLighting.Diffuse;
-    
     tempLighting = ComputePointLight_Lambert(input.worldPosition, worldNormal);
     totalLighting.Diffuse += tempLighting.Diffuse;
-    
     tempLighting = ComputeSpotLight_Lambert(input.worldPosition, worldNormal);
     totalLighting.Diffuse += tempLighting.Diffuse;
     
     float3 albedo = texColor.rgb * input.color.rgb;
     float3 ambient = Ambient.LightColor.rgb * 0.1f * albedo;
-    float3 diffuse  = totalLighting.Diffuse * albedo * SectionColor.rgb;
-
+    float3 diffuse  = totalLighting.Diffuse * albedo;
     float3 final = ambient + diffuse;
     finalColor = float4(final, input.color.a * texColor.a);
     
 #elif LIGHTING_MODEL_PHONG
-    float shininess = SpecularRoughness;
+float shininess = SpecularRoughness;
     
     tempLighting = ComputeDirectionalLight_BlinnPhong(CameraPosition.xyz, input.worldPosition, worldNormal, shininess);
     totalLighting.Diffuse += tempLighting.Diffuse;
@@ -105,11 +101,11 @@ float4 PS(PS_Lighting input) : SV_TARGET
     
     float3 albedo = texColor.rgb * input.color.rgb;
     float3 ambient = Ambient.LightColor.rgb * 0.1f * albedo;
-    float3 diffuse = totalLighting.Diffuse * albedo * SectionColor.rgb;
-    float3 specular = totalLighting.Specular;
-
+    float3 diffuse = totalLighting.Diffuse * albedo;
+    float3 specular = totalLighting.Specular * SpecularIntensity;
+    
     float3 final = ambient + diffuse + specular;
-    finalColor = float4(final, input.color.a * texColor.a); // 알파값 누락 방지
+    finalColor = float4(final, input.color.a * texColor.a);
     
  // 언릿 (조명 없음)
 #elif LIGHTING_MODEL_UNLIT
