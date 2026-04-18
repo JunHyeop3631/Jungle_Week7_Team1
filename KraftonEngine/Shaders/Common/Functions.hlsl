@@ -62,13 +62,13 @@ LightingResult ComputeDirectionalLight_BlinnPhong(float3 cameraPos, float3 world
     float3 L = normalize(-Directional.Direction);
     
     float diffIntensity = max(dot(N, L), 0.0f);
-    diffuse += Directional.LightColor * diffIntensity;
+    diffuse += Directional.LightColor.rgb * diffIntensity;
         
     if (diffIntensity > 0.0f)
     {
         float3 halfDir = normalize(L + V);
         float specIntensity = pow(max(dot(N, halfDir), 0.0f), exp);
-        specular = Directional.LightColor * specIntensity;
+        specular = Directional.LightColor.rgb * specIntensity;
     }
     
     result.Diffuse = diffuse;
@@ -170,7 +170,7 @@ LightingResult ComputeDirectionalLight_Lambert(float3 worldNormal)
     float3 L = normalize(-Directional.Direction);
     
     float diffIntensity = max(dot(N, L), 0.0f);
-    diffuse += Directional.LightColor * diffIntensity;
+    diffuse += Directional.LightColor.rgb * diffIntensity;
         
     result.Diffuse = diffuse;
     return result;

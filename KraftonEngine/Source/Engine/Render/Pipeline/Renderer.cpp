@@ -575,7 +575,7 @@ void FRenderer::ExecutePass(const TArray<const FPrimitiveSceneProxy*>& Proxies, 
 			const FPrimitiveSceneProxy& Proxy = *RawProxy;
 			if (Proxy.Pass == ERenderPass::Decal && !ActiveDepthSRV) continue;
 			if (!Proxy.MeshBuffer || !Proxy.MeshBuffer->IsValid()) continue;
-			BindShader(Proxy, Context, State);	
+            BindShader(Proxy, Bus, Context, State);	
 			BindExtraCB(Proxy, Context);
 			
 			if(Proxy.SectionDraws.size() == 1)
@@ -631,12 +631,19 @@ void FRenderer::SortProxies(const TArray<const FPrimitiveSceneProxy*>& Proxies)
 	std::sort(SortedProxyBuffer.begin(), SortedProxyBuffer.end(), ProxyLess);
 }
 
-void FRenderer::BindShader(const FPrimitiveSceneProxy& Proxy, ID3D11DeviceContext* Ctx, FDrawState& State)
+void FRenderer::BindShader(const FPrimitiveSceneProxy& Proxy, const FRenderBus& Bus, ID3D11DeviceContext* Ctx, FDrawState& State)
 {
-	if (Proxy.Shader && Proxy.Shader != State.LastShader)
+   FShader* ShaderToBind = Proxy.Shader;
+	FShader* BaseStaticMeshShader = FShaderManager::Get().GetShader(EShaderType::StaticMesh);
+	if (ShaderToBind == BaseStaticMeshShader)
 	{
-		Proxy.Shader->Bind(Ctx);
-		State.LastShader = Proxy.Shader;
+		ShaderToBind = FShaderManager::Get().GetStaticMeshShader(Bus.GetViewMode());
+	}
+
+	if (ShaderToBind && ShaderToBind != State.LastShader)
+	{
+        ShaderToBind->Bind(Ctx);
+		State.LastShader = ShaderToBind;
 	}
 }
 

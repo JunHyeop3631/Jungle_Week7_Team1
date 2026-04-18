@@ -119,7 +119,7 @@ private:
 	};
 
 	void SortProxies(const TArray<const FPrimitiveSceneProxy*>& Proxies);
-	void BindShader(const FPrimitiveSceneProxy& Proxy, ID3D11DeviceContext* Ctx, FDrawState& State);
+    void BindShader(const FPrimitiveSceneProxy& Proxy, const FRenderBus& Bus, ID3D11DeviceContext* Ctx, FDrawState& State);
 	void EnsurePerObjectCBPoolCapacity(uint32 RequiredCount);
 	FConstantBuffer* GetPerObjectCBForProxy(const FPrimitiveSceneProxy& Proxy);
 	bool BindPerObjectCB(const FPrimitiveSceneProxy& Proxy, ID3D11DeviceContext* Ctx, FDrawState& State);

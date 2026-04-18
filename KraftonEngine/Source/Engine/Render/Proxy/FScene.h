@@ -81,7 +81,10 @@ private:
 
 	// 프레임 내 변경된 프록시 dense 목록
 	TArray<FPrimitiveSceneProxy*> DirtyProxies;
+	TArray<FPrimitiveSceneProxy*> ProcessingDirtyProxies;
+
 	TArray<FLightSceneProxy*> DirtyLightProxies;
+	TArray<FLightSceneProxy*> ProcessingDirtyLightProxies;
 
 	// 선택된 프록시 dense 목록
 	TArray<FPrimitiveSceneProxy*> SelectedProxies;

@@ -318,10 +318,9 @@ void FScene::UpdateDirtyProxies()
 
 	//Update 중 Transform/Mesh 업데이트가 다시 MarkProxyDirty를 호출할 수 있으므로
 	//현재 배치는 스냅샷으로 분리해 순회한다.
-	TArray<FPrimitiveSceneProxy*> PendingDirtyProxies = std::move(DirtyProxies);
-	DirtyProxies.clear();
+	std::swap(DirtyProxies, ProcessingDirtyProxies);
 
-	for (FPrimitiveSceneProxy* Proxy : PendingDirtyProxies)
+	for (FPrimitiveSceneProxy* Proxy : ProcessingDirtyProxies)
 	{
 		if (!Proxy)
 		{
@@ -356,16 +355,17 @@ void FScene::UpdateDirtyProxies()
 			Proxy->UpdateVisibility();
 		}
 	}
+
+	ProcessingDirtyProxies.clear();
 }
 
 void FScene::UpdateDirtyLightProxies()
 {
 	SCOPE_STAT_CAT("UpdateDirtyLightProxies", "3_Collect");
 
-	TArray<FLightSceneProxy*> PendingDirtyProxies = std::move(DirtyLightProxies);
-	DirtyLightProxies.clear();
+	std::swap(DirtyLightProxies, ProcessingDirtyLightProxies);
 
-	for (FLightSceneProxy* Proxy : PendingDirtyProxies)
+	for (FLightSceneProxy* Proxy : ProcessingDirtyLightProxies)
 	{
 		if (!Proxy)
 		{
@@ -394,6 +394,8 @@ void FScene::UpdateDirtyLightProxies()
 			Proxy->UpdateLightData();
 		}
 	}
+
+	ProcessingDirtyLightProxies.clear();
 }
 
 // ============================================================
@@ -502,6 +504,18 @@ FLightingConstants FScene::GetLightingConstants() const
 		{
 			Proxy->CollectEntries(Context, Result);
 		}
+	}
+
+	// LightSceneProxy의 BuildContext 결과를 기준으로 실제 존재하지 않는 라이트 채널은
+	// 기본값(ambient/directional) 대신 0으로 강제해 "라이트 미배치 시 완전 암전" 동작을 보장한다.
+	if (!Context.bHasAmbient)
+	{
+		Result.Ambient.LightColor = FVector4(0.0f, 0.0f, 0.0f, 1.0f);
+	}
+
+	if (!Context.bHasDirectional)
+	{
+		Result.Directional.LightColor = FVector4(0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
 	return Result;
