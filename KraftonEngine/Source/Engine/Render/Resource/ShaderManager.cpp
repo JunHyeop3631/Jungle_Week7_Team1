@@ -113,7 +113,8 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 
 	Shaders[(uint32)EShaderType::IDPickDebugVisualize].Create(InDevice, L"Shaders/IDPickDebug.hlsl",
 		"VS", "PS", nullptr, 0);
-
+	/*Shaders[(uint32)EShaderType::LightCullingCS].CreateCompute(InDevice, L"Shaders/LightCulling.hlsl",
+		"CS");*/
 	bIsInitialized = true;
 }
 

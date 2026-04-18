@@ -22,15 +22,20 @@ public:
 	void Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const char* InVSEntryPoint, const char* InPSEntryPoint,
 		const D3D11_INPUT_ELEMENT_DESC* InInputElements, uint32 InInputElementCount,
 		const D3D_SHADER_MACRO* InDefines = nullptr);
+	void CreateCompute(ID3D11Device* InDevice, const wchar_t* InFilePath, const char* InCSEntryPoint, const D3D_SHADER_MACRO* InDefines = nullptr);
+
 	void Release();
 
 	void Bind(ID3D11DeviceContext* InDeviceContext) const;
+	void BindCompute(ID3D11DeviceContext* InDeviceContext) const;
 
 private:
 	ID3D11VertexShader* VertexShader = nullptr;
 	ID3D11PixelShader* PixelShader = nullptr;
+	ID3D11ComputeShader* ComputeShader = nullptr;
 	ID3D11InputLayout* InputLayout = nullptr;
 
 	size_t CachedVertexShaderSize = 0;
 	size_t CachedPixelShaderSize = 0;
+	size_t CachedComputeShaderSize = 0;
 };
