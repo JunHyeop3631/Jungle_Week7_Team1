@@ -59,7 +59,7 @@ void FObjViewerRenderPipeline::RenderPreviewViewport(FRenderer& Renderer)
 	ShowFlags.bGizmo = false;
 	ShowFlags.bBillboardText = false;
 	ShowFlags.bBoundingVolume = false;
-	Bus.SetRenderSettings(EViewMode::Lit, ShowFlags);
+	Bus.SetRenderSettings(EViewMode::Unlit, ShowFlags);
 	Bus.SetViewportInfo(VP);
 
 	// 월드 수집
