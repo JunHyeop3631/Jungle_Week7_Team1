@@ -88,25 +88,25 @@ LightingResult ComputePointLight_BlinnPhong(
     float3 N = normalize(worldNormal);
     float3 V = normalize(cameraPos - worldPos);
     
-    for (uint i = 0; i < NUM_POINT_LIGHT; ++i)
+    for (uint i = 0; i < PointLightCount; ++i)
     {
         // 수정: Position.xyz 사용 [cite: 18]
-        float3 toLight = PointLights[i].Position.xyz - worldPos;
+        float3 toLight = PointLightData[i].Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
 
         float NdotL = max(dot(N, L), 0.0f);
-        float distanceAtten = saturate(1.0f - dist / PointLights[i].AttenuationRadius);
-        distanceAtten = pow(distanceAtten, PointLights[i].FalloffExponent);
+        float distanceAtten = saturate(1.0f - dist / PointLightData[i].AttenuationRadius);
+        distanceAtten = pow(distanceAtten, PointLightData[i].FalloffExponent);
         
         float atten = distanceAtten;
-        diffuse += PointLights[i].LightColor.rgb * NdotL * atten;
+        diffuse += PointLightData[i].LightColor.rgb * NdotL * atten;
 
         if (NdotL > 0.0f && atten > 0.0f)
         {
             float3 H = normalize(L + V);
             float spec = pow(max(dot(N, H), 0.0f), shininess);
-            specular += PointLights[i].LightColor.rgb * spec * atten;
+            specular += PointLightData[i].LightColor.rgb * spec * atten;
         }
     }
 
@@ -128,28 +128,28 @@ LightingResult ComputeSpotLight_BlinnPhong(
     float3 N = normalize(worldNormal);
     float3 V = normalize(cameraPos - worldPos);
     
-    for (uint i = 0; i < NUM_SPOT_LIGHT; ++i)
+    for (uint i = 0; i < SpotLightCount; ++i)
     {
-        float3 toLight = SpotLights[i].Position.xyz - worldPos;
+        float3 toLight = SpotLightData[i].Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
 
         float NdotL = max(dot(N, L), 0.0f);
-        float3 lightDir = normalize(SpotLights[i].Direction.xyz);
-        float distanceAtten = saturate(1.0f - dist / SpotLights[i].AttenuationRadius);
+        float3 lightDir = normalize(SpotLightData[i].Direction.xyz);
+        float distanceAtten = saturate(1.0f - dist / SpotLightData[i].AttenuationRadius);
         float spotCos = dot(lightDir, -L);
         float spotFactor = saturate(
-            (spotCos - SpotLights[i].OuterConeAngle) /
-            max(SpotLights[i].InnerConeAngle - SpotLights[i].OuterConeAngle, 0.0001f)
+            (spotCos - SpotLightData[i].OuterConeAngle) /
+            max(SpotLightData[i].InnerConeAngle - SpotLightData[i].OuterConeAngle, 0.0001f)
         );
         float atten = distanceAtten * spotFactor;
 
-        diffuse += SpotLights[i].LightColor.rgb * NdotL * atten;
+        diffuse += SpotLightData[i].LightColor.rgb * NdotL * atten;
         if (NdotL > 0.0f && atten > 0.0f)
         {
             float3 H = normalize(L + V);
             float spec = pow(max(dot(N, H), 0.0f), shininess);
-            specular += SpotLights[i].LightColor.rgb * spec * atten;
+            specular += SpotLightData[i].LightColor.rgb * spec * atten;
         }
     }
 
@@ -177,16 +177,16 @@ LightingResult ComputePointLight_Lambert(float3 worldPos, float3 worldNormal)
     LightingResult result = (LightingResult) 0;
     float3 diffuse = 0.0f;
     float3 N = normalize(worldNormal);
-    for (uint i = 0; i < NUM_POINT_LIGHT; ++i)
+    for (uint i = 0; i < PointLightCount; ++i)
     {
-        float3 toLight = PointLights[i].Position.xyz - worldPos;
+        float3 toLight = PointLightData[i].Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
         float NdotL = max(dot(N, L), 0.0f);
-        float distanceAtten = saturate(1.0f - dist / PointLights[i].AttenuationRadius);
-        distanceAtten = pow(distanceAtten, PointLights[i].FalloffExponent);
+        float distanceAtten = saturate(1.0f - dist / PointLightData[i].AttenuationRadius);
+        distanceAtten = pow(distanceAtten, PointLightData[i].FalloffExponent);
         
-        diffuse += PointLights[i].LightColor.rgb * NdotL * distanceAtten;
+        diffuse += PointLightData[i].LightColor.rgb * NdotL * distanceAtten;
     }
     result.Diffuse = diffuse;
     return result;
@@ -197,21 +197,21 @@ LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal)
     LightingResult result = (LightingResult) 0;
     float3 diffuse = 0.0f;
     float3 N = normalize(worldNormal);
-    for (uint i = 0; i < NUM_SPOT_LIGHT; ++i)
+    for (uint i = 0; i < SpotLightCount; ++i)
     {
         // 수정: Position.xyz 및 Direction.xyz 사용 [cite: 19]
-        float3 toLight = SpotLights[i].Position.xyz - worldPos;
+        float3 toLight = SpotLightData[i].Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
         float NdotL = max(dot(N, L), 0.0f);
-        float3 lightDir = normalize(SpotLights[i].Direction.xyz);
-        float distanceAtten = saturate(1.0f - dist / SpotLights[i].AttenuationRadius);
+        float3 lightDir = normalize(SpotLightData[i].Direction.xyz);
+        float distanceAtten = saturate(1.0f - dist / SpotLightData[i].AttenuationRadius);
         float spotCos = dot(lightDir, -L);
         float spotFactor = saturate(
-            (spotCos - SpotLights[i].OuterConeAngle) /
-            max(SpotLights[i].InnerConeAngle - SpotLights[i].OuterConeAngle, 0.0001f)
+            (spotCos - SpotLightData[i].OuterConeAngle) /
+            max(SpotLightData[i].InnerConeAngle - SpotLightData[i].OuterConeAngle, 0.0001f)
         );
-        diffuse += SpotLights[i].LightColor.rgb * NdotL * distanceAtten * spotFactor;
+        diffuse += SpotLightData[i].LightColor.rgb * NdotL * distanceAtten * spotFactor;
     }
     result.Diffuse = diffuse;
     return result;

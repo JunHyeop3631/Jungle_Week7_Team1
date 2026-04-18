@@ -136,13 +136,17 @@ struct FSpotLightInfo
     float pad; // 16바이트 정렬을 위한 패딩
 };
 
-// [수정 완료] 팀의 원래 기획 + 엔진의 b8 슬롯 결합
+// [수정 완료] 팀의 원래 기획 + 엔진의 b8 슬롯 결합 
 cbuffer LightingBuffer : register(b8)
 {
     FAmbientLightInfo Ambient;
     FDirectionalLightInfo Directional;
-    FPointLightInfo PointLights[NUM_POINT_LIGHT];
-    FSpotLightInfo SpotLights[NUM_SPOT_LIGHT];
+    uint PointLightCount;
+    uint SpotLightCount;
+    float2 _lightPad;
 };
+
+StructuredBuffer<FPointLightInfo> PointLightData : register(t8);
+StructuredBuffer<FSpotLightInfo> SpotLightData : register(t9);
 
 #endif // CONSTANT_BUFFERS_HLSL

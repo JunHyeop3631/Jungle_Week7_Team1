@@ -161,6 +161,9 @@ struct FLightingConstants
 {
 	FAmbientLightInfo Ambient;
 	FDirectionalLightInfo Directional;
+	uint32 PointLightCount = 0;
+	uint32 SpotLightCount = 0;
+	uint32 _pad[2] = {0, 0};
 };
 
 struct FCollectedLightData

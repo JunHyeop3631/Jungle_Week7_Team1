@@ -325,8 +325,8 @@ void FRenderer::Render(const FRenderBus& InRenderBus)
 		UpdateLightingBuffer(Context, InRenderBus);
 	}
 
-	ExecuteDepthPrePass(InRenderBus, Context);
-	ExecuteLightCullingCS(InRenderBus, Context);
+	/*ExecuteDepthPrePass(InRenderBus, Context);
+	ExecuteLightCullingCS(InRenderBus, Context);*/
 
 	// 패스 실행 순서:
 	// - Grid/Axis가 PostProcess/Font 위를 덮지 않도록 Grid를 먼저 그린다.
@@ -1179,23 +1179,48 @@ void FRenderer::BlitSRVToRTV(ID3D11ShaderResourceView* SourceSRV, ID3D11RenderTa
 
 void FRenderer::UpdateLightingBuffer(ID3D11DeviceContext* Context, const FRenderBus& InRenderBus)
 {
-	// 1. RenderBus로부터 조명 데이터 뭉치를 가져옵니다.
-	const FLightingConstants& LightData = InRenderBus.GetLightingConstants();
+	FLightingConstants LightData = InRenderBus.GetLightingConstants();
+	const auto& PointLights = InRenderBus.GetPointLights();
+	const auto& SpotLights = InRenderBus.GetSpotLights();
 
-	// 2. 조명 데이터용 상수 버퍼(Constant Buffer)를 가져옵니다. (ECBSlot::Lighting = 8)
+	LightData.PointLightCount = static_cast<uint32>(PointLights.size());
+	LightData.SpotLightCount = static_cast<uint32>(SpotLights.size());
+
 	FConstantBuffer* LightCB = FConstantBufferPool::Get().GetBuffer(ECBSlot::Lighting, sizeof(FLightingConstants));
-	if (!LightCB)
+	if (LightCB)
 	{
-		return; // 버퍼를 가져오지 못했을 경우 안전 종료
+		LightCB->Update(Context, &LightData, sizeof(FLightingConstants));
+		ID3D11Buffer* cb8 = LightCB->GetBuffer();
+		Context->VSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
+		Context->PSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
 	}
 
-	// 3. GPU 메모리로 데이터 업로드
-	LightCB->Update(Context, &LightData, sizeof(FLightingConstants));
-	ID3D11Buffer* cb8 = LightCB->GetBuffer();
+	if (!PointLights.empty() && Resources.LightCulling.PointLightData)
+	{
+		D3D11_MAPPED_SUBRESOURCE Mapped;
+		if (SUCCEEDED(Context->Map(Resources.LightCulling.PointLightData, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped)))
+		{
+			memcpy(Mapped.pData, PointLights.data(), sizeof(FPointLightInfo) * PointLights.size());
+			Context->Unmap(Resources.LightCulling.PointLightData, 0);
+		}
+	}
 
-	// 4. Vertex Shader와 Pixel Shader의 b8 레지스터 슬롯에 상수 버퍼를 바인딩합니다.
-	Context->VSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
-	Context->PSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
+	if (!SpotLights.empty() && Resources.LightCulling.SpotLightData)
+	{
+		D3D11_MAPPED_SUBRESOURCE Mapped;
+		if (SUCCEEDED(Context->Map(Resources.LightCulling.SpotLightData, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped)))
+		{
+			memcpy(Mapped.pData, SpotLights.data(), sizeof(FSpotLightInfo) * SpotLights.size());
+			Context->Unmap(Resources.LightCulling.SpotLightData, 0);
+		}
+	}
+
+	ID3D11ShaderResourceView* LightSRVs[2] = {
+		Resources.LightCulling.PointLightDataSRV,
+		Resources.LightCulling.SpotLightDataSRV
+	};
+	Context->VSSetShaderResources(8, 2, LightSRVs);
+	Context->PSSetShaderResources(8, 2, LightSRVs);
 }
 
 // ============================================================
