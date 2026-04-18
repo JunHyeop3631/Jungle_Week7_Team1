@@ -7,6 +7,7 @@ class UBillboardComponent;
 class ADirectionalLight : public AActor
 {
 public:
+	DECLARE_CLASS(ADirectionalLight, AActor)
 	ADirectionalLight();
 
 private:
