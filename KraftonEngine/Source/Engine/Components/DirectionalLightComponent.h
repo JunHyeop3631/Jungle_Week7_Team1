@@ -6,5 +6,8 @@ public:
 	DECLARE_CLASS(UDirectionalLightComponent, ULightComponent)
 
 	FLightSceneProxy* CreateLightSceneProxy() override;
+
+	void CollectEditorVisualizations(FRenderBus& RenderBus) const override;
+
 };
 

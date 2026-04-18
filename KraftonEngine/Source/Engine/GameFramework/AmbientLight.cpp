@@ -1,6 +1,9 @@
 ﻿#include "AmbientLight.h"
 #include "Components/AmbientLightComponent.h"
 #include "Components/BillboardComponent.h"
+#include "Object/ObjectFactory.h"
+
+IMPLEMENT_CLASS(AAmbientLight, AActor)
 
 AAmbientLight::AAmbientLight()
 {
