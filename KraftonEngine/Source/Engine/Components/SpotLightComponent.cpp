@@ -16,12 +16,12 @@ namespace
 	constexpr int32 ConeSegmentCount = 24;
 	constexpr int32 ConeSideCount = 24;
 
-	void AddDebugLine(FRenderBus& RenderBus, const FVector& Start, const FVector& End, const FColor& Color)
+	void AddDebugLine(FRenderBus& RenderBus, const FVector& Start, const FVector& End, const FLinearColor& Color)
 	{
 		FDebugLineEntry Line;
 		Line.Start = Start;
 		Line.End = End;
-		Line.Color = Color;
+		Line.Color = Color.ToVector4();
 		RenderBus.AddDebugLineEntry(std::move(Line));
 	}
 
@@ -38,7 +38,7 @@ namespace
 		return StableUp;
 	}
 
-	void AddLightDirectionArrow(FRenderBus& RenderBus, const FVector& Start, const FVector& Direction, float Length)
+	void AddLightDirectionArrow(FRenderBus& RenderBus, const FVector& Start, const FVector& Direction, float Length, const FLinearColor InColor)
 	{
 		if (Length <= MinConeLength)
 		{
@@ -53,16 +53,15 @@ namespace
 
 		const FVector NormalizedDirection = Direction / DirectionLength;
 		const FVector End = Start + NormalizedDirection * Length;
-		const FColor ArrowColor(255, 0, 0);
 		const float HeadLength = Clamp(Length * 0.25f, 0.25f, 2.0f);
 		const float HeadHalfWidth = HeadLength * 0.45f;
 		const FVector StableUp = GetStableUpVector(NormalizedDirection, FVector(0.0f, 0.0f, 1.0f));
 		const FVector Right = StableUp.Cross(NormalizedDirection).Normalized();
 		const FVector HeadBase = End - NormalizedDirection * HeadLength;
 
-		AddDebugLine(RenderBus, Start, End, ArrowColor);
-		AddDebugLine(RenderBus, End, HeadBase + Right * HeadHalfWidth, ArrowColor);
-		AddDebugLine(RenderBus, End, HeadBase - Right * HeadHalfWidth, ArrowColor);
+		AddDebugLine(RenderBus, Start, End, InColor);
+		AddDebugLine(RenderBus, End, HeadBase + Right * HeadHalfWidth, InColor);
+		AddDebugLine(RenderBus, End, HeadBase - Right * HeadHalfWidth, InColor);
 	}
 
 	void AddCone(FRenderBus& RenderBus, const FVector& Start, const FVector& Direction, const FVector& Up, float Length, float InConeAngle)
@@ -108,7 +107,7 @@ namespace
 				+ ConeUp * (ConeRadius * SinAngle);
 		}
 
-		const FColor ConeColor = FColor::Yellow();
+		const FLinearColor ConeColor = FLinearColor::White();
 		for (int32 SegmentIndex = 0; SegmentIndex < ConeSegmentCount; ++SegmentIndex)
 		{
 			const FVector& CircleStart = CirclePoints[SegmentIndex];
@@ -139,7 +138,7 @@ void USpotLightComponent::CollectEditorVisualizations(FRenderBus& RenderBus) con
 
 	const float ArrowLength = Clamp(ConeLength * 0.25f, 1.0f, ConeLength);
 
-	AddLightDirectionArrow(RenderBus, Location, Forward, ArrowLength);
+	AddLightDirectionArrow(RenderBus, Location, Forward, ArrowLength, LightColor);
 	AddCone(RenderBus, Location, Forward, Up, ConeLength, InnerConeAngle);
 	AddCone(RenderBus, Location, Forward, Up, ConeLength, OuterConeAngle);
 }

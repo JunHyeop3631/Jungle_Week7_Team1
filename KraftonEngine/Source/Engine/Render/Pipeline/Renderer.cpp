@@ -133,7 +133,7 @@ void FRenderer::PrepareBatchers(const FRenderBus& Bus)
 	}
 	for (const auto& Entry : Bus.GetDebugLineEntries())
 	{
-		EditorLineBatcher.AddLine(Entry.Start, Entry.End, Entry.Color.ToVector4());
+		EditorLineBatcher.AddLine(Entry.Start, Entry.End, Entry.Color);
 	}
 
 	// --- Grid 패스: 월드 그리드 + 축 → GridLineBatcher ---

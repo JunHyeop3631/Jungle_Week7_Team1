@@ -291,7 +291,7 @@ struct FDebugLineEntry
 {
 	FVector Start;
 	FVector End;
-	FColor  Color;
+	FVector4  Color;
 };
 
 // 스크린 공간 텍스트 — Overlay Stats 등에서 사용
