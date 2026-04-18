@@ -2,27 +2,70 @@
 #include "Profiling/MemoryStats.h"
 
 #include <iostream>
+#include <string_view>
 
-static D3D_SHADER_MACRO defines_Gouraud[] =
+static D3D_SHADER_MACRO Defines_Gouraud[] =
 {
 	{ "LIGHTING_MODEL_GOURAUD", "1" },
-	// { "USE_GREEN_COLOR", "1" }, // 초록색을 사용하려면 이 줄을 활성화
-	{ nullptr, nullptr } // 반드시 마지막은 null로 종료
+   { nullptr, nullptr }
 };
 
-static D3D_SHADER_MACRO defines_Phong[] =
+static D3D_SHADER_MACRO Defines_Phong[] =
 {
 	{ "LIGHTING_MODEL_PHONG", "1" },
-	// { "USE_GREEN_COLOR", "1" }, // 초록색을 사용하려면 이 줄을 활성화
-	{ nullptr, nullptr } // 반드시 마지막은 null로 종료
+   { nullptr, nullptr }
 };
 
-static D3D_SHADER_MACRO defines_Lambert[] =
+static D3D_SHADER_MACRO Defines_Lambert[] =
 {
 	{ "LIGHTING_MODEL_LAMBERT", "1" },
-	// { "USE_GREEN_COLOR", "1" }, // 초록색을 사용하려면 이 줄을 활성화
-	{ nullptr, nullptr } // 반드시 마지막은 null로 종료
+   { nullptr, nullptr }
 };
+
+static D3D_SHADER_MACRO Defines_Unlit[] =
+{
+	{ "LIGHTING_MODEL_UNLIT", "1" },
+	{ nullptr, nullptr }
+};
+
+static EViewMode GLightingViewMode = EViewMode::Unlit;
+
+void FShader::SetCurrentLightingViewMode(EViewMode InViewMode)
+{
+	if (IsLightingModelViewMode(InViewMode))
+	{
+		GLightingViewMode = InViewMode;
+	}
+}
+
+EViewMode FShader::GetCurrentLightingViewMode()
+{
+	return GLightingViewMode;
+}
+
+bool FShader::IsLightingModelViewMode(EViewMode InViewMode)
+{
+	return InViewMode == EViewMode::Lit_Gouraud
+		|| InViewMode == EViewMode::Lit_Lambert
+		|| InViewMode == EViewMode::Lit_Phong
+		|| InViewMode == EViewMode::Unlit;
+}
+
+const D3D_SHADER_MACRO* FShader::GetLightingModelShaderMacro(EViewMode InViewMode)
+{
+	switch (InViewMode)
+	{
+	case EViewMode::Lit_Gouraud:
+		return Defines_Gouraud;
+	case EViewMode::Lit_Lambert:
+		return Defines_Lambert;
+	case EViewMode::Lit_Phong:
+		return Defines_Phong;
+	case EViewMode::Unlit:
+	default:
+		return Defines_Unlit;
+	}
+}
 
 FShader::FShader(FShader&& Other) noexcept
 	: VertexShader(Other.VertexShader)
@@ -63,12 +106,22 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 {
 	Release();
 
+	const D3D_SHADER_MACRO* ShaderDefines = InDefines;
+	if (!ShaderDefines && InFilePath)
+	{
+		constexpr std::wstring_view UberLitPath = L"Shaders/UberLit.hlsl";
+		if (std::wstring_view(InFilePath) == UberLitPath)
+		{
+			ShaderDefines = GetLightingModelShaderMacro(GLightingViewMode);
+		}
+	}
+
 	ID3DBlob* vertexShaderCSO = nullptr;
 	ID3DBlob* pixelShaderCSO = nullptr;
 	ID3DBlob* errorBlob = nullptr;
 
 	// Vertex Shader 컴파일
-	HRESULT hr = D3DCompileFromFile(InFilePath, InDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InVSEntryPoint, "vs_5_0", 0, 0, &vertexShaderCSO, &errorBlob);
+    HRESULT hr = D3DCompileFromFile(InFilePath, ShaderDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InVSEntryPoint, "vs_5_0", 0, 0, &vertexShaderCSO, &errorBlob);
 	if (FAILED(hr))
 	{
 		if (errorBlob)
@@ -80,7 +133,7 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 	}
 
 	// Pixel Shader 컴파일
-	hr = D3DCompileFromFile(InFilePath, InDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InPSEntryPoint, "ps_5_0", 0, 0, &pixelShaderCSO, &errorBlob);
+ hr = D3DCompileFromFile(InFilePath, ShaderDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InPSEntryPoint, "ps_5_0", 0, 0, &pixelShaderCSO, &errorBlob);
 	if (FAILED(hr))
 	{
 		if (errorBlob)

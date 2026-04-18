@@ -1,6 +1,25 @@
 ﻿#include "ShaderManager.h"
 #include "Render/Types/VertexTypes.h"
 
+namespace
+{
+uint32 ToStaticMeshLightingShaderIndex(EViewMode InViewMode)
+{
+	switch (InViewMode)
+	{
+	case EViewMode::Lit_Gouraud:
+		return 0;
+	case EViewMode::Lit_Lambert:
+		return 1;
+	case EViewMode::Lit_Phong:
+		return 2;
+	case EViewMode::Unlit:
+	default:
+		return 3;
+	}
+}
+}
+
 void FShaderManager::Initialize(ID3D11Device* InDevice)
 {
 	if (bIsInitialized) return;
@@ -14,8 +33,45 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 	Shaders[(uint32)EShaderType::Editor].Create(InDevice, L"Shaders/Editor.hlsl",
 		"VS", "PS", FVertexInputLayout, ARRAYSIZE(FVertexInputLayout));
 
-	Shaders[(uint32)EShaderType::StaticMesh].Create(InDevice, L"Shaders/StaticMeshShader.hlsl",
-		"VS", "PS", FVertexPNCTInputLayout, ARRAYSIZE(FVertexPNCTInputLayout));
+	Shaders[(uint32)EShaderType::StaticMesh].Create(InDevice, L"Shaders/UberLit.hlsl",
+     "VS", "PS", FVertexPNCTInputLayout, ARRAYSIZE(FVertexPNCTInputLayout),
+		FShader::GetLightingModelShaderMacro(EViewMode::Unlit));
+
+	StaticMeshLightingShaders[ToStaticMeshLightingShaderIndex(EViewMode::Lit_Gouraud)].Create(
+		InDevice,
+		L"Shaders/UberLit.hlsl",
+		"VS",
+		"PS",
+		FVertexPNCTInputLayout,
+		ARRAYSIZE(FVertexPNCTInputLayout),
+		FShader::GetLightingModelShaderMacro(EViewMode::Lit_Gouraud));
+
+	StaticMeshLightingShaders[ToStaticMeshLightingShaderIndex(EViewMode::Lit_Lambert)].Create(
+		InDevice,
+		L"Shaders/UberLit.hlsl",
+		"VS",
+		"PS",
+		FVertexPNCTInputLayout,
+		ARRAYSIZE(FVertexPNCTInputLayout),
+		FShader::GetLightingModelShaderMacro(EViewMode::Lit_Lambert));
+
+	StaticMeshLightingShaders[ToStaticMeshLightingShaderIndex(EViewMode::Lit_Phong)].Create(
+		InDevice,
+		L"Shaders/UberLit.hlsl",
+		"VS",
+		"PS",
+		FVertexPNCTInputLayout,
+		ARRAYSIZE(FVertexPNCTInputLayout),
+		FShader::GetLightingModelShaderMacro(EViewMode::Lit_Phong));
+
+	StaticMeshLightingShaders[ToStaticMeshLightingShaderIndex(EViewMode::Unlit)].Create(
+		InDevice,
+		L"Shaders/UberLit.hlsl",
+		"VS",
+		"PS",
+		FVertexPNCTInputLayout,
+		ARRAYSIZE(FVertexPNCTInputLayout),
+		FShader::GetLightingModelShaderMacro(EViewMode::Unlit));
 
 	Shaders[(uint32)EShaderType::Decal].Create(InDevice, L"Shaders/Decal.hlsl",
 		"VS", "PS", FVertexInputLayout, ARRAYSIZE(FVertexInputLayout));
@@ -67,6 +123,12 @@ void FShaderManager::Release()
 	{
 		Shaders[i].Release();
 	}
+
+	for (uint32 i = 0; i < StaticMeshLightingShaderCount; ++i)
+	{
+		StaticMeshLightingShaders[i].Release();
+	}
+
 	bIsInitialized = false;
 }
 
@@ -78,4 +140,9 @@ FShader* FShaderManager::GetShader(EShaderType InType)
 		return &Shaders[Idx];
 	}
 	return nullptr;
+}
+
+FShader* FShaderManager::GetStaticMeshShader(EViewMode InViewMode)
+{
+	return &StaticMeshLightingShaders[ToStaticMeshLightingShaderIndex(InViewMode)];
 }

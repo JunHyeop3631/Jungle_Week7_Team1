@@ -1,5 +1,6 @@
-#pragma once
+﻿#pragma once
 #include "Render/Types/RenderTypes.h"
+#include "Render/Types/ViewTypes.h"
 #include "Core/CoreTypes.h"
 
 class FShader
@@ -7,6 +8,11 @@ class FShader
 public:
 	FShader() = default;
 	~FShader() { Release(); }
+
+	static void SetCurrentLightingViewMode(EViewMode InViewMode);
+	static EViewMode GetCurrentLightingViewMode();
+	static bool IsLightingModelViewMode(EViewMode InViewMode);
+	static const D3D_SHADER_MACRO* GetLightingModelShaderMacro(EViewMode InViewMode);
 
 	FShader(const FShader&) = delete;
 	FShader& operator=(const FShader&) = delete;

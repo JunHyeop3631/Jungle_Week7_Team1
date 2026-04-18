@@ -482,26 +482,35 @@ bool FObjImporter::ParseMtl(const FString& MtlFilePath, TArray<FObjMaterialInfo>
 
 FVector FObjImporter::RemapPosition(const FVector& ObjPos, EForwardAxis Axis)
 {
-	// OBJ 원본 좌표 (Ox, Oy, Oz) → 엔진 (Ex, Ey, Ez)
-	// 엔진: X=Forward, Y=Right, Z=Up
-	// OBJ 기본: Y-up 우수 좌표계
+ // OBJ 원본 좌표계를 Unreal 축(+X Forward, +Y Right, +Z Up)으로 투영한다.
+	// ForwardAxis는 "원본 데이터에서 Forward가 어느 축인지"를 의미한다.
+	FVector SourceForward;
 	switch (Axis)
 	{
-	case EForwardAxis::X:    // OBJ +X → Engine Forward(+X)
-		return FVector(ObjPos.X, ObjPos.Z, ObjPos.Y);
-	case EForwardAxis::NegX: // OBJ -X → Engine Forward(+X)
-		return FVector(-ObjPos.X, -ObjPos.Z, ObjPos.Y);
-	case EForwardAxis::Y:    // OBJ +Y → Engine Forward(+X)
-		return FVector(ObjPos.Y, ObjPos.X, ObjPos.Z);
-	case EForwardAxis::NegY: // OBJ -Y → Engine Forward(+X) — 블렌더 기본
-		return FVector(-ObjPos.Y, -ObjPos.X, ObjPos.Z);
-	case EForwardAxis::Z:    // OBJ +Z → Engine Forward(+X)
-		return FVector(ObjPos.Z, ObjPos.X, ObjPos.Y);
-	case EForwardAxis::NegZ: // OBJ -Z → Engine Forward(+X) — OBJ 기본 (Y-up, -Z forward)
-		return FVector(-ObjPos.Z, ObjPos.X, ObjPos.Y);
-	default:
-		return FVector(ObjPos.X, ObjPos.Z, ObjPos.Y);
+	case EForwardAxis::X:    SourceForward = FVector(1.0f, 0.0f, 0.0f); break;
+	case EForwardAxis::NegX: SourceForward = FVector(-1.0f, 0.0f, 0.0f); break;
+	case EForwardAxis::Y:    SourceForward = FVector(0.0f, 1.0f, 0.0f); break;
+	case EForwardAxis::NegY: SourceForward = FVector(0.0f, -1.0f, 0.0f); break;
+	case EForwardAxis::Z:    SourceForward = FVector(0.0f, 0.0f, 1.0f); break;
+	case EForwardAxis::NegZ: SourceForward = FVector(0.0f, 0.0f, -1.0f); break;
+	default:                 SourceForward = FVector(0.0f, -1.0f, 0.0f); break;
 	}
+
+	// 기본은 Blender와 동일하게 Z-up을 가정.
+	// 단, Forward가 ±Z면 보조 Up을 Y로 바꿔 직교 기저를 만든다.
+	FVector SourceUp(0.0f, 0.0f, 1.0f);
+	if (std::abs(SourceForward.Dot(SourceUp)) > 0.9999f)
+	{
+		SourceUp = FVector(0.0f, 1.0f, 0.0f);
+	}
+
+	const FVector SourceRight = FVector::Cross(SourceUp, SourceForward).Normalized();
+	const FVector SourceOrthoUp = FVector::Cross(SourceForward, SourceRight).Normalized();
+
+	return FVector(
+		ObjPos.Dot(SourceForward),
+		ObjPos.Dot(SourceRight),
+		ObjPos.Dot(SourceOrthoUp));
 }
 
 bool FObjImporter::Convert(const FObjInfo& ObjInfo, const TArray<FObjMaterialInfo>& MtlInfos, const FImportOptions& Options, FStaticMesh& OutMesh, TArray<FStaticMaterial>& OutMaterials)
@@ -681,6 +690,10 @@ bool FObjImporter::Convert(const FObjInfo& ObjInfo, const TArray<FObjMaterialInf
 			FVector Edge1 = P1 - P0;
 			FVector Edge2 = P2 - P0;
 			FVector FaceNormal = Edge1.Cross(Edge2).Normalized();
+			if (Options.WindingOrder == EWindingOrder::CCW_to_CW)
+			{
+				FaceNormal = FaceNormal * -1.0f;
+			}
 
 			for (int j = 0; j < 3; ++j)
 			{

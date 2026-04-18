@@ -61,5 +61,5 @@ inline D3D11_INPUT_ELEMENT_DESC FVertexPNCTInputLayout[] =
 	{ "NORMAL",    0, DXGI_FORMAT_R32G32B32_FLOAT,    0, static_cast<uint32>(offsetof(FVertexPNCT, Normal)),   D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "TANGENT",   0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, static_cast<uint32>(offsetof(FVertexPNCT, Tangent)),  D3D11_INPUT_PER_VERTEX_DATA, 0 },
 	{ "COLOR",     0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, static_cast<uint32>(offsetof(FVertexPNCT, Color)),    D3D11_INPUT_PER_VERTEX_DATA, 0 },
-	{ "TEXTCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,       0, static_cast<uint32>(offsetof(FVertexPNCT, UV)),       D3D11_INPUT_PER_VERTEX_DATA, 0 },
+	{ "TEXCOORD",  0, DXGI_FORMAT_R32G32_FLOAT,       0, static_cast<uint32>(offsetof(FVertexPNCT, UV)),       D3D11_INPUT_PER_VERTEX_DATA, 0 },
 };

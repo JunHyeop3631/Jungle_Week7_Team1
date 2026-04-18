@@ -21,7 +21,7 @@ struct VS_Input_PNCT
     float3 normal : NORMAL;
     float4 tangent : TANGENT;
     float4 color : COLOR;
-    float2 texcoord : TEXTCOORD;
+    float2 texcoord : TEXCOORD;
 };
 
 // FTextureVertex (Position + TexCoord)
@@ -63,7 +63,7 @@ struct PS_Input_Full
     float3 normal   : NORMAL;
     float4 tangent  : TANGENT;
     float4 color    : COLOR;
-    float2 texcoord : TEXTCOORD;
+    float2 texcoord : TEXCOORD0;
     float3 worldPos : TEXCOORD1;
 };
 

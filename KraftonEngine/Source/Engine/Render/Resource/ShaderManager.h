@@ -39,10 +39,13 @@ public:
 	void Release();
 
 	FShader* GetShader(EShaderType InType);
+	FShader* GetStaticMeshShader(EViewMode InViewMode);
 
 private:
 	FShaderManager() = default;
+	static constexpr uint32 StaticMeshLightingShaderCount = 4;
 
 	FShader Shaders[(uint32)EShaderType::MAX];
+    FShader StaticMeshLightingShaders[StaticMeshLightingShaderCount];
 	bool bIsInitialized = false;
 };

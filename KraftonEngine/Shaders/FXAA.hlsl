@@ -6,7 +6,7 @@
 Texture2D SceneColor : register(t0);
 SamplerState Sampler : register(s0);
 
-// ── FXAA 전용 Constant Buffer (기존 b0~b4 사용 중이므로 b5 할당) ──
+// ── FXAA 전용 Constant Buffer ──
 cbuffer FXAAParams : register(b9)
 {
     float2 TexelSize; // 1.0f / ViewportWidth, 1.0f / ViewportHeight
