@@ -245,6 +245,7 @@ struct FBillboardConstants
 	const FTextureResource* Texture = nullptr;
 	float Width  = 1.0f;
 	float Height = 1.0f;
+	FVector4 Color = FVector4(1.f, 1.f, 1.f, 1.f);
 };
 
 // ============================================================
