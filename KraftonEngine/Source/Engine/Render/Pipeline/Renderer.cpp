@@ -1062,10 +1062,9 @@ void FRenderer::EnsurePostProcessTargets(const FRenderBus& Bus)
 	ReleasePostProcessTargets();
 
 	ID3D11Device* D3DDevice = Device.GetDevice();
-	if (!D3DDevice)
-	{
-		return;
-	}
+	if (!D3DDevice) return;
+
+	Resources.CreateLightCullingBuffers(D3DDevice, Width, Height);
 
 	D3D11_TEXTURE2D_DESC ColorDesc = {};
 	ColorDesc.Width = Width;
@@ -1107,6 +1106,8 @@ void FRenderer::ReleasePostProcessTargets()
 	SafeRelease(OutlineMaskSRV);
 	SafeRelease(OutlineMaskRTV);
 	SafeRelease(OutlineMaskTexture);
+
+	Resources.ReleaseLightCullingBuffers();
 
 	PostTargetWidth = 0;
 	PostTargetHeight = 0;

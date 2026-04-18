@@ -121,8 +121,8 @@ struct FPickingConstants
 	float _pad[3] = { 0.0f, 0.0f, 0.0f };
 };
 
-constexpr uint32 NUM_POINT_LIGHT = 4;
-constexpr uint32 NUM_SPOT_LIGHT = 4;
+constexpr uint32 NUM_POINT_LIGHT = 1024;
+constexpr uint32 NUM_SPOT_LIGHT = 1024;
 constexpr uint32 TILE_SIZE = 16;
 
 struct FAmbientLightInfo
