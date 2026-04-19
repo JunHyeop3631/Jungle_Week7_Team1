@@ -27,6 +27,8 @@ enum class EShaderType : uint32
 	IDPickBillboard,
 	IDPickStaticMesh,
 	IDPickDebugVisualize,
+	LightCullingCS_Point,
+	LightCullingCS_Spot,
 	MAX,
 };
 

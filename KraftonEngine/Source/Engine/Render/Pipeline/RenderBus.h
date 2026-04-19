@@ -68,8 +68,13 @@ public:
 	const FVector& GetWireframeColor() const { return WireframeColor; }
 	void SetWireframeColor(const FVector& InColor) { WireframeColor = InColor; }
 
-	void SetLightingConstants(const FLightingConstants& InConstants) { LightingConstants = InConstants; }
+	void SetLightingData(const FCollectedLightData& InConstants);
 	const FLightingConstants& GetLightingConstants() const { return LightingConstants; }
+	void AddPointLight(const FPointLightInfo& Light) { PointLights.push_back(Light); }
+	void AddSpotLight(const FSpotLightInfo& Light) { SpotLights.push_back(Light); }
+	const TArray<FPointLightInfo>& GetPointLights() const { return PointLights; }
+	const TArray<FSpotLightInfo>& GetSpotLights() const { return SpotLights; }
+
 
 	const float GetViewportWidth() const { return viewportWidth; }
 	const float GetViewportHeight() const { return viewportHeight; }
@@ -109,6 +114,8 @@ private:
 	FSceneEffectConstants SceneEffectConstants = {};
 	FFogPostProcessConstants FogPostProcessConstants = {};
 	FLightingConstants LightingConstants = {};
+	TArray<FPointLightInfo> PointLights;
+	TArray<FSpotLightInfo> SpotLights;
 
 	FMatrix View;
 	FMatrix Proj;

@@ -101,13 +101,10 @@ FAmbientLightSceneProxy::FAmbientLightSceneProxy(UAmbientLightComponent* InCompo
 {
 }
 
-void FAmbientLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult)
+void FAmbientLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult)
 {
-	if (Context.bHasAmbient)
-	{
-		return;
-	}
-	OutResult.Ambient.LightColor = BuildLightColor(this);
+	if (Context.bHasAmbient) return;
+	OutResult.Constants.Ambient.LightColor = BuildLightColor(this);
 	Context.bHasAmbient = true;
 }
 
@@ -116,14 +113,14 @@ FDirectionalLightSceneProxy::FDirectionalLightSceneProxy(UDirectionalLightCompon
 {
 }
 
-void FDirectionalLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult)
+void FDirectionalLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult)
 {
 	if (Context.bHasDirectional)
 	{
 		return;
 	}
-	OutResult.Directional.LightColor = BuildLightColor(this);
-	OutResult.Directional.Direction = BuildLightDirection(this);
+	OutResult.Constants.Directional.LightColor = BuildLightColor(this);
+	OutResult.Constants.Directional.Direction = BuildLightDirection(this);
 	Context.bHasDirectional = true;
 }
 
@@ -163,18 +160,15 @@ void FPointLightSceneProxy::UpdateLightData()
 	CachedFalloffExponent = PointLight->GetLightFalloffExponent();
 }
 
-void FPointLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult)
+void FPointLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult)
 {
-	if (Context.PointCount >= NUM_POINT_LIGHT)
-	{
-		return;
-	}
-
-	FPointLightInfo& PointInfo = OutResult.PointLights[Context.PointCount++];
+	FPointLightInfo PointInfo;
 	PointInfo.LightColor = BuildLightColor(this);
 	PointInfo.Position = BuildLightPosition(this);
 	PointInfo.AttenuationRadius = CachedAttenuationRadius;
 	PointInfo.FalloffExponent = CachedFalloffExponent;
+
+	OutResult.PointLights.push_back(PointInfo);
 }
 
 FSpotLightSceneProxy::FSpotLightSceneProxy(USpotLightComponent* InComponent)
@@ -196,18 +190,15 @@ void FSpotLightSceneProxy::UpdateLightData()
 	CachedOuterConeAngle = SpotLight->GetOuterConeAngle();
 }
 
-void FSpotLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FLightingConstants& OutResult)
+void FSpotLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult)
 {
-	if (Context.SpotCount >= NUM_SPOT_LIGHT)
-	{
-		return;;
-	}
-
-	FSpotLightInfo& SpotInfo = OutResult.SpotLights[Context.SpotCount++];
+	FSpotLightInfo SpotInfo;
 	SpotInfo.LightColor = BuildLightColor(this);
 	SpotInfo.Position = BuildLightPosition(this);
 	SpotInfo.Direction = BuildLightDirection(this);
 	SpotInfo.AttenuationRadius = CachedAttenuationRadius;
 	SpotInfo.InnerConeAngle = DegreesToConeCos(CachedInnerConeAngle);
 	SpotInfo.OuterConeAngle = DegreesToConeCos(CachedOuterConeAngle);
+
+	OutResult.SpotLights.push_back(SpotInfo);
 }

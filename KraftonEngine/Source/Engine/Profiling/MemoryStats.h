@@ -24,6 +24,9 @@ public:
 	static void AddVertexShaderMemory(uint64 Size) { VertexShaderMemory += Size; }
 	static void SubVertexShaderMemory(uint64 Size) { VertexShaderMemory -= Size; }
 
+	static void AddComputeShaderMemory(uint64 Size) { ComputeShaderMemory += Size; }
+	static void SubComputeShaderMemory(uint64 Size) { ComputeShaderMemory -= Size; }
+
 	// Texture
 	static void AddTextureMemory(uint64 Size) { TextureMemory += Size; }
 	static void SubTextureMemory(uint64 Size) { TextureMemory -= Size; }
@@ -43,6 +46,7 @@ public:
 	static uint32 GetTotalAllocationCount() { return TotalAllocationCount; }
 	static uint64 GetPixelShaderMemory() { return PixelShaderMemory; }
 	static uint64 GetVertexShaderMemory() { return VertexShaderMemory; }
+	static uint64 GetComputeShaderMemory() { return ComputeShaderMemory; }
 	static uint64 GetTextureMemory() { return TextureMemory; }
 	static uint64 GetVertexBufferMemory() { return VertexBufferMemory; }
 	static uint64 GetIndexBufferMemory() { return IndexBufferMemory; }
@@ -55,6 +59,7 @@ private:
 	static uint32 TotalAllocationCount;
 	static uint64 PixelShaderMemory;
 	static uint64 VertexShaderMemory;
+	static uint64 ComputeShaderMemory;
 	static uint64 TextureMemory;
 	static uint64 VertexBufferMemory;
 	static uint64 IndexBufferMemory;

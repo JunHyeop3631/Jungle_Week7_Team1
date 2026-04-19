@@ -325,6 +325,11 @@ void FRenderer::Render(const FRenderBus& InRenderBus)
 		UpdateLightingBuffer(Context, InRenderBus);
 	}
 
+	ExecuteDepthPrePass(InRenderBus, Context);
+	ExecuteLightCullingCS(InRenderBus, Context);
+	RestoreMainRenderTargets(InRenderBus, Context);
+	BindLightCullingResults(Context);
+
 	// 패스 실행 순서:
 	// - Grid/Axis가 PostProcess/Font 위를 덮지 않도록 Grid를 먼저 그린다.
 	// - SelectionMask는 PostProcess 내부에서만 실행한다.
@@ -423,7 +428,7 @@ void FRenderer::InitializePassRenderStates()
 	auto& S = PassRenderStates;
 
 	//								DepthStencil							Blend						Rasterizer							Topology								WireframeAware
-	S[(uint32)E::Opaque] =			{ EDepthStencilState::Default,			EBlendState::Opaque,		ERasterizerState::SolidBackCull,	D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,	true };
+	S[(uint32)E::Opaque] =			{ EDepthStencilState::DepthReadOnly,			EBlendState::Opaque,		ERasterizerState::SolidBackCull,	D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,	true };
  S[(uint32)E::Decal] =			{ EDepthStencilState::NoDepth,		EBlendState::AlphaBlend,	ERasterizerState::SolidFrontCull,	D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,	true };
 	//	Outline에 대한 Masking 방해로 인해 Patch
 	
@@ -1037,6 +1042,146 @@ void FRenderer::ExecutePostProcessChain(const FRenderBus& Bus, ID3D11DeviceConte
 	Context->OMSetRenderTargets(1, &ViewportRTV, ViewportDSV);
 }
 
+void FRenderer::ExecuteDepthPrePass(const FRenderBus& Bus, ID3D11DeviceContext* Context)
+{
+	SCOPE_STAT_CAT("DepthPrePass", "4_ExecutePass");
+	GPU_SCOPE_STAT("DepthPrePass");
+
+	const auto& OpaqueProxies = Bus.GetProxies(ERenderPass::Opaque);
+	if (OpaqueProxies.empty()) return;
+
+	ID3D11RenderTargetView* NullRTV = nullptr;
+	ID3D11DepthStencilView* DSV = Bus.GetViewportDSV();
+	Context->OMSetRenderTargets(1, &NullRTV, DSV);
+
+	Device.SetDepthStencilState(EDepthStencilState::Default);
+	Device.SetBlendState(EBlendState::Opaque);
+	Device.SetRasterizerState(ERasterizerState::SolidBackCull);
+	Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	SortProxies(OpaqueProxies);
+	FDrawState State;
+
+	for (const FPrimitiveSceneProxy* RawProxy : SortedProxyBuffer)
+	{
+		const FPrimitiveSceneProxy& Proxy = *RawProxy;
+		if (!Proxy.MeshBuffer || !Proxy.MeshBuffer->IsValid()) continue;
+
+		BindShader(Proxy, Bus, Context, State);
+		Context->PSSetShader(nullptr, nullptr, 0); // DepthPrePass에서는 픽셀 셰이더를 사용하지 않음
+		BindPerObjectCB(Proxy, Context, State);
+		BindMeshBuffer(Proxy.MeshBuffer, Context, State);
+		uint32 indexCount = Proxy.MeshBuffer->GetIndexBuffer().GetIndexCount();
+		if (indexCount > 0)
+			Context->DrawIndexed(indexCount, 0, 0);
+		else
+			Context->Draw(Proxy.MeshBuffer->GetVertexBuffer().GetVertexCount(), 0);
+	}
+	ID3D11RenderTargetView* RTV = Bus.GetViewportRTV();
+	Context->OMSetRenderTargets(1, &RTV, DSV);
+}
+
+void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext* Context)
+{
+	if (Bus.GetPointLights().empty() && Bus.GetSpotLights().empty()) return;
+
+	ID3D11RenderTargetView* NullRTV = nullptr;
+	ID3D11DepthStencilView* NullDSV = nullptr;
+	Context->OMSetRenderTargets(1, &NullRTV, NullDSV);
+
+	ID3D11ShaderResourceView* NullPS_SRVs[4] = { nullptr, nullptr, nullptr, nullptr };
+	Context->PSSetShaderResources(10, 4, NullPS_SRVs);
+
+	SCOPE_STAT_CAT("LightCulling", "4_ExecutePass");
+	GPU_SCOPE_STAT("LightCullingCS");
+
+	ID3D11Buffer* b0 = Resources.FrameBuffer.GetBuffer();
+	Context->CSSetConstantBuffers(0, 1, &b0);
+
+	FConstantBuffer* LightCB = FConstantBufferPool::Get().GetBuffer(ECBSlot::Lighting, sizeof(FLightingConstants));
+	if (LightCB)
+	{
+		ID3D11Buffer* b8 = LightCB->GetBuffer();
+		Context->CSSetConstantBuffers(8, 1, &b8);
+	}
+
+	ID3D11ShaderResourceView* DepthSRV = Bus.GetViewportDepthSRV();
+	Context->CSSetShaderResources(1, 1, &DepthSRV);
+
+	ID3D11ShaderResourceView* LightDataSRVs[2] = {
+		Resources.LightCulling.PointLightDataSRV,
+		Resources.LightCulling.SpotLightDataSRV
+	};
+	Context->CSSetShaderResources(8, 2, LightDataSRVs);
+
+
+	uint32 ViewportWidth = static_cast<uint32>(Bus.GetViewportWidth());
+	uint32 ViewportHeight = static_cast<uint32>(Bus.GetViewportHeight());
+	uint32 ThreadGroupX = (ViewportWidth + 15) / 16;
+	uint32 ThreadGroupY = (ViewportHeight + 15) / 16;
+
+	// PointLight
+	if (!Bus.GetPointLights().empty())
+	{
+		FShader* PointCullingShader = FShaderManager::Get().GetShader(EShaderType::LightCullingCS_Point);
+		if (PointCullingShader)
+		{
+			PointCullingShader->BindCompute(Context);
+
+			ID3D11UnorderedAccessView* PointUAVs[2] = {
+				Resources.LightCulling.PointLightIndicesUAV,
+				Resources.LightCulling.PointLightCountsUAV
+			};
+			Context->CSSetUnorderedAccessViews(0, 2, PointUAVs, nullptr);
+
+			Context->Dispatch(ThreadGroupX, ThreadGroupY, 1);
+		}
+	}
+
+	// SpotLight
+	if (!Bus.GetSpotLights().empty())
+	{
+		FShader* SpotCullingShader = FShaderManager::Get().GetShader(EShaderType::LightCullingCS_Spot);
+		if (SpotCullingShader)
+		{
+			SpotCullingShader->BindCompute(Context);
+
+			ID3D11UnorderedAccessView* SpotUAVs[2] = {
+				Resources.LightCulling.SpotLightIndicesUAV,
+				Resources.LightCulling.SpotLightCountsUAV
+			};
+			Context->CSSetUnorderedAccessViews(0, 2, SpotUAVs, nullptr);
+
+			Context->Dispatch(ThreadGroupX, ThreadGroupY, 1);
+		}
+	}
+
+	ID3D11UnorderedAccessView* NullUAVs[2] = { nullptr, nullptr };
+	Context->CSSetUnorderedAccessViews(0, 2, NullUAVs, nullptr);
+
+	ID3D11ShaderResourceView* NullSRVs[3] = { nullptr, nullptr, nullptr };
+	Context->CSSetShaderResources(1, 1, NullSRVs);
+	Context->CSSetShaderResources(8, 2, NullSRVs);
+}
+
+void FRenderer::RestoreMainRenderTargets(const FRenderBus& Bus, ID3D11DeviceContext* Context)
+{
+	ID3D11RenderTargetView* MainRTV = Bus.GetViewportRTV();
+	ID3D11DepthStencilView* MainDSV = Bus.GetViewportDSV();
+	Context->OMSetRenderTargets(1, &MainRTV, MainDSV);
+}
+
+void FRenderer::BindLightCullingResults(ID3D11DeviceContext* Context)
+{
+	ID3D11ShaderResourceView* CullingSRVs[4] = {
+		Resources.LightCulling.PointLightIndicesSRV, // t10
+		Resources.LightCulling.PointLightCountsSRV,  // t11
+		Resources.LightCulling.SpotLightIndicesSRV,  // t12
+		Resources.LightCulling.SpotLightCountsSRV    // t13
+	};
+	Context->PSSetShaderResources(10, 4, CullingSRVs);
+}
+
 void FRenderer::EnsurePostProcessTargets(const FRenderBus& Bus)
 {
 	//	뷰포트 해상도 기준으로 post 중간 버퍼를 재생성한다.
@@ -1062,10 +1207,9 @@ void FRenderer::EnsurePostProcessTargets(const FRenderBus& Bus)
 	ReleasePostProcessTargets();
 
 	ID3D11Device* D3DDevice = Device.GetDevice();
-	if (!D3DDevice)
-	{
-		return;
-	}
+	if (!D3DDevice) return;
+
+	Resources.CreateLightCullingBuffers(D3DDevice, Width, Height);
 
 	D3D11_TEXTURE2D_DESC ColorDesc = {};
 	ColorDesc.Width = Width;
@@ -1108,6 +1252,8 @@ void FRenderer::ReleasePostProcessTargets()
 	SafeRelease(OutlineMaskRTV);
 	SafeRelease(OutlineMaskTexture);
 
+	Resources.ReleaseLightCullingBuffers();
+
 	PostTargetWidth = 0;
 	PostTargetHeight = 0;
 }
@@ -1135,23 +1281,48 @@ void FRenderer::BlitSRVToRTV(ID3D11ShaderResourceView* SourceSRV, ID3D11RenderTa
 
 void FRenderer::UpdateLightingBuffer(ID3D11DeviceContext* Context, const FRenderBus& InRenderBus)
 {
-	// 1. RenderBus로부터 조명 데이터 뭉치를 가져옵니다.
-	const FLightingConstants& LightData = InRenderBus.GetLightingConstants();
+	FLightingConstants LightData = InRenderBus.GetLightingConstants();
+	const auto& PointLights = InRenderBus.GetPointLights();
+	const auto& SpotLights = InRenderBus.GetSpotLights();
 
-	// 2. 조명 데이터용 상수 버퍼(Constant Buffer)를 가져옵니다. (ECBSlot::Lighting = 8)
+	LightData.PointLightCount = static_cast<uint32>(PointLights.size());
+	LightData.SpotLightCount = static_cast<uint32>(SpotLights.size());
+
 	FConstantBuffer* LightCB = FConstantBufferPool::Get().GetBuffer(ECBSlot::Lighting, sizeof(FLightingConstants));
-	if (!LightCB)
+	if (LightCB)
 	{
-		return; // 버퍼를 가져오지 못했을 경우 안전 종료
+		LightCB->Update(Context, &LightData, sizeof(FLightingConstants));
+		ID3D11Buffer* cb8 = LightCB->GetBuffer();
+		Context->VSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
+		Context->PSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
 	}
 
-	// 3. GPU 메모리로 데이터 업로드
-	LightCB->Update(Context, &LightData, sizeof(FLightingConstants));
-	ID3D11Buffer* cb8 = LightCB->GetBuffer();
+	if (!PointLights.empty() && Resources.LightCulling.PointLightData)
+	{
+		D3D11_MAPPED_SUBRESOURCE Mapped;
+		if (SUCCEEDED(Context->Map(Resources.LightCulling.PointLightData, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped)))
+		{
+			memcpy(Mapped.pData, PointLights.data(), sizeof(FPointLightInfo) * PointLights.size());
+			Context->Unmap(Resources.LightCulling.PointLightData, 0);
+		}
+	}
 
-	// 4. Vertex Shader와 Pixel Shader의 b8 레지스터 슬롯에 상수 버퍼를 바인딩합니다.
-	Context->VSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
-	Context->PSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
+	if (!SpotLights.empty() && Resources.LightCulling.SpotLightData)
+	{
+		D3D11_MAPPED_SUBRESOURCE Mapped;
+		if (SUCCEEDED(Context->Map(Resources.LightCulling.SpotLightData, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped)))
+		{
+			memcpy(Mapped.pData, SpotLights.data(), sizeof(FSpotLightInfo) * SpotLights.size());
+			Context->Unmap(Resources.LightCulling.SpotLightData, 0);
+		}
+	}
+
+	ID3D11ShaderResourceView* LightSRVs[2] = {
+		Resources.LightCulling.PointLightDataSRV,
+		Resources.LightCulling.SpotLightDataSRV
+	};
+	Context->VSSetShaderResources(8, 2, LightSRVs);
+	Context->PSSetShaderResources(8, 2, LightSRVs);
 }
 
 // ============================================================
@@ -1555,6 +1726,9 @@ void FRenderer::UpdateFrameBuffer(ID3D11DeviceContext* Context, const FRenderBus
 		frameConstantData.InvDeviceZToWorldZTransform2 = 1.0f / Projection.M[3][2];
 		frameConstantData.InvDeviceZToWorldZTransform3 = Projection.M[2][2] / Projection.M[3][2];
 	}
+
+	frameConstantData.ScreenWidth = InRenderBus.GetViewportWidth();
+	frameConstantData.ScreenHeight = InRenderBus.GetViewportHeight();
 
 	if (GEngine && GEngine->GetTimer())
 	{

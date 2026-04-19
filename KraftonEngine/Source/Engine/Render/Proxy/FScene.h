@@ -56,7 +56,7 @@ public:
 	FFogPostProcessConstants GetFogPostProcessConstants() const;
 
 	// --- Light ---
-	FLightingConstants GetLightingConstants() const;
+	FCollectedLightData GetLightingData() const;
 
 	// --- 선택 ---
 	void SetProxySelected(FPrimitiveSceneProxy* Proxy, bool bSelected);

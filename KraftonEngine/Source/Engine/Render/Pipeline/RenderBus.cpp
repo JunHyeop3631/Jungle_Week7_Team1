@@ -17,6 +17,8 @@ void FRenderBus::Clear()
 	OBBEntries.clear();
 	GridEntries.clear();
 	DebugLineEntries.clear();
+	PointLights.clear();
+	SpotLights.clear();
 	SceneEffectConstants = {};
 	FogPostProcessConstants = {};
 	LightingConstants = {};
@@ -110,6 +112,13 @@ void FRenderBus::SetRenderSettings(const EViewMode NewViewMode, const FShowFlags
 {
 	ViewMode = NewViewMode;
 	ShowFlags = NewShowFlags;
+}
+
+void FRenderBus::SetLightingData(const FCollectedLightData& InConstants)
+{
+	LightingConstants = InConstants.Constants;
+	PointLights = std::move(InConstants.PointLights);
+	SpotLights = std::move(InConstants.SpotLights);
 }
 
 void FRenderBus::SetViewportSize(float InWidth, float InHeight)

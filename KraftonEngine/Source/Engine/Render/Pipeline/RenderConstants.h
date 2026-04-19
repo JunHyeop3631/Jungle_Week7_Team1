@@ -82,7 +82,8 @@ struct FFrameConstants
 	FGPUFloat4x4 InverseViewProjection;
 	float InvDeviceZToWorldZTransform2;
 	float InvDeviceZToWorldZTransform3;
-	float _framePad2[2];
+	float ScreenWidth;
+	float ScreenHeight;
 };
 
 static_assert(sizeof(FGPUFloat4x4) == 64, "FGPUFloat4x4 must match HLSL float4x4 size.");
@@ -121,8 +122,9 @@ struct FPickingConstants
 	float _pad[3] = { 0.0f, 0.0f, 0.0f };
 };
 
-constexpr uint32 NUM_POINT_LIGHT = 4;
-constexpr uint32 NUM_SPOT_LIGHT = 4;
+constexpr uint32 NUM_POINT_LIGHT = 1024;
+constexpr uint32 NUM_SPOT_LIGHT = 1024;
+constexpr uint32 TILE_SIZE = 16;
 
 struct FAmbientLightInfo
 {
@@ -160,8 +162,16 @@ struct FLightingConstants
 {
 	FAmbientLightInfo Ambient;
 	FDirectionalLightInfo Directional;
-	FPointLightInfo PointLights[NUM_POINT_LIGHT];
-	FSpotLightInfo SpotLights[NUM_SPOT_LIGHT];
+	uint32 PointLightCount = 0;
+	uint32 SpotLightCount = 0;
+	uint32 _pad[2] = {0, 0};
+};
+
+struct FCollectedLightData
+{
+	FLightingConstants Constants;
+	TArray<FPointLightInfo> PointLights;
+	TArray<FSpotLightInfo> SpotLights;
 };
 
 struct FGizmoConstants

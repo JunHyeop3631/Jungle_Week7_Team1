@@ -295,6 +295,7 @@ uint64 MemoryStats::TotalAllocationBytes = 0;
 uint32 MemoryStats::TotalAllocationCount = 0;
 uint64 MemoryStats::PixelShaderMemory = 0;
 uint64 MemoryStats::VertexShaderMemory = 0;
+uint64 MemoryStats::ComputeShaderMemory = 0;
 uint64 MemoryStats::TextureMemory = 0;
 uint64 MemoryStats::VertexBufferMemory = 0;
 uint64 MemoryStats::IndexBufferMemory = 0;

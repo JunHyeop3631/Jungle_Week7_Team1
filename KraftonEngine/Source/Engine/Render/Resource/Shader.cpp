@@ -190,6 +190,47 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 	pixelShaderCSO->Release();
 }
 
+void FShader::CreateCompute(ID3D11Device* InDevice, const wchar_t* InFilePath, const char* InCSEntryPoint,
+	const D3D_SHADER_MACRO* InDefines)
+{
+	Release();
+
+	ID3DBlob* computeShaderCSO = nullptr;
+	ID3DBlob* errorBlob = nullptr;
+
+	HRESULT hr = D3DCompileFromFile(InFilePath, InDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InCSEntryPoint, "cs_5_0", 0, 0, &computeShaderCSO, &errorBlob);
+	if (FAILED(hr))
+	{
+		if (errorBlob)
+		{
+			MessageBoxA(nullptr, (char*)errorBlob->GetBufferPointer(), "Compute Shader Compile Error", MB_OK | MB_ICONERROR);
+			errorBlob->Release();
+		}
+		return;
+	}
+
+	hr = InDevice->CreateComputeShader(computeShaderCSO->GetBufferPointer(), computeShaderCSO->GetBufferSize(), nullptr, &ComputeShader);
+	if (FAILED(hr))
+	{
+		std::cerr << "Failed to create Compute Shader (HRESULT: " << hr << ")" << std::endl;
+		computeShaderCSO->Release();
+		return;
+	}
+
+	CachedComputeShaderSize = computeShaderCSO->GetBufferSize();
+	MemoryStats::AddComputeShaderMemory(static_cast<uint32>(CachedComputeShaderSize));
+
+	computeShaderCSO->Release();
+}
+
+void FShader::BindCompute(ID3D11DeviceContext* InDeviceContext) const
+{
+	if (ComputeShader)
+	{
+		InDeviceContext->CSSetShader(ComputeShader, nullptr, 0);
+	}
+}
+
 void FShader::Release()
 {
 	if (InputLayout)
@@ -212,6 +253,14 @@ void FShader::Release()
 
 		VertexShader->Release();
 		VertexShader = nullptr;
+	}
+	if (ComputeShader)
+	{
+		MemoryStats::SubComputeShaderMemory(static_cast<uint32>(CachedComputeShaderSize));
+		CachedComputeShaderSize = 0;
+
+		ComputeShader->Release();
+		ComputeShader = nullptr;
 	}
 }
 

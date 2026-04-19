@@ -484,19 +484,10 @@ FSceneEffectConstants FScene::GetSceneEffectConstants() const
 	return Result;
 }
 
-FLightingConstants FScene::GetLightingConstants() const
+FCollectedLightData FScene::GetLightingData() const
 {
-	FLightingConstants Result = {};
-
-	/* 
-	Light 개수 체크 목적의 Context
-	bool bHasAmbient = false;
-	bool bHasDirectional = false;
-	uint32 PointCount = 0;
-	uint32 SpotCount = 0;
-	*/
+	FCollectedLightData Result = {};
 	FLightingBuildContext Context = {};
-	
 
 	for (FLightSceneProxy* Proxy : LightProxies)
 	{
@@ -506,16 +497,14 @@ FLightingConstants FScene::GetLightingConstants() const
 		}
 	}
 
-	// LightSceneProxy의 BuildContext 결과를 기준으로 실제 존재하지 않는 라이트 채널은
-	// 기본값(ambient/directional) 대신 0으로 강제해 "라이트 미배치 시 완전 암전" 동작을 보장한다.
 	if (!Context.bHasAmbient)
 	{
-		Result.Ambient.LightColor = FVector4(0.0f, 0.0f, 0.0f, 1.0f);
+		Result.Constants.Ambient.LightColor = FVector4(0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
 	if (!Context.bHasDirectional)
 	{
-		Result.Directional.LightColor = FVector4(0.0f, 0.0f, 0.0f, 1.0f);
+		Result.Constants.Directional.LightColor = FVector4(0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
 	return Result;
