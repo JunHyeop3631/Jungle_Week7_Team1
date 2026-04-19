@@ -11,6 +11,7 @@
 #include "Components/PrimitiveComponent.h"
 #include "Engine/Runtime/Engine.h"
 #include "Profiling/Timer.h"
+#include "Settings/EditorSettings.h"
 
 namespace
 {
@@ -1293,6 +1294,8 @@ void FRenderer::UpdateLightingBuffer(ID3D11DeviceContext* Context, const FRender
 
 	LightData.PointLightCount = static_cast<uint32>(PointLights.size());
 	LightData.SpotLightCount = static_cast<uint32>(SpotLights.size());
+
+	LightData.bDebugLightCulling = FEditorSettings::Get().UI.bLightCullingDebug ? 1 : 0;
 
 	FConstantBuffer* LightCB = FConstantBufferPool::Get().GetBuffer(ECBSlot::Lighting, sizeof(FLightingConstants));
 	if (LightCB)
