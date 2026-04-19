@@ -82,7 +82,8 @@ struct FFrameConstants
 	FGPUFloat4x4 InverseViewProjection;
 	float InvDeviceZToWorldZTransform2;
 	float InvDeviceZToWorldZTransform3;
-	float _framePad2[2];
+	float ScreenWidth;
+	float ScreenHeight;
 };
 
 static_assert(sizeof(FGPUFloat4x4) == 64, "FGPUFloat4x4 must match HLSL float4x4 size.");

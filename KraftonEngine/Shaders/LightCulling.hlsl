@@ -107,8 +107,8 @@ void CS_Point(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID
         FPointLightInfo light = PointLightData[i];
         float3 viewPos = mul(float4(light.Position.xyz, 1.0f), View).xyz;
 
-        if (viewPos.z - light.AttenuationRadius > maxDepthF || viewPos.z + light.AttenuationRadius < minDepthF)
-            continue;
+        /*if (viewPos.z - light.AttenuationRadius > maxDepthF || viewPos.z + light.AttenuationRadius < minDepthF)
+            continue;*/
 
         bool bInFrustum = true;
         for (int p = 0; p < 4; p++)
@@ -160,8 +160,8 @@ void CS_Spot(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID,
         FSpotLightInfo light = SpotLightData[i];
         float3 viewPos = mul(float4(light.Position.xyz, 1.0f), View).xyz;
         
-        if (viewPos.z - light.AttenuationRadius > maxDepthF || viewPos.z + light.AttenuationRadius < minDepthF)
-            continue;
+        /*if (viewPos.z - light.AttenuationRadius > maxDepthF || viewPos.z + light.AttenuationRadius < minDepthF)
+            continue;*/
 
         bool bInFrustum = true;
         for (int p = 0; p < 4; p++)

@@ -23,7 +23,9 @@ cbuffer FrameBuffer : register(b0)
     
     float InvDeviceZToWorldZTransform2;
     float InvDeviceZToWorldZTransform3;
-    float _framePad2[2];
+
+    float ScreenWidth;
+    float ScreenHeight;
 }
 
 struct LocalTintEffectData
@@ -148,5 +150,10 @@ cbuffer LightingBuffer : register(b8)
 
 StructuredBuffer<FPointLightInfo> PointLightData : register(t8);
 StructuredBuffer<FSpotLightInfo> SpotLightData : register(t9);
+
+StructuredBuffer<uint> PointLightIndices : register(t10);
+StructuredBuffer<uint> PointLightCounts : register(t11);
+StructuredBuffer<uint> SpotLightIndices : register(t12);
+StructuredBuffer<uint> SpotLightCounts : register(t13);
 
 #endif // CONSTANT_BUFFERS_HLSL

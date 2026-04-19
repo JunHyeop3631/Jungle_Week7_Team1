@@ -9,7 +9,8 @@ APointLight::APointLight()
 {
 	PointLight = AddComponent<UPointLightComponent>();
 	SetRootComponent(PointLight);
-
+	/*PointLight->SetIntensity(3.0f);
+	PointLight->SetAttenuationRadius(5.0f);*/
 	SpriteComponent = AddComponent<UBillboardComponent>();
 	SpriteComponent->AttachToComponent(PointLight);
 	SpriteComponent->SetTexture(FName("PointLightIcon"));

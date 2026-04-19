@@ -325,9 +325,25 @@ void FRenderer::Render(const FRenderBus& InRenderBus)
 		UpdateLightingBuffer(Context, InRenderBus);
 	}
 
-	/*ExecuteDepthPrePass(InRenderBus, Context);
-	ExecuteLightCullingCS(InRenderBus, Context);*/
+	ExecuteDepthPrePass(InRenderBus, Context);
 
+	ID3D11RenderTargetView* NullRTV = nullptr;
+	ID3D11DepthStencilView* NullDSV = nullptr;
+	Context->OMSetRenderTargets(1, &NullRTV, NullDSV);
+
+	ExecuteLightCullingCS(InRenderBus, Context);
+
+	ID3D11RenderTargetView* MainRTV = InRenderBus.GetViewportRTV();
+	ID3D11DepthStencilView* MainDSV = InRenderBus.GetViewportDSV();
+	Context->OMSetRenderTargets(1, &MainRTV, MainDSV);
+
+	ID3D11ShaderResourceView* CullingSRVs[4] = {
+		Resources.LightCulling.PointLightIndicesSRV, // t10
+		Resources.LightCulling.PointLightCountsSRV,  // t11
+		Resources.LightCulling.SpotLightIndicesSRV,  // t12
+		Resources.LightCulling.SpotLightCountsSRV    // t13
+	};
+	Context->PSSetShaderResources(10, 4, CullingSRVs);
 	// 패스 실행 순서:
 	// - Grid/Axis가 PostProcess/Font 위를 덮지 않도록 Grid를 먼저 그린다.
 	// - SelectionMask는 PostProcess 내부에서만 실행한다.
@@ -426,7 +442,7 @@ void FRenderer::InitializePassRenderStates()
 	auto& S = PassRenderStates;
 
 	//								DepthStencil							Blend						Rasterizer							Topology								WireframeAware
-	S[(uint32)E::Opaque] =			{ EDepthStencilState::Default,			EBlendState::Opaque,		ERasterizerState::SolidBackCull,	D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,	true };
+	S[(uint32)E::Opaque] =			{ EDepthStencilState::DepthReadOnly,			EBlendState::Opaque,		ERasterizerState::SolidBackCull,	D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,	true };
  S[(uint32)E::Decal] =			{ EDepthStencilState::NoDepth,		EBlendState::AlphaBlend,	ERasterizerState::SolidFrontCull,	D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST,	true };
 	//	Outline에 대한 Masking 방해로 인해 Patch
 	
@@ -1052,7 +1068,10 @@ void FRenderer::ExecuteDepthPrePass(const FRenderBus& Bus, ID3D11DeviceContext* 
 	ID3D11DepthStencilView* DSV = Bus.GetViewportDSV();
 	Context->OMSetRenderTargets(1, &NullRTV, DSV);
 
-	ApplyPassRenderState(ERenderPass::Opaque, Context, Bus.GetViewMode());
+	Device.SetDepthStencilState(EDepthStencilState::Default);
+	Device.SetBlendState(EBlendState::Opaque);
+	Device.SetRasterizerState(ERasterizerState::SolidBackCull);
+	Context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	SortProxies(OpaqueProxies);
 	FDrawState State;
@@ -1080,15 +1099,36 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 {
 	if (Bus.GetPointLights().empty() && Bus.GetSpotLights().empty()) return;
 
+	ID3D11ShaderResourceView* NullPS_SRVs[4] = { nullptr, nullptr, nullptr, nullptr };
+	Context->PSSetShaderResources(10, 4, NullPS_SRVs);
+
 	SCOPE_STAT_CAT("LightCulling", "4_ExecutePass");
 	GPU_SCOPE_STAT("LightCullingCS");
+
+	ID3D11Buffer* b0 = Resources.FrameBuffer.GetBuffer();
+	Context->CSSetConstantBuffers(0, 1, &b0);
+
+	FConstantBuffer* LightCB = FConstantBufferPool::Get().GetBuffer(ECBSlot::Lighting, sizeof(FLightingConstants));
+	if (LightCB)
+	{
+		ID3D11Buffer* b8 = LightCB->GetBuffer();
+		Context->CSSetConstantBuffers(8, 1, &b8);
+	}
+
+	ID3D11ShaderResourceView* DepthSRV = Bus.GetViewportDepthSRV();
+	Context->CSSetShaderResources(1, 1, &DepthSRV);
+
+	ID3D11ShaderResourceView* LightDataSRVs[2] = {
+		Resources.LightCulling.PointLightDataSRV,
+		Resources.LightCulling.SpotLightDataSRV
+	};
+	Context->CSSetShaderResources(8, 2, LightDataSRVs);
+
 
 	uint32 ViewportWidth = static_cast<uint32>(Bus.GetViewportWidth());
 	uint32 ViewportHeight = static_cast<uint32>(Bus.GetViewportHeight());
 	uint32 ThreadGroupX = (ViewportWidth + 15) / 16;
 	uint32 ThreadGroupY = (ViewportHeight + 15) / 16;
-
-	ID3D11ShaderResourceView* DepthSRV = Bus.GetViewportDepthSRV();
 
 	// PointLight
 	if (!Bus.GetPointLights().empty())
@@ -1098,10 +1138,10 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 		{
 			PointCullingShader->BindCompute(Context);
 
-			ID3D11ShaderResourceView* PointSRVs[2] = { Resources.LightCulling.PointLightDataSRV, DepthSRV };
-			Context->CSSetShaderResources(0, 2, PointSRVs);
-
-			ID3D11UnorderedAccessView* PointUAVs[2] = { Resources.LightCulling.PointLightIndicesUAV, Resources.LightCulling.PointLightCountsUAV };
+			ID3D11UnorderedAccessView* PointUAVs[2] = {
+				Resources.LightCulling.PointLightIndicesUAV,
+				Resources.LightCulling.PointLightCountsUAV
+			};
 			Context->CSSetUnorderedAccessViews(0, 2, PointUAVs, nullptr);
 
 			Context->Dispatch(ThreadGroupX, ThreadGroupY, 1);
@@ -1116,10 +1156,10 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 		{
 			SpotCullingShader->BindCompute(Context);
 
-			ID3D11ShaderResourceView* SpotSRVs[2] = { Resources.LightCulling.SpotLightDataSRV, DepthSRV };
-			Context->CSSetShaderResources(0, 2, SpotSRVs);
-
-			ID3D11UnorderedAccessView* SpotUAVs[2] = { Resources.LightCulling.SpotLightIndicesUAV, Resources.LightCulling.SpotLightCountsUAV };
+			ID3D11UnorderedAccessView* SpotUAVs[2] = {
+				Resources.LightCulling.SpotLightIndicesUAV,
+				Resources.LightCulling.SpotLightCountsUAV
+			};
 			Context->CSSetUnorderedAccessViews(0, 2, SpotUAVs, nullptr);
 
 			Context->Dispatch(ThreadGroupX, ThreadGroupY, 1);
@@ -1129,8 +1169,9 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 	ID3D11UnorderedAccessView* NullUAVs[2] = { nullptr, nullptr };
 	Context->CSSetUnorderedAccessViews(0, 2, NullUAVs, nullptr);
 
-	ID3D11ShaderResourceView* NullSRVs[2] = { nullptr, nullptr };
-	Context->CSSetShaderResources(0, 2, NullSRVs);
+	ID3D11ShaderResourceView* NullSRVs[3] = { nullptr, nullptr, nullptr };
+	Context->CSSetShaderResources(1, 1, NullSRVs);
+	Context->CSSetShaderResources(8, 2, NullSRVs);
 }
 
 void FRenderer::EnsurePostProcessTargets(const FRenderBus& Bus)
@@ -1677,6 +1718,9 @@ void FRenderer::UpdateFrameBuffer(ID3D11DeviceContext* Context, const FRenderBus
 		frameConstantData.InvDeviceZToWorldZTransform2 = 1.0f / Projection.M[3][2];
 		frameConstantData.InvDeviceZToWorldZTransform3 = Projection.M[2][2] / Projection.M[3][2];
 	}
+
+	frameConstantData.ScreenWidth = InRenderBus.GetViewportWidth();
+	frameConstantData.ScreenHeight = InRenderBus.GetViewportHeight();
 
 	if (GEngine && GEngine->GetTimer())
 	{

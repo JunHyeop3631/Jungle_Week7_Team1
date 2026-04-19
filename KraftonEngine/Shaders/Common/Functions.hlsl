@@ -49,7 +49,9 @@ struct LightingResult
     float3 Specular;
 };
 
-//Lighting 관련 함수들
+// ============================================================
+// Directional Light (전역 조명이므로 컬링 불필요)
+// ============================================================
 LightingResult ComputeDirectionalLight_BlinnPhong(float3 cameraPos, float3 worldPos, float3 worldNormal, float exp)
 {
     LightingResult result = (LightingResult) 0;
@@ -75,89 +77,6 @@ LightingResult ComputeDirectionalLight_BlinnPhong(float3 cameraPos, float3 world
     return result;
 }
 
-LightingResult ComputePointLight_BlinnPhong(
-    float3 cameraPos,
-    float3 worldPos,
-    float3 worldNormal,
-    float shininess)
-{
-    LightingResult result = (LightingResult) 0;
-    float3 diffuse = 0.0f;
-    float3 specular = 0.0f;
-
-    float3 N = normalize(worldNormal);
-    float3 V = normalize(cameraPos - worldPos);
-    
-    for (uint i = 0; i < PointLightCount; ++i)
-    {
-        // 수정: Position.xyz 사용 [cite: 18]
-        float3 toLight = PointLightData[i].Position.xyz - worldPos;
-        float dist = length(toLight);
-        float3 L = toLight / max(dist, 0.0001f);
-
-        float NdotL = max(dot(N, L), 0.0f);
-        float distanceAtten = saturate(1.0f - dist / PointLightData[i].AttenuationRadius);
-        distanceAtten = pow(distanceAtten, PointLightData[i].FalloffExponent);
-        
-        float atten = distanceAtten;
-        diffuse += PointLightData[i].LightColor.rgb * NdotL * atten;
-
-        if (NdotL > 0.0f && atten > 0.0f)
-        {
-            float3 H = normalize(L + V);
-            float spec = pow(max(dot(N, H), 0.0f), shininess);
-            specular += PointLightData[i].LightColor.rgb * spec * atten;
-        }
-    }
-
-    result.Diffuse = diffuse;
-    result.Specular = specular;
-    return result;
-}
-
-LightingResult ComputeSpotLight_BlinnPhong(
-    float3 cameraPos,
-    float3 worldPos,
-    float3 worldNormal,
-    float shininess)
-{
-    LightingResult result = (LightingResult) 0;
-    float3 diffuse = 0.0f;
-    float3 specular = 0.0f;
-
-    float3 N = normalize(worldNormal);
-    float3 V = normalize(cameraPos - worldPos);
-    
-    for (uint i = 0; i < SpotLightCount; ++i)
-    {
-        float3 toLight = SpotLightData[i].Position.xyz - worldPos;
-        float dist = length(toLight);
-        float3 L = toLight / max(dist, 0.0001f);
-
-        float NdotL = max(dot(N, L), 0.0f);
-        float3 lightDir = normalize(SpotLightData[i].Direction.xyz);
-        float distanceAtten = saturate(1.0f - dist / SpotLightData[i].AttenuationRadius);
-        float spotCos = dot(lightDir, -L);
-        float spotFactor = saturate(
-            (spotCos - SpotLightData[i].OuterConeAngle) /
-            max(SpotLightData[i].InnerConeAngle - SpotLightData[i].OuterConeAngle, 0.0001f)
-        );
-        float atten = distanceAtten * spotFactor;
-
-        diffuse += SpotLightData[i].LightColor.rgb * NdotL * atten;
-        if (NdotL > 0.0f && atten > 0.0f)
-        {
-            float3 H = normalize(L + V);
-            float spec = pow(max(dot(N, H), 0.0f), shininess);
-            specular += SpotLightData[i].LightColor.rgb * spec * atten;
-        }
-    }
-
-    result.Diffuse = diffuse;
-    result.Specular = specular;
-    return result;
-}
-
 LightingResult ComputeDirectionalLight_Lambert(float3 worldNormal)
 {
     LightingResult result = (LightingResult) 0;
@@ -172,46 +91,275 @@ LightingResult ComputeDirectionalLight_Lambert(float3 worldNormal)
     return result;
 }
 
-LightingResult ComputePointLight_Lambert(float3 worldPos, float3 worldNormal)
+// ============================================================
+// [VS용] 타일 컬링을 사용하지 않는 순회 함수들 (_NoTile)
+// ============================================================
+LightingResult ComputePointLight_BlinnPhong_NoTile(float3 cameraPos, float3 worldPos, float3 worldNormal, float shininess)
+{
+    LightingResult result = (LightingResult) 0;
+    float3 diffuse = 0.0f, specular = 0.0f;
+    float3 N = normalize(worldNormal);
+    float3 V = normalize(cameraPos - worldPos);
+
+    for (uint i = 0; i < PointLightCount; ++i)
+    {
+        FPointLightInfo light = PointLightData[i];
+        float3 toLight = light.Position.xyz - worldPos;
+        float dist = length(toLight);
+        float3 L = toLight / max(dist, 0.0001f);
+        float NdotL = max(dot(N, L), 0.0f);
+
+        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+        float atten = pow(distanceAtten, light.FalloffExponent);
+
+        diffuse += light.LightColor.rgb * NdotL * atten;
+
+        if (NdotL > 0.0f && atten > 0.0f)
+        {
+            float3 H = normalize(L + V);
+            float spec = pow(max(dot(N, H), 0.0f), shininess);
+            specular += light.LightColor.rgb * spec * atten;
+        }
+    }
+    result.Diffuse = diffuse;
+    result.Specular = specular;
+    return result;
+}
+
+LightingResult ComputeSpotLight_BlinnPhong_NoTile(float3 cameraPos, float3 worldPos, float3 worldNormal, float shininess)
+{
+    LightingResult result = (LightingResult) 0;
+    float3 diffuse = 0.0f, specular = 0.0f;
+    float3 N = normalize(worldNormal);
+    float3 V = normalize(cameraPos - worldPos);
+
+    for (uint i = 0; i < SpotLightCount; ++i)
+    {
+        FSpotLightInfo light = SpotLightData[i];
+        float3 toLight = light.Position.xyz - worldPos;
+        float dist = length(toLight);
+        float3 L = toLight / max(dist, 0.0001f);
+
+        float NdotL = max(dot(N, L), 0.0f);
+        float3 lightDir = normalize(light.Direction.xyz);
+        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+        float spotCos = dot(lightDir, -L);
+        float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
+        float atten = distanceAtten * spotFactor;
+
+        diffuse += light.LightColor.rgb * NdotL * atten;
+        if (NdotL > 0.0f && atten > 0.0f)
+        {
+            float3 H = normalize(L + V);
+            float spec = pow(max(dot(N, H), 0.0f), shininess);
+            specular += light.LightColor.rgb * spec * atten;
+        }
+    }
+    result.Diffuse = diffuse;
+    result.Specular = specular;
+    return result;
+}
+
+LightingResult ComputePointLight_Lambert_NoTile(float3 worldPos, float3 worldNormal)
 {
     LightingResult result = (LightingResult) 0;
     float3 diffuse = 0.0f;
     float3 N = normalize(worldNormal);
     for (uint i = 0; i < PointLightCount; ++i)
     {
-        float3 toLight = PointLightData[i].Position.xyz - worldPos;
+        FPointLightInfo light = PointLightData[i];
+        float3 toLight = light.Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
         float NdotL = max(dot(N, L), 0.0f);
-        float distanceAtten = saturate(1.0f - dist / PointLightData[i].AttenuationRadius);
-        distanceAtten = pow(distanceAtten, PointLightData[i].FalloffExponent);
+        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+        float atten = pow(distanceAtten, light.FalloffExponent);
         
-        diffuse += PointLightData[i].LightColor.rgb * NdotL * distanceAtten;
+        diffuse += light.LightColor.rgb * NdotL * atten;
     }
     result.Diffuse = diffuse;
     return result;
 }
 
-LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal)
+LightingResult ComputeSpotLight_Lambert_NoTile(float3 worldPos, float3 worldNormal)
 {
     LightingResult result = (LightingResult) 0;
     float3 diffuse = 0.0f;
     float3 N = normalize(worldNormal);
     for (uint i = 0; i < SpotLightCount; ++i)
     {
-        // 수정: Position.xyz 및 Direction.xyz 사용 [cite: 19]
-        float3 toLight = SpotLightData[i].Position.xyz - worldPos;
+        FSpotLightInfo light = SpotLightData[i];
+        float3 toLight = light.Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
         float NdotL = max(dot(N, L), 0.0f);
-        float3 lightDir = normalize(SpotLightData[i].Direction.xyz);
-        float distanceAtten = saturate(1.0f - dist / SpotLightData[i].AttenuationRadius);
+        float3 lightDir = normalize(light.Direction.xyz);
+        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
         float spotCos = dot(lightDir, -L);
-        float spotFactor = saturate(
-            (spotCos - SpotLightData[i].OuterConeAngle) /
-            max(SpotLightData[i].InnerConeAngle - SpotLightData[i].OuterConeAngle, 0.0001f)
-        );
-        diffuse += SpotLightData[i].LightColor.rgb * NdotL * distanceAtten * spotFactor;
+        float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
+        
+        diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
+    }
+    result.Diffuse = diffuse;
+    return result;
+}
+
+
+// ============================================================
+// [PS용] 타일 컬링이 적용된 핵심 조명 계산 함수들 (Tile-Culled)
+// ============================================================
+LightingResult ComputePointLight_BlinnPhong(float3 cameraPos, float3 worldPos, float3 worldNormal, float shininess, float2 screenPos)
+{
+    LightingResult result = (LightingResult) 0;
+    float3 diffuse = 0.0f;
+    float3 specular = 0.0f;
+
+    float3 N = normalize(worldNormal);
+    float3 V = normalize(cameraPos - worldPos);
+
+    uint tileX = (uint) screenPos.x / 16;
+    uint tileY = (uint) screenPos.y / 16;
+    uint numTilesX = ((uint) ScreenWidth + 15) / 16;
+    uint tileIndex = tileY * numTilesX + tileX;
+
+    uint lightCount = PointLightCounts[tileIndex];
+    uint tileOffset = tileIndex * 64;
+    
+    for (uint i = 0; i < lightCount; ++i)
+    {
+        uint lightIndex = PointLightIndices[tileOffset + i];
+        FPointLightInfo light = PointLightData[lightIndex];
+        
+        float3 toLight = light.Position.xyz - worldPos;
+        float dist = length(toLight);
+        float3 L = toLight / max(dist, 0.0001f);
+        float NdotL = max(dot(N, L), 0.0f);
+
+        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+        float atten = pow(distanceAtten, light.FalloffExponent);
+
+        diffuse += light.LightColor.rgb * NdotL * atten;
+
+        if (NdotL > 0.0f && atten > 0.0f)
+        {
+            float3 H = normalize(L + V);
+            float spec = pow(max(dot(N, H), 0.0f), shininess);
+            specular += light.LightColor.rgb * spec * atten;
+        }
+    }
+
+    result.Diffuse = diffuse;
+    result.Specular = specular;
+    return result;
+}
+
+LightingResult ComputeSpotLight_BlinnPhong(float3 cameraPos, float3 worldPos, float3 worldNormal, float shininess, float2 screenPos)
+{
+    LightingResult result = (LightingResult) 0;
+    float3 diffuse = 0.0f;
+    float3 specular = 0.0f;
+    float3 N = normalize(worldNormal);
+    float3 V = normalize(cameraPos - worldPos);
+
+    uint tileX = (uint) screenPos.x / 16;
+    uint tileY = (uint) screenPos.y / 16;
+    uint numTilesX = ((uint) ScreenWidth + 15) / 16;
+    uint tileIndex = tileY * numTilesX + tileX;
+    
+    uint lightCount = SpotLightCounts[tileIndex];
+    uint tileOffset = tileIndex * 64; // MAX_LIGHTS_PER_TILE
+
+    for (uint i = 0; i < lightCount; ++i)
+    {
+        uint lightIndex = SpotLightIndices[tileOffset + i];
+        FSpotLightInfo light = SpotLightData[lightIndex];
+
+        float3 toLight = light.Position.xyz - worldPos;
+        float dist = length(toLight);
+        float3 L = toLight / max(dist, 0.0001f);
+
+        float NdotL = max(dot(N, L), 0.0f);
+        float3 lightDir = normalize(light.Direction.xyz);
+        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+        float spotCos = dot(lightDir, -L);
+        float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
+        float atten = distanceAtten * spotFactor;
+
+        diffuse += light.LightColor.rgb * NdotL * atten;
+        if (NdotL > 0.0f && atten > 0.0f)
+        {
+            float3 H = normalize(L + V);
+            float spec = pow(max(dot(N, H), 0.0f), shininess);
+            specular += light.LightColor.rgb * spec * atten;
+        }
+    }
+
+    result.Diffuse = diffuse;
+    result.Specular = specular;
+    return result;
+}
+
+LightingResult ComputePointLight_Lambert(float3 worldPos, float3 worldNormal, float2 screenPos)
+{
+    LightingResult result = (LightingResult) 0;
+    float3 diffuse = 0.0f;
+    float3 N = normalize(worldNormal);
+    
+    uint tileX = (uint) screenPos.x / 16;
+    uint tileY = (uint) screenPos.y / 16;
+    uint numTilesX = ((uint) ScreenWidth + 15) / 16;
+    uint tileIndex = tileY * numTilesX + tileX;
+
+    uint lightCount = PointLightCounts[tileIndex];
+    uint tileOffset = tileIndex * 64;
+
+    for (uint i = 0; i < lightCount; ++i)
+    {
+        uint lightIndex = PointLightIndices[tileOffset + i];
+        FPointLightInfo light = PointLightData[lightIndex];
+        
+        float3 toLight = light.Position.xyz - worldPos;
+        float dist = length(toLight);
+        float3 L = toLight / max(dist, 0.0001f);
+        float NdotL = max(dot(N, L), 0.0f);
+        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+        float atten = pow(distanceAtten, light.FalloffExponent);
+        
+        diffuse += light.LightColor.rgb * NdotL * atten;
+    }
+    result.Diffuse = diffuse;
+    return result;
+}
+
+LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal, float2 screenPos)
+{
+    LightingResult result = (LightingResult) 0;
+    float3 diffuse = 0.0f;
+    float3 N = normalize(worldNormal);
+    
+    uint tileX = (uint) screenPos.x / 16;
+    uint tileY = (uint) screenPos.y / 16;
+    uint numTilesX = ((uint) ScreenWidth + 15) / 16;
+    uint tileIndex = tileY * numTilesX + tileX;
+
+    uint lightCount = SpotLightCounts[tileIndex];
+    uint tileOffset = tileIndex * 64;
+
+    for (uint i = 0; i < lightCount; ++i)
+    {
+        uint lightIndex = SpotLightIndices[tileOffset + i];
+        FSpotLightInfo light = SpotLightData[lightIndex];
+        
+        float3 toLight = light.Position.xyz - worldPos;
+        float dist = length(toLight);
+        float3 L = toLight / max(dist, 0.0001f);
+        float NdotL = max(dot(N, L), 0.0f);
+        float3 lightDir = normalize(light.Direction.xyz);
+        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+        float spotCos = dot(lightDir, -L);
+        float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
+        
+        diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
     }
     result.Diffuse = diffuse;
     return result;
