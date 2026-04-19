@@ -152,6 +152,8 @@ private:
 	// Light를 계산하기 위한 PreDepth영역.
 	void ExecuteDepthPrePass(const FRenderBus& Bus, ID3D11DeviceContext* Context);
 	void ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext* Context);
+	void RestoreMainRenderTargets(const FRenderBus& Bus, ID3D11DeviceContext* Context);
+	void BindLightCullingResults(ID3D11DeviceContext* Context);
 
 	//	뷰포트 크기에 맞는 post 중간 RT/Mask를 보장
 	void EnsurePostProcessTargets(const FRenderBus& Bus);

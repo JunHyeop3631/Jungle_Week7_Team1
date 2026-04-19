@@ -326,24 +326,10 @@ void FRenderer::Render(const FRenderBus& InRenderBus)
 	}
 
 	ExecuteDepthPrePass(InRenderBus, Context);
-
-	ID3D11RenderTargetView* NullRTV = nullptr;
-	ID3D11DepthStencilView* NullDSV = nullptr;
-	Context->OMSetRenderTargets(1, &NullRTV, NullDSV);
-
 	ExecuteLightCullingCS(InRenderBus, Context);
+	RestoreMainRenderTargets(InRenderBus, Context);
+	BindLightCullingResults(Context);
 
-	ID3D11RenderTargetView* MainRTV = InRenderBus.GetViewportRTV();
-	ID3D11DepthStencilView* MainDSV = InRenderBus.GetViewportDSV();
-	Context->OMSetRenderTargets(1, &MainRTV, MainDSV);
-
-	ID3D11ShaderResourceView* CullingSRVs[4] = {
-		Resources.LightCulling.PointLightIndicesSRV, // t10
-		Resources.LightCulling.PointLightCountsSRV,  // t11
-		Resources.LightCulling.SpotLightIndicesSRV,  // t12
-		Resources.LightCulling.SpotLightCountsSRV    // t13
-	};
-	Context->PSSetShaderResources(10, 4, CullingSRVs);
 	// 패스 실행 순서:
 	// - Grid/Axis가 PostProcess/Font 위를 덮지 않도록 Grid를 먼저 그린다.
 	// - SelectionMask는 PostProcess 내부에서만 실행한다.
@@ -1099,6 +1085,10 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 {
 	if (Bus.GetPointLights().empty() && Bus.GetSpotLights().empty()) return;
 
+	ID3D11RenderTargetView* NullRTV = nullptr;
+	ID3D11DepthStencilView* NullDSV = nullptr;
+	Context->OMSetRenderTargets(1, &NullRTV, NullDSV);
+
 	ID3D11ShaderResourceView* NullPS_SRVs[4] = { nullptr, nullptr, nullptr, nullptr };
 	Context->PSSetShaderResources(10, 4, NullPS_SRVs);
 
@@ -1172,6 +1162,24 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 	ID3D11ShaderResourceView* NullSRVs[3] = { nullptr, nullptr, nullptr };
 	Context->CSSetShaderResources(1, 1, NullSRVs);
 	Context->CSSetShaderResources(8, 2, NullSRVs);
+}
+
+void FRenderer::RestoreMainRenderTargets(const FRenderBus& Bus, ID3D11DeviceContext* Context)
+{
+	ID3D11RenderTargetView* MainRTV = Bus.GetViewportRTV();
+	ID3D11DepthStencilView* MainDSV = Bus.GetViewportDSV();
+	Context->OMSetRenderTargets(1, &MainRTV, MainDSV);
+}
+
+void FRenderer::BindLightCullingResults(ID3D11DeviceContext* Context)
+{
+	ID3D11ShaderResourceView* CullingSRVs[4] = {
+		Resources.LightCulling.PointLightIndicesSRV, // t10
+		Resources.LightCulling.PointLightCountsSRV,  // t11
+		Resources.LightCulling.SpotLightIndicesSRV,  // t12
+		Resources.LightCulling.SpotLightCountsSRV    // t13
+	};
+	Context->PSSetShaderResources(10, 4, CullingSRVs);
 }
 
 void FRenderer::EnsurePostProcessTargets(const FRenderBus& Bus)
