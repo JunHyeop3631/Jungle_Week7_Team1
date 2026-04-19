@@ -163,16 +163,33 @@ void CS_Spot(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID,
     for (uint i = groupIndex; i < SpotLightCount; i += 256)
     {
         FSpotLightInfo light = SpotLightData[i];
-        float3 viewPos = mul(float4(light.Position.xyz, 1.0f), View).xyz;
+
+        float3 apexViewPos = mul(float4(light.Position.xyz, 1.0f), View).xyz; // SpotLight의 꼭짓점
+        float3 viewDir = mul(float4(light.Direction.xyz, 0.0f), View).xyz;
+        viewDir = normalize(viewDir);
         
-        if (viewPos.z - light.AttenuationRadius > maxDepthF || viewPos.z + light.AttenuationRadius < minDepthF)
+        float coneLength = light.AttenuationRadius;
+        float halfAngle = light.OuterConeAngle;
+
+        float3 boundingCenter = apexViewPos;
+        float boundingRadius = coneLength;
+
+        // 45도 이하인 경우에만 원뿔의 중심, 반지름 재계산.
+        if (halfAngle <= 0.785398f) // 45도 이하에만 적용
+        {
+            boundingRadius = coneLength / (2.0f * cos(halfAngle));
+            boundingCenter = apexViewPos + (viewDir * boundingRadius);
+        }
+
+
+        // 구와 절두체 컬링(기존과 동일)
+        if (boundingCenter.z - boundingRadius > maxDepthF || boundingCenter.z + boundingRadius < minDepthF)
             continue;
 
         bool bInFrustum = true;
-		// PointLight와 동일 로직.
         for (int p = 0; p < 4; p++)
         {
-            if (dot(g_FrustumPlanes[p].Normal, viewPos) < -light.AttenuationRadius)
+            if (dot(g_FrustumPlanes[p].Normal, boundingCenter) < -boundingRadius)
             {
                 bInFrustum = false;
                 break;
