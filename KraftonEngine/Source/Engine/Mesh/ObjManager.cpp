@@ -526,6 +526,11 @@ void FObjManager::EnsureMaterialTextureLoaded(UMaterialInterface* Material, ID3D
 		{
 			MasterMat->DiffuseTexture = UTexture2D::LoadFromFile(MasterMat->DiffuseTextureFilePath, InDevice);
 		}
+
+		if (!MasterMat->NormalTexture && !MasterMat->NormalTextureFilePath.empty())
+		{
+			MasterMat->NormalTexture = UTexture2D::LoadFromFile(MasterMat->NormalTextureFilePath, InDevice);
+		}
 	}
 	// 2. 만약 인스턴스(Instance) 머티리얼이라면
 	else if (UMaterialInstance* InstMat = Cast<UMaterialInstance>(Material))
@@ -534,6 +539,11 @@ void FObjManager::EnsureMaterialTextureLoaded(UMaterialInterface* Material, ID3D
 		if (InstMat->bOverride_DiffuseTexture && !InstMat->OverriddenDiffuseTexture && !InstMat->OverriddenDiffuseTexturePath.empty())
 		{
 			InstMat->OverriddenDiffuseTexture = UTexture2D::LoadFromFile(InstMat->OverriddenDiffuseTexturePath, InDevice);
+		}
+
+		if (InstMat->bOverride_NormalTexture && !InstMat->OverriddenNormalTexture && !InstMat->OverriddenNormalTexturePath.empty())
+		{
+			InstMat->OverriddenNormalTexture = UTexture2D::LoadFromFile(InstMat->OverriddenNormalTexturePath, InDevice);
 		}
 
 		// 팁: 인스턴스의 부모가 가진 텍스처도 로드되어 있는지 확실히 하려면 여기서 재귀 호출을 할 수도 있습니다.
