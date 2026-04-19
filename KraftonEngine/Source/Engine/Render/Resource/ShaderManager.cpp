@@ -13,9 +13,11 @@ uint32 ToStaticMeshLightingShaderIndex(EViewMode InViewMode)
 		return 1;
 	case EViewMode::Lit_Phong:
 		return 2;
+	case EViewMode::WorldNormal:
+		return 3;
 	case EViewMode::Unlit:
 	default:
-		return 3;
+		return 4;
 	}
 }
 }
@@ -72,6 +74,15 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 		FVertexPNCTInputLayout,
 		ARRAYSIZE(FVertexPNCTInputLayout),
 		FShader::GetLightingModelShaderMacro(EViewMode::Unlit));
+
+	StaticMeshLightingShaders[ToStaticMeshLightingShaderIndex(EViewMode::WorldNormal)].Create(
+		InDevice,
+		L"Shaders/UberLit.hlsl",
+		"VS",
+		"PS",
+		FVertexPNCTInputLayout,
+		ARRAYSIZE(FVertexPNCTInputLayout),
+		FShader::GetLightingModelShaderMacro(EViewMode::WorldNormal));
 
 	Shaders[(uint32)EShaderType::Decal].Create(InDevice, L"Shaders/Decal.hlsl",
 		"VS", "PS", FVertexInputLayout, ARRAYSIZE(FVertexInputLayout));

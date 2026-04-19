@@ -45,7 +45,7 @@ public:
 
 private:
 	FShaderManager() = default;
-	static constexpr uint32 StaticMeshLightingShaderCount = 4;
+	static constexpr uint32 StaticMeshLightingShaderCount = 5;
 
 	FShader Shaders[(uint32)EShaderType::MAX];
     FShader StaticMeshLightingShaders[StaticMeshLightingShaderCount];
