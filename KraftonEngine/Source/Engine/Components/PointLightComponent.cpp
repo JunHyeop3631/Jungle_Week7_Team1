@@ -63,7 +63,7 @@ FLightSceneProxy* UPointLightComponent::CreateLightSceneProxy()
 void UPointLightComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
 {
 	ULocalLightComponent::GetEditableProperties(OutProps);
-	OutProps.push_back({ "LightFalloffExponent", EPropertyType::Float, &LightFalloffExponent });
+	OutProps.push_back({ "LightFalloffExponent", EPropertyType::Float, &LightFalloffExponent , 0.f, 20.f});
 }
 
 void UPointLightComponent::PostEditProperty(const char* PropertyName)
