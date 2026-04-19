@@ -28,6 +28,12 @@ static D3D_SHADER_MACRO Defines_Unlit[] =
 	{ nullptr, nullptr }
 };
 
+static D3D_SHADER_MACRO Defines_WorldNormal[] =
+{
+	{ "VIEWMODE_NORMAL", "1" },
+	{ nullptr, nullptr }
+};
+
 static EViewMode GLightingViewMode = EViewMode::Unlit;
 
 void FShader::SetCurrentLightingViewMode(EViewMode InViewMode)
@@ -61,6 +67,8 @@ const D3D_SHADER_MACRO* FShader::GetLightingModelShaderMacro(EViewMode InViewMod
 		return Defines_Lambert;
 	case EViewMode::Lit_Phong:
 		return Defines_Phong;
+	case EViewMode::WorldNormal:
+		return Defines_WorldNormal;
 	case EViewMode::Unlit:
 	default:
 		return Defines_Unlit;
