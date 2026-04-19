@@ -53,10 +53,6 @@ float4 PS(PS_Lighting input) : SV_TARGET
 {
     float4 finalColor = float4(1.0f, 0.0f, 1.0f, 1.0f);
     float4 texColor = g_txColor.Sample(g_Sample, input.texCoord) * SectionColor;
-    if (texColor.a < 0.001f)
-    {
-        texColor = float4(1.0f, 1.0f, 1.0f, 1.0f) * SectionColor;
-    }
     float3 worldNormal = normalize(input.worldNormal);
     
     if (bHasNormalMap != 0)

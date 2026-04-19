@@ -1050,6 +1050,7 @@ void FRenderer::ExecuteDepthPrePass(const FRenderBus& Bus, ID3D11DeviceContext* 
 	const auto& OpaqueProxies = Bus.GetProxies(ERenderPass::Opaque);
 	if (OpaqueProxies.empty()) return;
 
+	// 색을 칠할 필요가 없으므로 RTV는 nullptr로 바인딩, DSV는 깊이 정보를 저장하기 위함.
 	ID3D11RenderTargetView* NullRTV = nullptr;
 	ID3D11DepthStencilView* DSV = Bus.GetViewportDSV();
 	Context->OMSetRenderTargets(1, &NullRTV, DSV);
@@ -1062,6 +1063,7 @@ void FRenderer::ExecuteDepthPrePass(const FRenderBus& Bus, ID3D11DeviceContext* 
 	SortProxies(OpaqueProxies);
 	FDrawState State;
 
+	// Primitive(mesh) 그리기 시작(깊이버퍼만)
 	for (const FPrimitiveSceneProxy* RawProxy : SortedProxyBuffer)
 	{
 		const FPrimitiveSceneProxy& Proxy = *RawProxy;
@@ -1089,12 +1091,14 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 	ID3D11DepthStencilView* NullDSV = nullptr;
 	Context->OMSetRenderTargets(1, &NullRTV, NullDSV);
 
+	// PS에서 사용되는 애들 비활성화
 	ID3D11ShaderResourceView* NullPS_SRVs[4] = { nullptr, nullptr, nullptr, nullptr };
 	Context->PSSetShaderResources(10, 4, NullPS_SRVs);
 
 	SCOPE_STAT_CAT("LightCulling", "4_ExecutePass");
 	GPU_SCOPE_STAT("LightCullingCS");
 
+	// CB CS용으로 재설정
 	ID3D11Buffer* b0 = Resources.FrameBuffer.GetBuffer();
 	Context->CSSetConstantBuffers(0, 1, &b0);
 
@@ -1120,7 +1124,7 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 	uint32 ThreadGroupX = (ViewportWidth + 15) / 16;
 	uint32 ThreadGroupY = (ViewportHeight + 15) / 16;
 
-	// PointLight
+	// PointLight UAV
 	if (!Bus.GetPointLights().empty())
 	{
 		FShader* PointCullingShader = FShaderManager::Get().GetShader(EShaderType::LightCullingCS_Point);
@@ -1138,7 +1142,7 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 		}
 	}
 
-	// SpotLight
+	// SpotLight UAV
 	if (!Bus.GetSpotLights().empty())
 	{
 		FShader* SpotCullingShader = FShaderManager::Get().GetShader(EShaderType::LightCullingCS_Spot);
@@ -1156,6 +1160,7 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 		}
 	}
 
+	// 전부 사용 후 비활성화
 	ID3D11UnorderedAccessView* NullUAVs[2] = { nullptr, nullptr };
 	Context->CSSetUnorderedAccessViews(0, 2, NullUAVs, nullptr);
 
@@ -1166,6 +1171,7 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 
 void FRenderer::RestoreMainRenderTargets(const FRenderBus& Bus, ID3D11DeviceContext* Context)
 {
+	// RenderStart 재설정
 	ID3D11RenderTargetView* MainRTV = Bus.GetViewportRTV();
 	ID3D11DepthStencilView* MainDSV = Bus.GetViewportDSV();
 	Context->OMSetRenderTargets(1, &MainRTV, MainDSV);
