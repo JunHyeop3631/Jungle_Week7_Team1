@@ -1086,7 +1086,22 @@ void FRenderer::ExecuteDepthPrePass(const FRenderBus& Bus, ID3D11DeviceContext* 
 
 void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext* Context)
 {
-	if (Bus.GetPointLights().empty() && Bus.GetSpotLights().empty()) return;
+	const bool bNoPointLights = Bus.GetPointLights().empty();
+	const bool bNoSpotLights = Bus.GetSpotLights().empty();
+
+	const uint32 ClearZero[4] = { 0, 0, 0, 0 };
+
+	if (bNoPointLights && Resources.LightCulling.PointLightCountsUAV)
+	{
+		Context->ClearUnorderedAccessViewUint(Resources.LightCulling.PointLightCountsUAV, ClearZero);
+	}
+
+	if (bNoSpotLights && Resources.LightCulling.SpotLightCountsUAV)
+	{
+		Context->ClearUnorderedAccessViewUint(Resources.LightCulling.SpotLightCountsUAV, ClearZero);
+	}
+
+	if (bNoPointLights && bNoSpotLights) return;
 
 	ID3D11RenderTargetView* NullRTV = nullptr;
 	ID3D11DepthStencilView* NullDSV = nullptr;

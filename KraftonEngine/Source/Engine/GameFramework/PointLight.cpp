@@ -9,8 +9,10 @@ APointLight::APointLight()
 {
 	PointLight = AddComponent<UPointLightComponent>();
 	SetRootComponent(PointLight);
+	// 우선 기본값 세팅.
 	PointLight->SetIntensity(3.0f);
 	PointLight->SetAttenuationRadius(5.0f);
+
 	SpriteComponent = AddComponent<UBillboardComponent>();
 	SpriteComponent->AttachToComponent(PointLight);
 	SpriteComponent->SetTexture(FName("PointLightIcon"));
