@@ -30,6 +30,8 @@ public:
 	// 파라미터 Getter
 	virtual UTexture2D* GetDiffuseTexture() const;
 	virtual FVector4 GetDiffuseColor() const;
+	virtual FVector4 GetSpecularColor() const;
+	virtual FVector4 GetAmbientColor() const;
 
 	virtual UTexture2D* GetNormalTexture() const = 0;
 

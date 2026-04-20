@@ -571,10 +571,14 @@ bool FObjImporter::Convert(const FObjInfo& ObjInfo, const TArray<FObjMaterialInf
 				{
 					MaterialObject->DiffuseTextureFilePath = MatchedMaterial->map_Kd;
 					MaterialObject->DiffuseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+					MaterialObject->AmbientColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+					MaterialObject->SpecularColor = { 0.5f, 0.5f, 0.5f, 1.0f };
 				}
 				else
 				{
 					MaterialObject->DiffuseColor = { MatchedMaterial->Kd.X, MatchedMaterial->Kd.Y, MatchedMaterial->Kd.Z, 1.0f };
+					MaterialObject->AmbientColor = { MatchedMaterial->Ka.X, MatchedMaterial->Ka.Y, MatchedMaterial->Ka.Z, 1.0f };
+					MaterialObject->SpecularColor = { MatchedMaterial->Ks.X, MatchedMaterial->Ks.Y, MatchedMaterial->Ks.Z, 1.0f };
 				}
 
 				if (!MatchedMaterial->map_Bump.empty())

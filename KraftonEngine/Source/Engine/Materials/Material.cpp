@@ -13,6 +13,8 @@ void UMaterial::Serialize(FArchive& Ar)
 	// Ar << PathFileName; UMaterialInterface로 이동
 	Ar << DiffuseTextureFilePath;
 	Ar << DiffuseColor;
+	Ar << AmbientColor;
+	Ar << SpecularColor;
 	Ar << NormalTextureFilePath;
 	Ar << VertexShaderFilePath;
 	Ar << PixelShaderFilePath;

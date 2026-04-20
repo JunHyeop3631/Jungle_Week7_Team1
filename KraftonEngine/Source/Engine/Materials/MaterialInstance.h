@@ -17,7 +17,11 @@ public:
 
 	// --- 오버라이드 데이터 ---
 	bool bOverride_DiffuseColor = false;
+	bool bOverride_AmbientColor = false;
+	bool bOverride_SpecularColor = false;
 	FVector4 OverriddenDiffuseColor = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
+	FVector4 OverriddenAmbientColor = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
+	FVector4 OverriddenSpecularColor = FVector4(0.0f, 0.0f, 0.0f, 1.0f);
 
 	bool bOverride_DiffuseTexture = false;
 	FString OverriddenDiffuseTexturePath;
@@ -40,6 +44,16 @@ public:
 	{
 		if (bOverride_DiffuseColor) return OverriddenDiffuseColor;
 		return Parent ? Parent->GetDiffuseColor() : FVector4(1.0f, 0.0f, 1.0f, 1.0f);
+	}
+	virtual FVector4 GetAmbientColor() const override
+	{
+		if (bOverride_AmbientColor) return OverriddenAmbientColor;
+		return Parent ? Parent->GetAmbientColor() : FVector4(1.0f, 1.0f	, 1.0f, 1.0f);
+	}
+	virtual FVector4 GetSpecularColor() const override
+	{
+		if (bOverride_SpecularColor) return OverriddenSpecularColor;
+		return Parent ? Parent->GetSpecularColor() : FVector4(0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
 	// 셰이더는 무조건 부모에게 위임 (인스턴스는 셰이더를 가지지 않음) ★

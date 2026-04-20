@@ -789,6 +789,8 @@ void FRenderer::DrawSections(const FPrimitiveSceneProxy& Proxy, ID3D11DeviceCont
 			FMaterialConstants MatConstants = {};
 			MatConstants.bIsUVScroll = curUVScroll;
 			MatConstants.SectionColor = Section.DiffuseColor;
+			MatConstants.Ka = Section.AmbientColor;
+			MatConstants.Ks = Section.SpecularColor;
 			MatConstants.bHasNormalMap = (Section.NormalMapSRV != nullptr) ? 1 : 0;
 			MaterialCB->Update(Ctx, &MatConstants, sizeof(MatConstants));
 			State.LastUVScroll = curUVScroll;
@@ -850,6 +852,8 @@ void FRenderer::DrawSingleSection(const FPrimitiveSceneProxy& Proxy, ID3D11Devic
 		MatConstants.bIsUVScroll = curUVScroll;
 		MatConstants.SectionColor = Section.DiffuseColor;
 		MatConstants.bHasNormalMap = (Section.NormalMapSRV != nullptr) ? 1 : 0;
+		MatConstants.Ka = Section.AmbientColor;
+		MatConstants.Ks = Section.SpecularColor;
 		MaterialCB->Update(Ctx, &MatConstants, sizeof(MatConstants));
 		State.LastUVScroll = curUVScroll;
 		State.LastSectionColor = Section.DiffuseColor;

@@ -95,6 +95,8 @@ cbuffer MaterialBuffer : register(b4)
     float SpecularRoughness; // Blinn-Phong Shininess
     float SpecularIntensity; // 반사광 세기
     float4 SectionColor;
+    float4 ka; // Ambient coefficient
+    float4 ks; // Specular coefficient
 }
 
 // b7: ID picking

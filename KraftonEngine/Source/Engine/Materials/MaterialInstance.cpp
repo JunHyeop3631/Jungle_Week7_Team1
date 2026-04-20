@@ -17,6 +17,16 @@ void UMaterialInstance::Serialize(FArchive& Ar)
 	{
 		Ar << OverriddenDiffuseColor;
 	}
+	Ar << bOverride_AmbientColor;
+	if (bOverride_AmbientColor)
+	{
+		Ar << OverriddenAmbientColor;
+	}
+	Ar << bOverride_SpecularColor;
+	if (bOverride_SpecularColor)
+	{
+		Ar << OverriddenSpecularColor;
+	}
 
 	// 4. Diffuse Texture 오버라이드 정보 직렬화
 	Ar << bOverride_DiffuseTexture;
