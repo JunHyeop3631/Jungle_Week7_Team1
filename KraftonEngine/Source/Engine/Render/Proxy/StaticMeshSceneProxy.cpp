@@ -157,6 +157,7 @@ void FStaticMeshSceneProxy::RebuildSectionDraws()
 					Draw.DiffuseColor = Mat->GetDiffuseColor();
 					Draw.AmbientColor = Mat->GetAmbientColor();
 					Draw.SpecularColor = Mat->GetSpecularColor();
+					Draw.SpecularExponent = Mat->GetSpecularExponent();
 				}
 			}
 

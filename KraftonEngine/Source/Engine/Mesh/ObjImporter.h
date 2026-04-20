@@ -27,15 +27,15 @@ struct FObjInfo
 struct FObjMaterialInfo
 {
 	FString MaterialSlotName = "None"; // newmtl
-	FVector Kd; // diffuse color
+	FVector Kd = FVector(1.0f, 0.0f, 1.0f); // diffuse color
 	FString map_Kd; // diffuse texture file path
 	FString map_Bump;
 
-	FVector Ka; // ambient color
-	FVector Ks; // specular color
-	float Ns; // specular exponent
-	float Ni; // optical density
-	int32 illum; // illumination model
+	FVector Ka = FVector(0.0f, 0.0f, 0.0f); // ambient color
+	FVector Ks = FVector(0.0f, 0.0f, 0.0f); // specular color
+	float Ns = 16.0f; // specular exponent
+	float Ni = 0.0f; // optical density
+	int32 illum = 0; // illumination model
 };
 
 // 블렌더 스타일 Forward 축 선택

@@ -109,6 +109,10 @@ private:
 		ID3D11Buffer* LastPerObjectCB = nullptr;
 		int32        LastUVScroll   = -1;
 		FVector4     LastSectionColor = { -1.0f, -1.0f, -1.0f, -1.0f }; // 초기값: 불일치 보장
+		FVector4     LastAmbientColor = { -1.0f, -1.0f, -1.0f, -1.0f };
+		FVector4     LastSpecularColor = { -1.0f, -1.0f, -1.0f, -1.0f };
+		float        LastSpecularRoughness = -1.0f;
+		int32        LastHasNormalMap = -1;
 
 		ID3D11ShaderResourceView* LastNormalSRV = reinterpret_cast<ID3D11ShaderResourceView*>(~0ull);
 

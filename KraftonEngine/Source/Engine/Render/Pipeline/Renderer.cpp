@@ -784,18 +784,28 @@ void FRenderer::DrawSections(const FPrimitiveSceneProxy& Proxy, ID3D11DeviceCont
 
 		// Material CB — SectionColor 또는 UVScroll 변경 시만 업데이트
 		int32 curUVScroll = Section.bIsUVScroll ? 1 : 0;
+		int32 curHasNormalMap = (Section.NormalMapSRV != nullptr) ? 1 : 0;
 		if (curUVScroll != State.LastUVScroll
-			|| memcmp(&Section.DiffuseColor, &State.LastSectionColor, sizeof(FVector4)) != 0)
+			|| curHasNormalMap != State.LastHasNormalMap
+			|| memcmp(&Section.DiffuseColor, &State.LastSectionColor, sizeof(FVector4)) != 0
+			|| memcmp(&Section.AmbientColor, &State.LastAmbientColor, sizeof(FVector4)) != 0
+			|| memcmp(&Section.SpecularColor, &State.LastSpecularColor, sizeof(FVector4)) != 0
+			|| Section.SpecularExponent != State.LastSpecularRoughness)
 		{
 			FMaterialConstants MatConstants = {};
 			MatConstants.bIsUVScroll = curUVScroll;
 			MatConstants.SectionColor = Section.DiffuseColor;
 			MatConstants.Ka = Section.AmbientColor;
 			MatConstants.Ks = Section.SpecularColor;
-			MatConstants.bHasNormalMap = (Section.NormalMapSRV != nullptr) ? 1 : 0;
+			MatConstants.SpecularRoughness = Section.SpecularExponent;
+			MatConstants.bHasNormalMap = curHasNormalMap;
 			MaterialCB->Update(Ctx, &MatConstants, sizeof(MatConstants));
 			State.LastUVScroll = curUVScroll;
+			State.LastHasNormalMap = curHasNormalMap;
 			State.LastSectionColor = Section.DiffuseColor;
+			State.LastAmbientColor = Section.AmbientColor;
+			State.LastSpecularColor = Section.SpecularColor;
+			State.LastSpecularRoughness = Section.SpecularExponent;
 		}
 
 		Ctx->DrawIndexed(Section.IndexCount, Section.FirstIndex, 0);
@@ -846,18 +856,28 @@ void FRenderer::DrawSingleSection(const FPrimitiveSceneProxy& Proxy, ID3D11Devic
 
 	// Material CB — SectionColor 또는 UVScroll 변경 시만 업데이트
 	int32 curUVScroll = Section.bIsUVScroll ? 1 : 0;
+	int32 curHasNormalMap = (Section.NormalMapSRV != nullptr) ? 1 : 0;
 	if (curUVScroll != State.LastUVScroll
-		|| memcmp(&Section.DiffuseColor, &State.LastSectionColor, sizeof(FVector4)) != 0)
+		|| curHasNormalMap != State.LastHasNormalMap
+		|| memcmp(&Section.DiffuseColor, &State.LastSectionColor, sizeof(FVector4)) != 0
+		|| memcmp(&Section.AmbientColor, &State.LastAmbientColor, sizeof(FVector4)) != 0
+		|| memcmp(&Section.SpecularColor, &State.LastSpecularColor, sizeof(FVector4)) != 0
+		|| Section.SpecularExponent != State.LastSpecularRoughness)
 	{
 		FMaterialConstants MatConstants = {};
 		MatConstants.bIsUVScroll = curUVScroll;
 		MatConstants.SectionColor = Section.DiffuseColor;
-		MatConstants.bHasNormalMap = (Section.NormalMapSRV != nullptr) ? 1 : 0;
+		MatConstants.bHasNormalMap = curHasNormalMap;
 		MatConstants.Ka = Section.AmbientColor;
 		MatConstants.Ks = Section.SpecularColor;
+		MatConstants.SpecularRoughness = Section.SpecularExponent;
 		MaterialCB->Update(Ctx, &MatConstants, sizeof(MatConstants));
 		State.LastUVScroll = curUVScroll;
+		State.LastHasNormalMap = curHasNormalMap;
 		State.LastSectionColor = Section.DiffuseColor;
+		State.LastAmbientColor = Section.AmbientColor;
+		State.LastSpecularColor = Section.SpecularColor;
+		State.LastSpecularRoughness = Section.SpecularExponent;
 	}
 
 	Ctx->DrawIndexed(Section.IndexCount, Section.FirstIndex, 0);

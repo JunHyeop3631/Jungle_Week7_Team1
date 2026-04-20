@@ -15,6 +15,7 @@ void UMaterial::Serialize(FArchive& Ar)
 	Ar << DiffuseColor;
 	Ar << AmbientColor;
 	Ar << SpecularColor;
+	Ar << SpecularExponent;
 	Ar << NormalTextureFilePath;
 	Ar << VertexShaderFilePath;
 	Ar << PixelShaderFilePath;

@@ -48,6 +48,7 @@ namespace
 		Hash = HashCombine(Hash, HashFloatBits(Section.SpecularColor.Y));
 		Hash = HashCombine(Hash, HashFloatBits(Section.SpecularColor.Z));
 		Hash = HashCombine(Hash, HashFloatBits(Section.SpecularColor.W));
+		Hash = HashCombine(Hash, HashFloatBits(Section.SpecularExponent));
 		return Hash;
 	}
 

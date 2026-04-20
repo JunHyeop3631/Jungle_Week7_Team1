@@ -16,6 +16,7 @@ public:
 	FVector4 DiffuseColor = FVector4(1.0f, 0.0f, 1.0f, 1.0f);
 	FVector4 AmbientColor = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
 	FVector4 SpecularColor = FVector4(0.0f, 0.0f, 0.0f, 1.0f);
+	float SpecularExponent = 0.0f;
 	UTexture2D* DiffuseTexture = nullptr;	// UObjectManager 소유, 여기선 참조만
 
 	FString VertexShaderFilePath; // 예: "Shaders/Default_VS.hlsl"
@@ -38,6 +39,7 @@ public:
 	FVector4 GetDiffuseColor() const override { return DiffuseColor; }
 	FVector4 GetAmbientColor() const override { return AmbientColor; }
 	FVector4 GetSpecularColor() const override { return SpecularColor; }
+	float GetSpecularExponent() const override { return SpecularExponent; }
 	UTexture2D* GetNormalTexture() const override { return NormalTexture; }
 	ID3D11VertexShader* GetVertexShader() const override { return VertexShader; }
 	ID3D11PixelShader* GetPixelShader() const override { return PixelShader; }

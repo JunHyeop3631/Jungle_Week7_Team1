@@ -33,6 +33,11 @@ FVector4 UMaterialInterface::GetAmbientColor() const
 	return FVector4(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
+float UMaterialInterface::GetSpecularExponent() const
+{
+	return 0.0f;
+}
+
 ID3D11VertexShader* UMaterialInterface::GetVertexShader() const
 {
     return nullptr;

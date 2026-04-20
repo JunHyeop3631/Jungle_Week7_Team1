@@ -356,6 +356,17 @@ bool FObjImporter::ParseMtl(const FString& MtlFilePath, TArray<FObjMaterialInfo>
 			MaterialInfo.Kd = FallbackColor3;
 			OutMtlInfos.emplace_back(MaterialInfo);
 		}
+		else if (Prefix == "Ka")
+		{
+			if (OutMtlInfos.empty())
+			{
+				continue;
+			}
+			FObjMaterialInfo& CurrentMaterial = OutMtlInfos.back();
+			FStringParser::ParseFloat(FStringParser::GetNextWhitespaceToken(Line), CurrentMaterial.Ka.X);
+			FStringParser::ParseFloat(FStringParser::GetNextWhitespaceToken(Line), CurrentMaterial.Ka.Y);
+			FStringParser::ParseFloat(FStringParser::GetNextWhitespaceToken(Line), CurrentMaterial.Ka.Z);
+		}
 		else if (Prefix == "Kd")
 		{
 			if (OutMtlInfos.empty())
@@ -366,6 +377,26 @@ bool FObjImporter::ParseMtl(const FString& MtlFilePath, TArray<FObjMaterialInfo>
 			FStringParser::ParseFloat(FStringParser::GetNextWhitespaceToken(Line), CurrentMaterial.Kd.X);
 			FStringParser::ParseFloat(FStringParser::GetNextWhitespaceToken(Line), CurrentMaterial.Kd.Y);
 			FStringParser::ParseFloat(FStringParser::GetNextWhitespaceToken(Line), CurrentMaterial.Kd.Z);
+		}
+		else if (Prefix == "Ks")
+		{
+			if (OutMtlInfos.empty())
+			{
+				continue;
+			}
+			FObjMaterialInfo& CurrentMaterial = OutMtlInfos.back();
+			FStringParser::ParseFloat(FStringParser::GetNextWhitespaceToken(Line), CurrentMaterial.Ks.X);
+			FStringParser::ParseFloat(FStringParser::GetNextWhitespaceToken(Line), CurrentMaterial.Ks.Y);
+			FStringParser::ParseFloat(FStringParser::GetNextWhitespaceToken(Line), CurrentMaterial.Ks.Z);
+		}
+		else if (Prefix == "Ns")
+		{
+			if (OutMtlInfos.empty())
+			{
+				continue;
+			}
+			FObjMaterialInfo& CurrentMaterial = OutMtlInfos.back();
+			FStringParser::ParseFloat(FStringParser::GetNextWhitespaceToken(Line), CurrentMaterial.Ns);
 		}
 		else if (Prefix == "map_Kd")
 		{
@@ -570,16 +601,34 @@ bool FObjImporter::Convert(const FObjInfo& ObjInfo, const TArray<FObjMaterialInf
 				if (!MatchedMaterial->map_Kd.empty())
 				{
 					MaterialObject->DiffuseTextureFilePath = MatchedMaterial->map_Kd;
-					MaterialObject->DiffuseColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-					MaterialObject->AmbientColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-					MaterialObject->SpecularColor = { 0.5f, 0.5f, 0.5f, 1.0f };
+					MaterialObject->DiffuseColor = { 1,1,1,1 }; // 텍스처 색 유지용
 				}
 				else
 				{
-					MaterialObject->DiffuseColor = { MatchedMaterial->Kd.X, MatchedMaterial->Kd.Y, MatchedMaterial->Kd.Z, 1.0f };
-					MaterialObject->AmbientColor = { MatchedMaterial->Ka.X, MatchedMaterial->Ka.Y, MatchedMaterial->Ka.Z, 1.0f };
-					MaterialObject->SpecularColor = { MatchedMaterial->Ks.X, MatchedMaterial->Ks.Y, MatchedMaterial->Ks.Z, 1.0f };
+					MaterialObject->DiffuseColor = {
+						MatchedMaterial->Kd.X,
+						MatchedMaterial->Kd.Y,
+						MatchedMaterial->Kd.Z,
+						1.0f
+					};
 				}
+
+				// 항상 공통
+				MaterialObject->AmbientColor = {
+					MatchedMaterial->Ka.X,
+					MatchedMaterial->Ka.Y,
+					MatchedMaterial->Ka.Z,
+					1.0f
+				};
+
+				MaterialObject->SpecularColor = {
+					MatchedMaterial->Ks.X,
+					MatchedMaterial->Ks.Y,
+					MatchedMaterial->Ks.Z,
+					1.0f
+				};
+
+				MaterialObject->SpecularExponent = MatchedMaterial->Ns;
 
 				if (!MatchedMaterial->map_Bump.empty())
 				{

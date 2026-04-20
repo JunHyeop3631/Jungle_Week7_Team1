@@ -56,6 +56,11 @@ public:
 		return Parent ? Parent->GetSpecularColor() : FVector4(0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
+	virtual float GetSpecularExponent() const override
+	{
+		return Parent ? Parent->GetSpecularExponent() : 0.0f;
+	}
+
 	// 셰이더는 무조건 부모에게 위임 (인스턴스는 셰이더를 가지지 않음) ★
 	virtual ID3D11VertexShader* GetVertexShader() const override
 	{

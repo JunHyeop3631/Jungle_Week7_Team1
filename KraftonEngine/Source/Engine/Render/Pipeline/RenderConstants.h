@@ -111,7 +111,7 @@ struct FMaterialConstants
 {
 	uint32 bIsUVScroll = 0;
 	uint32 bHasNormalMap = 0;
-	float SpecularRoughness = 16.0f;
+	float SpecularRoughness = 0.0f;
 	float SpecularIntensity = 1.0f;
 	FVector4 SectionColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 	FVector4 Ka = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -362,6 +362,7 @@ struct FMeshSectionDraw
 	FVector4 DiffuseColor = { 1.0f, 0.0f, 1.0f, 1.0f };		// 기본 마젠타 색
 	FVector4 AmbientColor = { 1.0f, 1.0f, 1.0f, 1.0f };		
 	FVector4 SpecularColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float SpecularExponent = 0.0f;
 	uint32 FirstIndex = 0;
 	uint32 IndexCount = 0;
 	bool bIsUVScroll = false;

@@ -61,6 +61,9 @@ struct FStaticMaterial
 		FString InlineTexturePath;
 		FString InlineNormalTexturePath;
 		FVector4 InlineDiffuseColor = { 1.0f, 0.0f, 1.0f, 1.0f };
+		FVector4 InlineAmbientColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+		FVector4 InlineSpecularColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+		float InlineSpecularExponent = 0.0f;
 
 		if (Ar.IsSaving() && Mat.MaterialInterface)
 		{
@@ -69,6 +72,9 @@ struct FStaticMaterial
 			{
 				// 1. 색상은 인스턴스든 마스터든 다형성으로 안전하게 최종 값을 가져옵니다.
 				InlineDiffuseColor = Mat.MaterialInterface->GetDiffuseColor();
+				InlineAmbientColor = Mat.MaterialInterface->GetAmbientColor();
+				InlineSpecularColor = Mat.MaterialInterface->GetSpecularColor();
+				InlineSpecularExponent = Mat.MaterialInterface->GetSpecularExponent();
 
 				// 2. 텍스처 경로는 런타임 폴백용이므로, 마스터 머티리얼일 경우에만 저장하도록 정책을 정합니다.
 				if (Mat.MaterialInterface->GetMaterialType() == EMaterialType::Master)
@@ -86,6 +92,9 @@ struct FStaticMaterial
 		Ar << InlineTexturePath;
 		Ar << InlineNormalTexturePath;
 		Ar << InlineDiffuseColor;
+		Ar << InlineAmbientColor;
+		Ar << InlineSpecularColor;
+		Ar << InlineSpecularExponent;
 
 		// 4. 로딩 시 머티리얼 복원
 		if (Ar.IsLoading())
@@ -108,6 +117,9 @@ struct FStaticMaterial
 					ConcreteMaterial->DiffuseTextureFilePath = InlineTexturePath;
 					ConcreteMaterial->NormalTextureFilePath = InlineNormalTexturePath;
 					ConcreteMaterial->DiffuseColor = InlineDiffuseColor;
+					ConcreteMaterial->AmbientColor = InlineAmbientColor;
+					ConcreteMaterial->SpecularColor = InlineSpecularColor;
+					ConcreteMaterial->SpecularExponent = InlineSpecularExponent;
 				}
 			}
 		}

@@ -32,6 +32,7 @@ public:
 	virtual FVector4 GetDiffuseColor() const;
 	virtual FVector4 GetSpecularColor() const;
 	virtual FVector4 GetAmbientColor() const;
+	virtual float GetSpecularExponent() const;
 
 	virtual UTexture2D* GetNormalTexture() const = 0;
 
