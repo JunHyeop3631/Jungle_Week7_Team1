@@ -16,3 +16,21 @@ APointLight::APointLight()
 	SpriteComponent->SetTexture(FName("PointLightIcon"));
 	PointLight->SetEditorIconBillboard(SpriteComponent);
 }
+
+void APointLight::BeginPlay()
+{
+	AActor::BeginPlay();
+
+	for (UActorComponent* Component : GetComponents())
+	{
+		if (UBillboardComponent* Billboard = Cast<UBillboardComponent>(Component))
+		{
+			Billboard->SetVisibility(false);
+		}
+	}
+}
+
+void APointLight::Serialize(FArchive& Ar)
+{
+	AActor::Serialize(Ar);
+}

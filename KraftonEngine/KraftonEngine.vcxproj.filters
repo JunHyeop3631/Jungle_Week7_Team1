@@ -187,6 +187,7 @@
       <Filter>Shaders\Common</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\Decal.hlsl" />
+    <FxCompile Include="Shaders\LightCulling.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Editor\EditorEngine.cpp">
@@ -580,6 +581,8 @@
     <ClCompile Include="Source\Engine\GameFramework\SpotLight.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\PointLight.cpp" />
     <ClCompile Include="Source\Engine\Components\PointLightComponent.cpp" />
+    <ClCompile Include="Source\Engine\GameFramework\AmbientLight.cpp" />
+    <ClCompile Include="Source\Engine\GameFramework\DirectionalLight.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Editor\EditorEngine.h">
@@ -1084,6 +1087,9 @@
     <ClInclude Include="Source\Engine\GameFramework\SpotLight.h" />
     <ClInclude Include="Source\Engine\GameFramework\PointLight.h" />
     <ClInclude Include="Source\Engine\Components\PointLightComponent.h" />
+    <ClInclude Include="Source\Engine\GameFramework\AmbientLight.h" />
+    <ClInclude Include="Source\Engine\GameFramework\DirectionalLight.h" />
+    <ClInclude Include="Source\Engine\Render\Proxy\LightSceneProxy.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="KraftonEngine.rc" />

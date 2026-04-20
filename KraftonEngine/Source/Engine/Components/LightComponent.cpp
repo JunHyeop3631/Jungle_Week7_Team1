@@ -1,8 +1,19 @@
 ﻿#include "LightComponent.h"
 #include "Object/ObjectFactory.h"
 #include "BillboardComponent.h"
+#include "Serialization/Archive.h"
 
 IMPLEMENT_CLASS(ULightComponent, ULightComponentBase)
+
+void ULightComponent::BeginPlay()
+{
+	ULightComponentBase::BeginPlay();
+}
+
+void ULightComponent::Serialize(FArchive& Ar)
+{
+	ULightComponentBase::Serialize(Ar);
+}
 
 void ULightComponent::SetEditorIconBillboard(UBillboardComponent* InBillboard)
 {

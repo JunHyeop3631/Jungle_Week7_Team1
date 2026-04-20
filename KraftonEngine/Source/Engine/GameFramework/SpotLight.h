@@ -11,6 +11,10 @@ public:
 
 	ASpotLight();
 
+
+	void BeginPlay() override;
+	void Serialize(FArchive& Ar) override;
+
 private:
 	UBillboardComponent* SpriteComponent = nullptr;
 	USpotLightComponent* SpotLight = nullptr;

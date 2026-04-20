@@ -2,6 +2,8 @@
 #include "Object/ObjectFactory.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/ActorComponent.h"
+#include "Components/LightComponent.h"
+#include "Components/LightComponentBase.h"
 #include "Components/MovementComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Math/Rotator.h"
@@ -130,13 +132,24 @@ void AActor::SetVisible(bool Visible)
 	}
 
 	bVisible = Visible;
-	// 각 PrimitiveComponent가 자신의 dirty 시퀀스(Proxy/Octree/PickingBVH/VisibleSet)를
+	// 각 Component 가 자신의 dirty 시퀀스(Proxy/Octree/PickingBVH/VisibleSet)를
 	// 전파하면 액터 단위 캐시도 자연히 무효화된다.
-	for (UPrimitiveComponent* Prim : GetPrimitiveComponents())
+	for (UActorComponent* Comp : OwnedComponents)
 	{
-		if (Prim)
+		if (!Comp)
+		{
+			continue;
+		}
+		
+		if (UPrimitiveComponent* Prim = Cast<UPrimitiveComponent>(Comp))
 		{
 			Prim->MarkRenderVisibilityDirty();
+			continue;
+		}
+
+		if (ULightComponentBase* Light = Cast<ULightComponentBase>(Comp))
+		{
+			Light->MarkRenderVisibilityDirty();
 		}
 	}
 }

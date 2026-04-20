@@ -16,4 +16,21 @@ ASpotLight::ASpotLight()
 	SpotLight->SetEditorIconBillboard(SpriteComponent);
 }
 
+void ASpotLight::BeginPlay()
+{
+	AActor::BeginPlay();
+
+	for (UActorComponent* Component : GetComponents())
+	{
+		if (UBillboardComponent* Billboard = Cast<UBillboardComponent>(Component))
+		{
+			Billboard->SetVisibility(false);
+		}
+	}
+}
+
+void ASpotLight::Serialize(FArchive& Ar)
+{
+	AActor::Serialize(Ar);
+}
 

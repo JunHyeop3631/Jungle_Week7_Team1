@@ -37,16 +37,6 @@ FLightSceneProxy* ULightComponentBase::CreateLightSceneProxy()
 void ULightComponentBase::MarkRenderVisibilityDirty()
 {
 	MarkProxyDirty(EDirtyFlag::Visibility);
-
-	AActor* OwnerActor = GetOwner();
-	if (!OwnerActor) return;
-	UWorld* World = OwnerActor->GetWorld();
-	if (!World) return;
-
-	// 가시성 변화는 Octree 포함 여부도 좌우하므로 액터 dirty로 반영한다.
-	World->UpdateActorInOctree(OwnerActor);
-	World->MarkWorldPrimitivePickingBVHDirty();
-	World->InvalidateVisibleSet();
 }
 
 void ULightComponentBase::MarkProxyDirty(EDirtyFlag flag) const
