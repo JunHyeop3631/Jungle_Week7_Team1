@@ -114,6 +114,8 @@ struct FMaterialConstants
 	float SpecularRoughness = 16.0f;
 	float SpecularIntensity = 1.0f;
 	FVector4 SectionColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	FVector4 Ka = { 1.0f, 1.0f, 1.0f, 1.0f };
+	FVector4 Ks = { 0.0f, 0.0f, 0.0f, 1.0f };
 };
 
 struct FPickingConstants
@@ -164,7 +166,9 @@ struct FLightingConstants
 	FDirectionalLightInfo Directional;
 	uint32 PointLightCount = 0;
 	uint32 SpotLightCount = 0;
-	uint32 _pad[2] = {0, 0};
+	
+	uint32 bDebugLightCulling = 0;
+	uint32 _pad = 0;
 };
 
 struct FCollectedLightData
@@ -356,6 +360,8 @@ struct FMeshSectionDraw
 	ID3D11ShaderResourceView* DiffuseSRV = nullptr;
 	ID3D11ShaderResourceView* NormalMapSRV = nullptr;
 	FVector4 DiffuseColor = { 1.0f, 0.0f, 1.0f, 1.0f };		// 기본 마젠타 색
+	FVector4 AmbientColor = { 1.0f, 1.0f, 1.0f, 1.0f };		
+	FVector4 SpecularColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 	uint32 FirstIndex = 0;
 	uint32 IndexCount = 0;
 	bool bIsUVScroll = false;

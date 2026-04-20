@@ -60,6 +60,7 @@ namespace Key
 	constexpr const char* ShowPropertyWindow = "ShowPropertyWindow";
 	constexpr const char* ShowSceneManager = "ShowSceneManager";
 	constexpr const char* ShowStatProfiler = "ShowStatProfiler";
+	constexpr const char* ShowLightCullingDebug = "ShowLightCullingDebug";
 
 	// Perspective Camera
 	constexpr const char* PerspectiveCamera = "PerspectiveCamera";
@@ -148,6 +149,7 @@ void FEditorSettings::SaveToFile(const FString& Path) const
 	WidgetsObj[Key::ShowPropertyWindow] = UI.bProperty;
 	WidgetsObj[Key::ShowSceneManager] = UI.bScene;
 	WidgetsObj[Key::ShowStatProfiler] = UI.bStat;
+	WidgetsObj[Key::ShowLightCullingDebug] = UI.bLightCullingDebug;
 	Root[Key::UIWidgets] = WidgetsObj;
 
 	// Perspective Camera
@@ -317,6 +319,7 @@ void FEditorSettings::LoadFromFile(const FString& Path)
 		if (W.hasKey(Key::ShowPropertyWindow)) UI.bProperty = W[Key::ShowPropertyWindow].ToBool();
 		if (W.hasKey(Key::ShowSceneManager))   UI.bScene = W[Key::ShowSceneManager].ToBool();
 		if (W.hasKey(Key::ShowStatProfiler))   UI.bStat = W[Key::ShowStatProfiler].ToBool();
+		if (W.hasKey(Key::ShowLightCullingDebug))   UI.bLightCullingDebug = W[Key::ShowLightCullingDebug].ToBool();
 	}
 
 	// Perspective Camera

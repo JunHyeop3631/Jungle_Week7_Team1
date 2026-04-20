@@ -20,8 +20,8 @@ groupshared uint g_TileLightIndices[MAX_LIGHTS_PER_TILE];
 
 struct Plane
 {
-    float3 N;
-    float d;
+    float3 Normal;
+    float DistanceToOrigin;
 };
 groupshared Plane g_FrustumPlanes[4];
 
@@ -67,24 +67,28 @@ void InitializeTileAndFrustum(uint3 groupId, uint3 dispatchThreadId, uint groupI
         uint2 tileMin = groupId.xy * TILE_SIZE;
         uint2 tileMax = tileMin + TILE_SIZE;
 
-        float3 pBL = ScreenToView(float4(tileMin.x, tileMax.y, 1.0f, 1.0f), screenDims);
-        float3 pTL = ScreenToView(float4(tileMin.x, tileMin.y, 1.0f, 1.0f), screenDims);
-        float3 pTR = ScreenToView(float4(tileMax.x, tileMin.y, 1.0f, 1.0f), screenDims);
-        float3 pBR = ScreenToView(float4(tileMax.x, tileMax.y, 1.0f, 1.0f), screenDims);
-        float3 center = ScreenToView(float4((tileMin.x + tileMax.x) * 0.5f, (tileMin.y + tileMax.y) * 0.5f, 1.0f, 1.0f), screenDims);
+        float3 viewBottomLeft = ScreenToView(float4(tileMin.x, tileMax.y, 1.0f, 1.0f), screenDims);
+        float3 viewTopLeft = ScreenToView(float4(tileMin.x, tileMin.y, 1.0f, 1.0f), screenDims);
+        float3 viewTopRight = ScreenToView(float4(tileMax.x, tileMin.y, 1.0f, 1.0f), screenDims);
+        float3 viewBottomRight = ScreenToView(float4(tileMax.x, tileMax.y, 1.0f, 1.0f), screenDims);
+        
+        float3 viewCenter = ScreenToView(float4((tileMin.x + tileMax.x) * 0.5f, (tileMin.y + tileMax.y) * 0.5f, 1.0f, 1.0f), screenDims);
 
-        float3 planes[4];
-        planes[0] = normalize(cross(pBL, pTL));
-        planes[1] = normalize(cross(pTL, pTR));
-        planes[2] = normalize(cross(pTR, pBR));
-        planes[3] = normalize(cross(pBR, pBL));
+        float3 planeNormals[4];
+        planeNormals[0] = normalize(cross(viewBottomLeft, viewTopLeft));
+        planeNormals[1] = normalize(cross(viewTopLeft, viewTopRight));
+        planeNormals[2] = normalize(cross(viewTopRight, viewBottomRight));
+        planeNormals[3] = normalize(cross(viewBottomRight, viewBottomLeft));
 
         for (int p = 0; p < 4; p++)
         {
-            if (dot(planes[p], center) < 0.0f)
-                planes[p] = -planes[p];
-            g_FrustumPlanes[p].N = planes[p];
-            g_FrustumPlanes[p].d = 0.0f;
+            if (dot(planeNormals[p], viewCenter) < 0.0f)
+            {
+                planeNormals[p] = -planeNormals[p];
+            }
+                
+            g_FrustumPlanes[p].Normal = planeNormals[p];
+            g_FrustumPlanes[p].DistanceToOrigin = 0.0f;
         }
     }
     GroupMemoryBarrierWithGroupSync();
@@ -101,19 +105,19 @@ void CS_Point(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID
     float minDepthF = asfloat(g_MinDepthInt);
     float maxDepthF = asfloat(g_MaxDepthInt);
 
-    // [핵심] b8 버퍼의 PointLightCount 와 t8 버퍼의 PointLightData 사용
+    // PointLightCount, PointLightData 사용
     for (uint i = groupIndex; i < PointLightCount; i += 256)
     {
         FPointLightInfo light = PointLightData[i];
-        float3 viewPos = mul(float4(light.Position.xyz, 1.0f), View).xyz;
+        float3 LightViewPosition = mul(float4(light.Position.xyz, 1.0f), View).xyz;
 
-        /*if (viewPos.z - light.AttenuationRadius > maxDepthF || viewPos.z + light.AttenuationRadius < minDepthF)
-            continue;*/
+        if (LightViewPosition.z - light.AttenuationRadius > maxDepthF || LightViewPosition.z + light.AttenuationRadius < minDepthF)
+            continue;
 
         bool bInFrustum = true;
         for (int p = 0; p < 4; p++)
         {
-            if (dot(g_FrustumPlanes[p].N, viewPos) < -light.AttenuationRadius)
+            if (dot(g_FrustumPlanes[p].Normal, LightViewPosition) < -light.AttenuationRadius)
             {
                 bInFrustum = false;
                 break;
@@ -144,6 +148,7 @@ void CS_Point(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID
 }
 
 
+// 로직 자체는 PointLight와 동일 -> 원뿔 계산이 비효율적이므로 동일하게 사용 -> 자세하게 한다면 로직 변경 필요
 [numthreads(16, 16, 1)]
 void CS_Spot(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID, uint3 dispatchThreadId : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
 {
@@ -158,15 +163,33 @@ void CS_Spot(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID,
     for (uint i = groupIndex; i < SpotLightCount; i += 256)
     {
         FSpotLightInfo light = SpotLightData[i];
-        float3 viewPos = mul(float4(light.Position.xyz, 1.0f), View).xyz;
+
+        float3 apexViewPos = mul(float4(light.Position.xyz, 1.0f), View).xyz; // SpotLight의 꼭짓점
+        float3 viewDir = mul(float4(light.Direction.xyz, 0.0f), View).xyz;
+        viewDir = normalize(viewDir);
         
-        /*if (viewPos.z - light.AttenuationRadius > maxDepthF || viewPos.z + light.AttenuationRadius < minDepthF)
-            continue;*/
+        float coneLength = light.AttenuationRadius;
+        float halfAngle = light.OuterConeAngle;
+
+        float3 boundingCenter = apexViewPos;
+        float boundingRadius = coneLength;
+
+        // 45도 이하인 경우에만 원뿔의 중심, 반지름 재계산.
+        if (halfAngle <= 0.785398f) // 45도 이하에만 적용
+        {
+            boundingRadius = coneLength / (2.0f * cos(halfAngle));
+            boundingCenter = apexViewPos + (viewDir * boundingRadius);
+        }
+
+
+        // 구와 절두체 컬링(기존과 동일)
+        if (boundingCenter.z - boundingRadius > maxDepthF || boundingCenter.z + boundingRadius < minDepthF)
+            continue;
 
         bool bInFrustum = true;
         for (int p = 0; p < 4; p++)
         {
-            if (dot(g_FrustumPlanes[p].N, viewPos) < -light.AttenuationRadius)
+            if (dot(g_FrustumPlanes[p].Normal, boundingCenter) < -boundingRadius)
             {
                 bInFrustum = false;
                 break;

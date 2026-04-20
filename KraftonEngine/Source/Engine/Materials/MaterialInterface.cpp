@@ -23,6 +23,16 @@ FVector4 UMaterialInterface::GetDiffuseColor() const
     return FVector4(1.0f, 0.0f, 1.0f, 1.0f);
 }
 
+FVector4 UMaterialInterface::GetSpecularColor() const
+{
+	return FVector4(0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+FVector4 UMaterialInterface::GetAmbientColor() const
+{
+	return FVector4(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
 ID3D11VertexShader* UMaterialInterface::GetVertexShader() const
 {
     return nullptr;

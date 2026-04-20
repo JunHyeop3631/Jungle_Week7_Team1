@@ -70,6 +70,7 @@ public:
 #if STATS
 		bool bHiZDebug = false;
 #endif
+		bool bLightCullingDebug = false;
 	} UI;
 
 	void SaveToFile(const FString& Path) const;

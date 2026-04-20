@@ -739,6 +739,9 @@ void FEditorMainPanel::RenderEditorDebugPanel()
 		}
 	}
 
+	ImGui::Separator();
+	ImGui::Checkbox("Show Light Culling Heatmap", &Settings.UI.bLightCullingDebug);
+
 	PushFXAAConstantsToRenderer(EditorEngine, Settings);
 
 	if (FLevelEditorViewportClient* ActiveVC = EditorEngine->GetActiveViewport())
