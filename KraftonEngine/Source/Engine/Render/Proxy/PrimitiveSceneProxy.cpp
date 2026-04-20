@@ -38,6 +38,16 @@ namespace
 		Hash = HashCombine(Hash, HashFloatBits(Section.DiffuseColor.Y));
 		Hash = HashCombine(Hash, HashFloatBits(Section.DiffuseColor.Z));
 		Hash = HashCombine(Hash, HashFloatBits(Section.DiffuseColor.W));
+
+		Hash = HashCombine(Hash, HashFloatBits(Section.AmbientColor.X));
+		Hash = HashCombine(Hash, HashFloatBits(Section.AmbientColor.Y));
+		Hash = HashCombine(Hash, HashFloatBits(Section.AmbientColor.Z));
+		Hash = HashCombine(Hash, HashFloatBits(Section.AmbientColor.W));
+
+		Hash = HashCombine(Hash, HashFloatBits(Section.SpecularColor.X));
+		Hash = HashCombine(Hash, HashFloatBits(Section.SpecularColor.Y));
+		Hash = HashCombine(Hash, HashFloatBits(Section.SpecularColor.Z));
+		Hash = HashCombine(Hash, HashFloatBits(Section.SpecularColor.W));
 		return Hash;
 	}
 

@@ -149,16 +149,28 @@ void USpotLightComponent::CollectEditorVisualizations(FRenderBus& RenderBus) con
 void USpotLightComponent::GetEditableProperties(TArray<FPropertyDescriptor>& OutProps)
 {
 	UPointLightComponent::GetEditableProperties(OutProps);
-	OutProps.push_back({ "InnerConeAngle", EPropertyType::Float, &InnerConeAngle });
-	OutProps.push_back({ "OuterConeAngle", EPropertyType::Float, &OuterConeAngle });
+	OutProps.push_back({ "InnerConeAngle", EPropertyType::Float, &InnerConeAngle , 0.f, 80.f});
+	OutProps.push_back({ "OuterConeAngle", EPropertyType::Float, &OuterConeAngle, 0.f, 80.f});
 }
 
 void USpotLightComponent::PostEditProperty(const char* PropertyName)
 {
 	UPointLightComponent::PostEditProperty(PropertyName);
 
-	if (strcmp(PropertyName, "InnerConeAngle") == 0 || strcmp(PropertyName, "OuterConeAngle") == 0)
+	if (strcmp(PropertyName, "InnerConeAngle") == 0)
 	{
+		if (InnerConeAngle > OuterConeAngle)
+		{
+			OuterConeAngle = InnerConeAngle;
+		}
+		MarkProxyDirty(EDirtyFlag::LightData);
+	}
+	else if (strcmp(PropertyName, "OuterConeAngle") == 0)
+	{
+		if (InnerConeAngle > OuterConeAngle)
+		{
+			InnerConeAngle = OuterConeAngle;
+		}
 		MarkProxyDirty(EDirtyFlag::LightData);
 	}
 }

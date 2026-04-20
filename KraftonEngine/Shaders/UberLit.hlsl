@@ -25,7 +25,7 @@ PS_Lighting VS(VS_Input_PNCT input)
     
 // 구루 쉐이딩 (VS 단계이므로 타일 컬링 없이 _NoTile 함수 사용)
 #if LIGHTING_MODEL_GOURAUD
-    float3 AmbientColor = Ambient.LightColor.rgb * 0.1f;
+    float3 AmbientColor = Ambient.LightColor.rgb * ka * 0.1f;
     float shininess = SpecularRoughness;
     
     LightingResult totalLighting = (LightingResult)0;
@@ -43,7 +43,7 @@ PS_Lighting VS(VS_Input_PNCT input)
     totalLighting.Diffuse += tempLighting.Diffuse;
     totalLighting.Specular += tempLighting.Specular;
     
-    output.vertexLighting = AmbientColor + totalLighting.Diffuse + (totalLighting.Specular * SpecularIntensity);
+    output.vertexLighting = AmbientColor + totalLighting.Diffuse + (totalLighting.Specular * SpecularIntensity * ks);
 #endif
     
     return output;
@@ -81,7 +81,7 @@ float4 PS(PS_Lighting input) : SV_TARGET
     totalLighting.Diffuse += tempLighting.Diffuse;
     
     float3 albedo = texColor.rgb * input.color.rgb;
-    float3 ambient = Ambient.LightColor.rgb * 0.1f * albedo;
+    float3 ambient = Ambient.LightColor.rgb * ka * albedo* 0.1f;
     float3 diffuse  = totalLighting.Diffuse * albedo;
     float3 final = ambient + diffuse;
     finalColor = float4(final, input.color.a * texColor.a);
@@ -103,9 +103,9 @@ float4 PS(PS_Lighting input) : SV_TARGET
     totalLighting.Specular += tempLighting.Specular;
     
     float3 albedo = texColor.rgb * input.color.rgb;
-    float3 ambient = Ambient.LightColor.rgb * 0.1f * albedo;
+    float3 ambient = Ambient.LightColor.rgb * ka * albedo * 0.1f;
     float3 diffuse = totalLighting.Diffuse * albedo;
-    float3 specular = totalLighting.Specular * SpecularIntensity;
+    float3 specular = totalLighting.Specular * SpecularIntensity * ks;
     
     float3 final = ambient + diffuse + specular;
     finalColor = float4(final, input.color.a * texColor.a);

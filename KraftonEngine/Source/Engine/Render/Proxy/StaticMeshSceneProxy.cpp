@@ -155,6 +155,8 @@ void FStaticMeshSceneProxy::RebuildSectionDraws()
 						Draw.NormalMapSRV = NormalTex->GetSRV();
 
 					Draw.DiffuseColor = Mat->GetDiffuseColor();
+					Draw.AmbientColor = Mat->GetAmbientColor();
+					Draw.SpecularColor = Mat->GetSpecularColor();
 				}
 			}
 
