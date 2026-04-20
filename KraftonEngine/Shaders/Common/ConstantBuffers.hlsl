@@ -147,7 +147,8 @@ cbuffer LightingBuffer : register(b8)
     FDirectionalLightInfo Directional;
     uint PointLightCount;
     uint SpotLightCount;
-    float2 _lightPad;
+    uint bDebugLightCulling;
+    float _lightPad;
 };
 
 StructuredBuffer<FPointLightInfo> PointLightData : register(t8);
