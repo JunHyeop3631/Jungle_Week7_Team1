@@ -11,6 +11,9 @@ public:
 	
 	APointLight();
 
+	void BeginPlay() override;
+	void Serialize(FArchive& Ar) override;
+
 private:
 	UBillboardComponent* SpriteComponent = nullptr;
 	UPointLightComponent* PointLight = nullptr;
