@@ -31,6 +31,7 @@ UWorld::~UWorld()
 	{
 		EndPlay();
 	}
+	delete PersistentLevel;
 }
 
 UObject* UWorld::Duplicate(UObject* NewOuter) const
