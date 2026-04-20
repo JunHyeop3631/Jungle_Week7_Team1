@@ -17,23 +17,29 @@ struct FLightCullingBuffers
 	ID3D11Buffer* SpotLightData = nullptr;
 	ID3D11ShaderResourceView* SpotLightDataSRV = nullptr;
 
-	// Point Light 타일 컬링 결과 (CS에서 UAV 쓰기 -> PS에서 SRV 읽기)
-	ID3D11Buffer* PointLightIndices = nullptr;
-	ID3D11UnorderedAccessView* PointLightIndicesUAV = nullptr;
-	ID3D11ShaderResourceView* PointLightIndicesSRV = nullptr;
+	// Point Light 클러스터 기반 컬링 결과 버퍼
+	ID3D11Buffer* PointLightClusterGrid = nullptr; // Offset, Count 저장
+	ID3D11UnorderedAccessView* PointLightClusterGridUAV = nullptr;
+	ID3D11ShaderResourceView* PointLightClusterGridSRV = nullptr;
 
-	ID3D11Buffer* PointLightCounts = nullptr;
-	ID3D11UnorderedAccessView* PointLightCountsUAV = nullptr;
-	ID3D11ShaderResourceView* PointLightCountsSRV = nullptr;
+	ID3D11Buffer* PointLightGlobalIndices = nullptr; // 실제 조명 인덱스가 담기는 배열
+	ID3D11UnorderedAccessView* PointLightGlobalIndicesUAV = nullptr;
+	ID3D11ShaderResourceView* PointLightGlobalIndicesSRV = nullptr;
 
-	// Spot Light 타일 컬링 결과
-	ID3D11Buffer* SpotLightIndices = nullptr;
-	ID3D11UnorderedAccessView* SpotLightIndicesUAV = nullptr;
-	ID3D11ShaderResourceView* SpotLightIndicesSRV = nullptr;
+	ID3D11Buffer* PointLightGlobalCounter = nullptr; // 인덱스 할당용 카운터
+	ID3D11UnorderedAccessView* PointLightGlobalCounterUAV = nullptr;
 
-	ID3D11Buffer* SpotLightCounts = nullptr;
-	ID3D11UnorderedAccessView* SpotLightCountsUAV = nullptr;
-	ID3D11ShaderResourceView* SpotLightCountsSRV = nullptr;
+	// Spot Light 클러스터 기반 컬링 결과 버퍼
+	ID3D11Buffer* SpotLightClusterGrid = nullptr; // Offset, Count 저장
+	ID3D11UnorderedAccessView* SpotLightClusterGridUAV = nullptr;
+	ID3D11ShaderResourceView* SpotLightClusterGridSRV = nullptr;
+
+	ID3D11Buffer* SpotLightGlobalIndices = nullptr; // 실제 조명 인덱스가 담기는 배열
+	ID3D11UnorderedAccessView* SpotLightGlobalIndicesUAV = nullptr;
+	ID3D11ShaderResourceView* SpotLightGlobalIndicesSRV = nullptr;
+
+	ID3D11Buffer* SpotLightGlobalCounter = nullptr; // 인덱스 할당용 카운터
+	ID3D11UnorderedAccessView* SpotLightGlobalCounterUAV = nullptr;
 };
 
 struct FRenderResources

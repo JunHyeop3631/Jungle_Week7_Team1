@@ -74,9 +74,9 @@ struct FFrameConstants
 	float Time;
 	float NearPlane;
 	float FarPlane;
-	float _pad0;
+	float ClusterScale;
+	float ClusterBias;
 	FVector CameraPosition;
-	float _pad1;
 	FGPUFloat4x4 InverseView;
 	FGPUFloat4x4 InverseProjection;
 	FGPUFloat4x4 InverseViewProjection;

@@ -7,16 +7,21 @@
 Texture2D<float> DepthTexture : register(t1);
 
 // UAV
-RWStructuredBuffer<uint> LightIndices : register(u0);
-RWStructuredBuffer<uint> LightCounts : register(u1);
+RWStructuredBuffer<uint2> ClusterGrid : register(u0);
+RWStructuredBuffer<uint> GlobalIndices : register(u1);
+RWStructuredBuffer<uint> GlobalCounts: register(u2);
 
 #define TILE_SIZE 16
-#define MAX_LIGHTS_PER_TILE 64
+#define CLUSTER_SLICES 24
+#define MAX_LIGHTS_PER_CLUSTER 64
+#define MAX_GLOBAL_LIGHT_INDICES 500000
 
 groupshared uint g_MinDepthInt;
 groupshared uint g_MaxDepthInt;
-groupshared uint g_TileLightCount;
-groupshared uint g_TileLightIndices[MAX_LIGHTS_PER_TILE];
+
+groupshared uint g_ClusterLightCount[CLUSTER_SLICES];
+groupshared uint g_ClusterStartOffset[CLUSTER_SLICES];
+groupshared uint g_ClusterLightIndices[CLUSTER_SLICES][MAX_LIGHTS_PER_CLUSTER];
 
 struct Plane
 {
@@ -33,19 +38,29 @@ float3 ScreenToView(float4 screenPos, float2 screenDims)
     return view.xyz / view.w;
 }
 
+uint GetZSlice(float viewZ)
+{
+	// CPU선에서 ClusterScale과 ClusterBias를 계산하여 log(A / B) = log(A) - log(B)공식을 적용시킨 계산식임.
+    int slice = (int) (log2(viewZ) * ClusterScale + ClusterBias);
+    return (uint) clamp(slice, 0, CLUSTER_SLICES - 1);
+}
+
 void InitializeTileAndFrustum(uint3 groupId, uint3 dispatchThreadId, uint groupIndex, uint screenWidth, uint screenHeight)
 {
     if (groupIndex == 0)
     {
         g_MinDepthInt = 0x7f7fffff;
         g_MaxDepthInt = 0;
-        g_TileLightCount = 0;
-        
-        for (int i = 0; i < MAX_LIGHTS_PER_TILE; ++i)
-            g_TileLightIndices[i] = 0;
+    }
+
+    // 16x16 스레드 중 24개가 각 층의 카운터 0으로 초기화
+    if (groupIndex < CLUSTER_SLICES)
+    {
+        g_ClusterLightCount[groupIndex] = 0;
     }
     GroupMemoryBarrierWithGroupSync();
 
+    // 16x16에서의 ViewZ 계산. -> 해당 픽셀의 Z값 계산
     float viewZ = FarPlane;
     if (dispatchThreadId.x < screenWidth && dispatchThreadId.y < screenHeight)
     {
@@ -56,11 +71,13 @@ void InitializeTileAndFrustum(uint3 groupId, uint3 dispatchThreadId, uint groupI
         }
     }
 
+    // minDepth, maxDepth 계산.
     uint zInt = asuint(viewZ);
     InterlockedMin(g_MinDepthInt, zInt);
     InterlockedMax(g_MaxDepthInt, zInt);
     GroupMemoryBarrierWithGroupSync();
 
+    // minDepth, maxDepth기반 절두체의 normal 계산 -> 빛의 원의 거리 계산에 사용
     if (groupIndex == 0)
     {
         float2 screenDims = float2((float) screenWidth, (float) screenHeight);
@@ -102,15 +119,18 @@ void CS_Point(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID
 
     InitializeTileAndFrustum(groupId, dispatchThreadId, groupIndex, screenWidth, screenHeight);
 
-    float minDepthF = asfloat(g_MinDepthInt);
-    float maxDepthF = asfloat(g_MaxDepthInt);
-
-    // PointLightCount, PointLightData 사용
+    float minDepthF = max(NearPlane, asfloat(g_MinDepthInt));
+    float maxDepthF = min(FarPlane, asfloat(g_MaxDepthInt));
+    uint tileStartSlice = GetZSlice(minDepthF);
+    uint tileEndSlice = GetZSlice(maxDepthF);
+    
+	// Cluster내부에 빛의 영향이 있는 것 걸러내는 작업.
     for (uint i = groupIndex; i < PointLightCount; i += 256)
     {
         FPointLightInfo light = PointLightData[i];
         float3 LightViewPosition = mul(float4(light.Position.xyz, 1.0f), View).xyz;
 
+        // Z-bounds검사
         if (LightViewPosition.z - light.AttenuationRadius > maxDepthF || LightViewPosition.z + light.AttenuationRadius < minDepthF)
             continue;
 
@@ -126,10 +146,27 @@ void CS_Point(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID
 
         if (bInFrustum)
         {
-            uint slot;
-            InterlockedAdd(g_TileLightCount, 1, slot);
-            if (slot < MAX_LIGHTS_PER_TILE)
-                g_TileLightIndices[slot] = i;
+			// 빛이 겹치는 Cluster 층을 구하는중
+            float lightMinZ = max(NearPlane, LightViewPosition.z - light.AttenuationRadius);
+            float lightMaxZ = min(FarPlane, LightViewPosition.z + light.AttenuationRadius);
+
+            uint lightStartSlice = GetZSlice(lightMinZ);
+            uint lightEndSlice = GetZSlice(lightMaxZ);
+
+            uint actualStart = max(tileStartSlice, lightStartSlice);
+            uint actualEnd = min(tileEndSlice, lightEndSlice);
+
+            // 영향을 받는 cluster 층에 빛 인덱스 추가
+            for (uint z = actualStart; z <= actualEnd; z++)
+            {
+                uint slot;
+                InterlockedAdd(g_ClusterLightCount[z], 1, slot);
+				if (slot < MAX_LIGHTS_PER_CLUSTER)
+				{
+                    g_ClusterLightIndices[z][slot] = i;
+                }
+            }
+
         }
     }
     GroupMemoryBarrierWithGroupSync();
@@ -137,18 +174,59 @@ void CS_Point(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID
     uint numTilesX = (screenWidth + TILE_SIZE - 1) / TILE_SIZE;
     uint tileIndex = groupId.y * numTilesX + groupId.x;
 
-    if (groupIndex == 0)
-        LightCounts[tileIndex] = min(g_TileLightCount, (uint) MAX_LIGHTS_PER_TILE);
-    
-    uint exportCount = min(g_TileLightCount, (uint) MAX_LIGHTS_PER_TILE);
-    for (uint j = groupIndex; j < exportCount; j += 256)
+    // 0 ~ 23 스레드만 동작.
+    if (groupIndex < CLUSTER_SLICES)
     {
-        LightIndices[tileIndex * MAX_LIGHTS_PER_TILE + j] = g_TileLightIndices[j];
+        uint z = groupIndex;
+        uint count = min(g_ClusterLightCount[z], (uint) MAX_LIGHTS_PER_CLUSTER);
+
+        uint cluster3DIndex = tileIndex * CLUSTER_SLICES + z;
+        if (z >= tileStartSlice && z <= tileEndSlice && count > 0)
+        {
+			// GlobalCounts가 500000이 넘는 것에 대한 방어로직
+            uint startOffset;
+            InterlockedAdd(GlobalCounts[0], count, startOffset);
+
+            if (startOffset >= MAX_GLOBAL_LIGHT_INDICES)
+            {
+                count = 0;
+                startOffset = 0;
+            }
+			else if (startOffset + count > MAX_GLOBAL_LIGHT_INDICES)
+			{
+                count = MAX_GLOBAL_LIGHT_INDICES - startOffset;
+            }
+			// 해당하는 클러스터 인덱스에 정보 저장
+            ClusterGrid[cluster3DIndex] = uint2(startOffset, count);
+            g_ClusterStartOffset[z] = startOffset;
+            g_ClusterLightCount[z] = count;
+        }
+		else
+		{
+            ClusterGrid[cluster3DIndex] = uint2(0, 0);
+            g_ClusterLightCount[z] = 0;
+        }
     }
+    GroupMemoryBarrierWithGroupSync();
+
+    for (uint idx = groupIndex; idx < CLUSTER_SLICES * MAX_LIGHTS_PER_CLUSTER; idx += 256)
+    {
+        // 1차원 배열 2차원 배열화
+        uint z = idx / MAX_LIGHTS_PER_CLUSTER;
+        uint lightSlot = idx % MAX_LIGHTS_PER_CLUSTER;
+
+        if (lightSlot < g_ClusterLightCount[z])
+        {
+			// groupshared에는 배열화 되어 있는데 이것을 1차원 GlobalIndices에 저장하는 과정임.
+            uint offset = g_ClusterStartOffset[z];
+            uint lightIndex = g_ClusterLightIndices[z][lightSlot];
+            GlobalIndices[offset + lightSlot] = lightIndex;
+        }
+    }
+
 }
 
 
-// 로직 자체는 PointLight와 동일 -> 원뿔 계산이 비효율적이므로 동일하게 사용 -> 자세하게 한다면 로직 변경 필요
 [numthreads(16, 16, 1)]
 void CS_Spot(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID, uint3 dispatchThreadId : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
 {
@@ -157,16 +235,17 @@ void CS_Spot(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID,
 
     InitializeTileAndFrustum(groupId, dispatchThreadId, groupIndex, screenWidth, screenHeight);
 
-    float minDepthF = asfloat(g_MinDepthInt);
-    float maxDepthF = asfloat(g_MaxDepthInt);
+    float minDepthF = max(NearPlane, asfloat(g_MinDepthInt));
+    float maxDepthF = min(FarPlane, asfloat(g_MaxDepthInt));
+    uint tileStartSlice = GetZSlice(minDepthF);
+    uint tileEndSlice = GetZSlice(maxDepthF);
     
+	// Cluster내부에 빛의 영향이 있는 것 걸러내는 작업.
     for (uint i = groupIndex; i < SpotLightCount; i += 256)
     {
         FSpotLightInfo light = SpotLightData[i];
-
-        float3 apexViewPos = mul(float4(light.Position.xyz, 1.0f), View).xyz; // SpotLight의 꼭짓점
-        float3 viewDir = mul(float4(light.Direction.xyz, 0.0f), View).xyz;
-        viewDir = normalize(viewDir);
+        float3 apexViewPos = mul(float4(light.Position.xyz, 1.0f), View).xyz;
+        float3 viewDir = normalize(mul(float4(light.Direction.xyz, 0.0f), View).xyz);
         
         float coneLength = light.AttenuationRadius;
         float halfAngle = light.OuterConeAngle;
@@ -174,15 +253,12 @@ void CS_Spot(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID,
         float3 boundingCenter = apexViewPos;
         float boundingRadius = coneLength;
 
-        // 45도 이하인 경우에만 원뿔의 중심, 반지름 재계산.
-        if (halfAngle <= 0.785398f) // 45도 이하에만 적용
+        if (halfAngle <= 0.785398f)
         {
             boundingRadius = coneLength / (2.0f * cos(halfAngle));
             boundingCenter = apexViewPos + (viewDir * boundingRadius);
         }
 
-
-        // 구와 절두체 컬링(기존과 동일)
         if (boundingCenter.z - boundingRadius > maxDepthF || boundingCenter.z + boundingRadius < minDepthF)
             continue;
 
@@ -198,10 +274,25 @@ void CS_Spot(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID,
 
         if (bInFrustum)
         {
-            uint slot;
-            InterlockedAdd(g_TileLightCount, 1, slot);
-            if (slot < MAX_LIGHTS_PER_TILE)
-                g_TileLightIndices[slot] = i;
+            // SpotLight의 Z-Bound 교집합 계산
+            float lightMinZ = max(NearPlane, boundingCenter.z - boundingRadius);
+            float lightMaxZ = min(FarPlane, boundingCenter.z + boundingRadius);
+
+            uint lightStartSlice = GetZSlice(lightMinZ);
+            uint lightEndSlice = GetZSlice(lightMaxZ);
+
+            uint actualStart = max(tileStartSlice, lightStartSlice);
+            uint actualEnd = min(tileEndSlice, lightEndSlice);
+
+            for (uint z = actualStart; z <= actualEnd; ++z)
+            {
+                uint slot;
+                InterlockedAdd(g_ClusterLightCount[z], 1, slot);
+                if (slot < MAX_LIGHTS_PER_CLUSTER)
+                {
+                    g_ClusterLightIndices[z][slot] = i;
+                }
+            }
         }
     }
     GroupMemoryBarrierWithGroupSync();
@@ -209,12 +300,51 @@ void CS_Spot(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID,
     uint numTilesX = (screenWidth + TILE_SIZE - 1) / TILE_SIZE;
     uint tileIndex = groupId.y * numTilesX + groupId.x;
 
-    if (groupIndex == 0)
-        LightCounts[tileIndex] = min(g_TileLightCount, (uint) MAX_LIGHTS_PER_TILE);
-    
-    uint exportCount = min(g_TileLightCount, (uint) MAX_LIGHTS_PER_TILE);
-    for (uint j = groupIndex; j < exportCount; j += 256)
+    // 0 ~ 23 스레드만 동작.
+    if (groupIndex < CLUSTER_SLICES)
     {
-        LightIndices[tileIndex * MAX_LIGHTS_PER_TILE + j] = g_TileLightIndices[j];
+        uint z = groupIndex;
+        uint count = min(g_ClusterLightCount[z], (uint) MAX_LIGHTS_PER_CLUSTER);
+
+        uint cluster3DIndex = tileIndex * CLUSTER_SLICES + z;
+        if (z >= tileStartSlice && z <= tileEndSlice && count > 0)
+        {
+			// GlobalCounts가 500000이 넘는 것에 대한 방어로직
+            uint startOffset;
+            InterlockedAdd(GlobalCounts[0], count, startOffset);
+
+            if (startOffset >= MAX_GLOBAL_LIGHT_INDICES)
+            {
+                count = 0;
+                startOffset = 0;
+            }
+            else if (startOffset + count > MAX_GLOBAL_LIGHT_INDICES)
+            {
+                count = MAX_GLOBAL_LIGHT_INDICES - startOffset;
+            }
+			// 해당하는 클러스터 인덱스에 정보 저장
+            ClusterGrid[cluster3DIndex] = uint2(startOffset, count);
+            g_ClusterStartOffset[z] = startOffset;
+            g_ClusterLightCount[z] = count;
+        }
+        else
+        {
+            ClusterGrid[cluster3DIndex] = uint2(0, 0);
+            g_ClusterLightCount[z] = 0;
+        }
+    }
+    GroupMemoryBarrierWithGroupSync();
+
+    for (uint idx = groupIndex; idx < CLUSTER_SLICES * MAX_LIGHTS_PER_CLUSTER; idx += 256)
+    {
+        uint z = idx / MAX_LIGHTS_PER_CLUSTER;
+        uint lightSlot = idx % MAX_LIGHTS_PER_CLUSTER;
+
+        if (lightSlot < g_ClusterLightCount[z])
+        {
+            uint offset = g_ClusterStartOffset[z];
+            uint lightIndex = g_ClusterLightIndices[z][lightSlot];
+            GlobalIndices[offset + lightSlot] = lightIndex;
+        }
     }
 }

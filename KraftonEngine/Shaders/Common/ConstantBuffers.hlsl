@@ -13,9 +13,9 @@ cbuffer FrameBuffer : register(b0)
     float Time;
     float NearPlane;
     float FarPlane;
-    float _framePad0;
+    float ClusterScale;
+    float ClusterBias;
     float3 CameraPosition;
-    float _framePad1;
     
     float4x4 InverseView;
     float4x4 InverseProjection;
@@ -154,9 +154,9 @@ cbuffer LightingBuffer : register(b8)
 StructuredBuffer<FPointLightInfo> PointLightData : register(t8);
 StructuredBuffer<FSpotLightInfo> SpotLightData : register(t9);
 
-StructuredBuffer<uint> PointLightIndices : register(t10);
-StructuredBuffer<uint> PointLightCounts : register(t11);
-StructuredBuffer<uint> SpotLightIndices : register(t12);
-StructuredBuffer<uint> SpotLightCounts : register(t13);
+StructuredBuffer<uint2> PointLightClusterGrid : register(t10);
+StructuredBuffer<uint> PointLightGlobalIndices : register(t11);
+StructuredBuffer<uint2> SpotLightClusterGrid : register(t12);
+StructuredBuffer<uint> SpotLightGlobalIndices : register(t13);
 
 #endif // CONSTANT_BUFFERS_HLSL

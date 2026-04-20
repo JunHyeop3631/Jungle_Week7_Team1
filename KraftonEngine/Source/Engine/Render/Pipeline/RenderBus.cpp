@@ -93,7 +93,19 @@ void FRenderBus::SetCameraInfo(const UCameraComponent* Camera)
 	bIsOrtho = Camera->IsOrthogonal();
 	OrthoWidth = Camera->GetOrthoWidth();
 
-	// View * Proj 로부터 절두체 평면 갱신 - OBB 컬링(IntersectOBB)에 사용
+	const float NumSlices = 24.0f;
+	const float SafeNear = std::max(NearPlane, 0.01f);
+	if (bIsOrtho)
+	{
+		ClusterScale = NumSlices / (FarPlane - SafeNear);
+		ClusterBias = -(NumSlices * SafeNear) / (FarPlane - SafeNear);
+	}
+	else
+	{
+		ClusterScale = NumSlices / std::log2(FarPlane / SafeNear);
+		ClusterBias = -(NumSlices * std::log2(SafeNear)) / std::log2(FarPlane / SafeNear);
+	}
+
 	CachedConvexVolume.UpdateFromMatrix(View * Proj);
 }
 

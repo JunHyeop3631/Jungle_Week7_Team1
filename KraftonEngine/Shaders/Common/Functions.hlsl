@@ -229,12 +229,18 @@ LightingResult ComputePointLight_BlinnPhong(float3 cameraPos, float3 worldPos, f
     uint numTilesX = ((uint) ScreenWidth + 15) / 16;
     uint tileIndex = tileY * numTilesX + tileX;
 
-    uint lightCount = PointLightCounts[tileIndex];
-    uint tileOffset = tileIndex * 64;
+    // z깊이 구해서 24층 중 몇 층인지 알아내야 함.
+    float viewZ = mul(float4(worldPos, 1.0f), View).z;
+    uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
+    uint cluster3DIndex = tileIndex * 24 + zSlice;
+
+    uint2 clusterData = PointLightClusterGrid[cluster3DIndex];
+    uint offset = clusterData.x;
+    uint lightCount = clusterData.y;
     
     for (uint i = 0; i < lightCount; ++i)
     {
-        uint lightIndex = PointLightIndices[tileOffset + i];
+        uint lightIndex = PointLightGlobalIndices[offset + i];
         FPointLightInfo light = PointLightData[lightIndex];
         
         float3 toLight = light.Position.xyz - worldPos;
@@ -275,12 +281,17 @@ LightingResult ComputeSpotLight_BlinnPhong(float3 cameraPos, float3 worldPos, fl
     uint numTilesX = ((uint) ScreenWidth + 15) / 16;
     uint tileIndex = tileY * numTilesX + tileX;
     
-    uint lightCount = SpotLightCounts[tileIndex];
-    uint tileOffset = tileIndex * 64; // MAX_LIGHTS_PER_TILE
+    float viewZ = mul(float4(worldPos, 1.0f), View).z;
+    uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
+    uint cluster3DIndex = tileIndex * 24 + zSlice;
+
+    uint2 clusterData = PointLightClusterGrid[cluster3DIndex];
+    uint offset = clusterData.x;
+    uint lightCount = clusterData.y;
 
     for (uint i = 0; i < lightCount; ++i)
     {
-        uint lightIndex = SpotLightIndices[tileOffset + i];
+        uint lightIndex = SpotLightClusterGrid[offset + i];
         FSpotLightInfo light = SpotLightData[lightIndex];
 
         float3 toLight = light.Position.xyz - worldPos;
@@ -322,12 +333,18 @@ LightingResult ComputePointLight_Lambert(float3 worldPos, float3 worldNormal, fl
     uint numTilesX = ((uint) ScreenWidth + 15) / 16;
     uint tileIndex = tileY * numTilesX + tileX;
 
-    uint lightCount = PointLightCounts[tileIndex];
-    uint tileOffset = tileIndex * 64;
+    float viewZ = mul(float4(worldPos, 1.0f), View).z;
+    uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
+    uint cluster3DIndex = tileIndex * 24 + zSlice;
+
+    uint2 clusterData = PointLightClusterGrid[cluster3DIndex];
+    uint offset = clusterData.x;
+    uint lightCount = clusterData.y;
+    
 
     for (uint i = 0; i < lightCount; ++i)
     {
-        uint lightIndex = PointLightIndices[tileOffset + i];
+        uint lightIndex = PointLightGlobalIndices[offset + i];
         FPointLightInfo light = PointLightData[lightIndex];
         
         float3 toLight = light.Position.xyz - worldPos;
@@ -354,12 +371,17 @@ LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal, flo
     uint numTilesX = ((uint) ScreenWidth + 15) / 16;
     uint tileIndex = tileY * numTilesX + tileX;
 
-    uint lightCount = SpotLightCounts[tileIndex];
-    uint tileOffset = tileIndex * 64;
+    float viewZ = mul(float4(worldPos, 1.0f), View).z;
+    uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
+    uint cluster3DIndex = tileIndex * 24 + zSlice;
+
+    uint2 clusterData = PointLightClusterGrid[cluster3DIndex];
+    uint offset = clusterData.x;
+    uint lightCount = clusterData.y;
 
     for (uint i = 0; i < lightCount; ++i)
     {
-        uint lightIndex = SpotLightIndices[tileOffset + i];
+        uint lightIndex = SpotLightClusterGrid[offset + i];
         FSpotLightInfo light = SpotLightData[lightIndex];
         
         float3 toLight = light.Position.xyz - worldPos;

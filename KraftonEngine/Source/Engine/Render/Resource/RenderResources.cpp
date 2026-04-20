@@ -40,13 +40,19 @@ void FRenderResources::CreateLightCullingBuffers(ID3D11Device* InDevice, uint32 
 	if (ViewportWidth == 0 || ViewportHeight == 0) return;
 
 	const uint32 TILE_SIZE = 16;
-	const uint32 MAX_LIGHTS_PER_TILE = 64;
+	const uint32 CLUSTER_SLICES = 24;
+
+	// 전체 씬에서 Point/Spot 각각 허용할 수 있는 최대 조명 교차(장바구니) 개수
+	// 50만개면 메모리도 적게 먹으면서 오버플로우 걱정이 없는 아주 넉넉한 수치입니다.
+	const uint32 MAX_GLOBAL_LIGHT_INDICES = 500000;
 
 	uint32 NumTilesX = (ViewportWidth + TILE_SIZE - 1) / TILE_SIZE;
 	uint32 NumTilesY = (ViewportHeight + TILE_SIZE - 1) / TILE_SIZE;
-	uint32 TotalTiles = NumTilesX * NumTilesY;
+
+	uint32 TotalClusters = NumTilesX * NumTilesY * CLUSTER_SLICES;
 
 
+	// === [1. 원본 라이트 데이터 (Point / Spot)] ===
 	D3D11_BUFFER_DESC dataDesc = {};
 	dataDesc.Usage = D3D11_USAGE_DYNAMIC;
 	dataDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
@@ -72,16 +78,11 @@ void FRenderResources::CreateLightCullingBuffers(ID3D11Device* InDevice, uint32 
 	InDevice->CreateShaderResourceView(LightCulling.SpotLightData, &dataSrvDesc, &LightCulling.SpotLightDataSRV);
 
 
-	// 2. GPU 컬링 결과 저장용 버퍼 세팅 (Indices, Counts) / DEFAULT & UAV & SRV
-	D3D11_BUFFER_DESC indicesDesc = {};
-	indicesDesc.Usage = D3D11_USAGE_DEFAULT;
-	indicesDesc.ByteWidth = TotalTiles * MAX_LIGHTS_PER_TILE * sizeof(uint32);
-	indicesDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-	indicesDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	indicesDesc.StructureByteStride = sizeof(uint32);
-
-	D3D11_BUFFER_DESC countsDesc = indicesDesc;
-	countsDesc.ByteWidth = TotalTiles * sizeof(uint32);
+	// === [2. GPU 컬링 결과 저장용 공통 Desc 세팅] ===
+	D3D11_BUFFER_DESC bufDesc = {};
+	bufDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	bufDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 
 	D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
 	uavDesc.Format = DXGI_FORMAT_UNKNOWN;
@@ -93,50 +94,97 @@ void FRenderResources::CreateLightCullingBuffers(ID3D11Device* InDevice, uint32 
 	srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 	srvDesc.Buffer.FirstElement = 0;
 
-	// --- [Point Light] Indices & Counts ---
-	InDevice->CreateBuffer(&indicesDesc, nullptr, &LightCulling.PointLightIndices);
-	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalTiles * MAX_LIGHTS_PER_TILE;
-	InDevice->CreateUnorderedAccessView(LightCulling.PointLightIndices, &uavDesc, &LightCulling.PointLightIndicesUAV);
-	InDevice->CreateShaderResourceView(LightCulling.PointLightIndices, &srvDesc, &LightCulling.PointLightIndicesSRV);
+	// =========================================================
+	// [Point Light] 클러스터 결과 버퍼 생성
+	// =========================================================
 
-	InDevice->CreateBuffer(&countsDesc, nullptr, &LightCulling.PointLightCounts);
-	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalTiles;
-	InDevice->CreateUnorderedAccessView(LightCulling.PointLightCounts, &uavDesc, &LightCulling.PointLightCountsUAV);
-	InDevice->CreateShaderResourceView(LightCulling.PointLightCounts, &srvDesc, &LightCulling.PointLightCountsSRV);
+	// 2-1. Cluster Grid (uint2: Offset, Count)
+	bufDesc.StructureByteStride = sizeof(uint32) * 2;
+	bufDesc.ByteWidth = TotalClusters * bufDesc.StructureByteStride;
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.PointLightClusterGrid);
+	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalClusters;
+	InDevice->CreateUnorderedAccessView(LightCulling.PointLightClusterGrid, &uavDesc, &LightCulling.PointLightClusterGridUAV);
+	InDevice->CreateShaderResourceView(LightCulling.PointLightClusterGrid, &srvDesc, &LightCulling.PointLightClusterGridSRV);
 
-	// --- [Spot Light] Indices & Counts ---
-	InDevice->CreateBuffer(&indicesDesc, nullptr, &LightCulling.SpotLightIndices);
-	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalTiles * MAX_LIGHTS_PER_TILE;
-	InDevice->CreateUnorderedAccessView(LightCulling.SpotLightIndices, &uavDesc, &LightCulling.SpotLightIndicesUAV);
-	InDevice->CreateShaderResourceView(LightCulling.SpotLightIndices, &srvDesc, &LightCulling.SpotLightIndicesSRV);
+	// 2-2. Global Indices (uint)
+	bufDesc.StructureByteStride = sizeof(uint32);
+	bufDesc.ByteWidth = MAX_GLOBAL_LIGHT_INDICES * bufDesc.StructureByteStride;
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.PointLightGlobalIndices);
+	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = MAX_GLOBAL_LIGHT_INDICES;
+	InDevice->CreateUnorderedAccessView(LightCulling.PointLightGlobalIndices, &uavDesc, &LightCulling.PointLightGlobalIndicesUAV);
+	InDevice->CreateShaderResourceView(LightCulling.PointLightGlobalIndices, &srvDesc, &LightCulling.PointLightGlobalIndicesSRV);
 
-	InDevice->CreateBuffer(&countsDesc, nullptr, &LightCulling.SpotLightCounts);
-	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalTiles;
-	InDevice->CreateUnorderedAccessView(LightCulling.SpotLightCounts, &uavDesc, &LightCulling.SpotLightCountsUAV);
-	InDevice->CreateShaderResourceView(LightCulling.SpotLightCounts, &srvDesc, &LightCulling.SpotLightCountsSRV);
+	// 2-3. Global Counter (uint, 1칸짜리, SRV는 필요 없음)
+	bufDesc.ByteWidth = sizeof(uint32);
+	bufDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS; // 카운터는 SRV로 안 읽음
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.PointLightGlobalCounter);
+	uavDesc.Buffer.NumElements = 1;
+	InDevice->CreateUnorderedAccessView(LightCulling.PointLightGlobalCounter, &uavDesc, &LightCulling.PointLightGlobalCounterUAV);
+
+
+	// =========================================================
+	// [Spot Light] 클러스터 결과 버퍼 생성
+	// =========================================================
+
+	bufDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE; // SRV 플래그 복구
+
+	// 2-1. Cluster Grid (uint2: Offset, Count)
+	bufDesc.StructureByteStride = sizeof(uint32) * 2;
+	bufDesc.ByteWidth = TotalClusters * bufDesc.StructureByteStride;
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.SpotLightClusterGrid);
+	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalClusters;
+	InDevice->CreateUnorderedAccessView(LightCulling.SpotLightClusterGrid, &uavDesc, &LightCulling.SpotLightClusterGridUAV);
+	InDevice->CreateShaderResourceView(LightCulling.SpotLightClusterGrid, &srvDesc, &LightCulling.SpotLightClusterGridSRV);
+
+	// 2-2. Global Indices (uint)
+	bufDesc.StructureByteStride = sizeof(uint32);
+	bufDesc.ByteWidth = MAX_GLOBAL_LIGHT_INDICES * bufDesc.StructureByteStride;
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.SpotLightGlobalIndices);
+	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = MAX_GLOBAL_LIGHT_INDICES;
+	InDevice->CreateUnorderedAccessView(LightCulling.SpotLightGlobalIndices, &uavDesc, &LightCulling.SpotLightGlobalIndicesUAV);
+	InDevice->CreateShaderResourceView(LightCulling.SpotLightGlobalIndices, &srvDesc, &LightCulling.SpotLightGlobalIndicesSRV);
+
+	// 2-3. Global Counter (uint, 1칸짜리, SRV는 필요 없음)
+	bufDesc.ByteWidth = sizeof(uint32);
+	bufDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.SpotLightGlobalCounter);
+	uavDesc.Buffer.NumElements = 1;
+	InDevice->CreateUnorderedAccessView(LightCulling.SpotLightGlobalCounter, &uavDesc, &LightCulling.SpotLightGlobalCounterUAV);
 }
 
 void FRenderResources::ReleaseLightCullingBuffers()
 {
-	// Point Light 릴리즈
+	// Point Light 원본 데이터
 	SafeRelease(LightCulling.PointLightDataSRV);
 	SafeRelease(LightCulling.PointLightData);
-	SafeRelease(LightCulling.PointLightIndicesSRV);
-	SafeRelease(LightCulling.PointLightIndicesUAV);
-	SafeRelease(LightCulling.PointLightIndices);
-	SafeRelease(LightCulling.PointLightCountsSRV);
-	SafeRelease(LightCulling.PointLightCountsUAV);
-	SafeRelease(LightCulling.PointLightCounts);
 
-	// Spot Light 릴리즈
+	// Point Light 클러스터 결과
+	SafeRelease(LightCulling.PointLightClusterGridSRV);
+	SafeRelease(LightCulling.PointLightClusterGridUAV);
+	SafeRelease(LightCulling.PointLightClusterGrid);
+
+	SafeRelease(LightCulling.PointLightGlobalIndicesSRV);
+	SafeRelease(LightCulling.PointLightGlobalIndicesUAV);
+	SafeRelease(LightCulling.PointLightGlobalIndices);
+
+	SafeRelease(LightCulling.PointLightGlobalCounterUAV);
+	SafeRelease(LightCulling.PointLightGlobalCounter);
+
+	// Spot Light 원본 데이터
 	SafeRelease(LightCulling.SpotLightDataSRV);
 	SafeRelease(LightCulling.SpotLightData);
-	SafeRelease(LightCulling.SpotLightIndicesSRV);
-	SafeRelease(LightCulling.SpotLightIndicesUAV);
-	SafeRelease(LightCulling.SpotLightIndices);
-	SafeRelease(LightCulling.SpotLightCountsSRV);
-	SafeRelease(LightCulling.SpotLightCountsUAV);
-	SafeRelease(LightCulling.SpotLightCounts);
+
+	// Spot Light 클러스터 결과
+	SafeRelease(LightCulling.SpotLightClusterGridSRV);
+	SafeRelease(LightCulling.SpotLightClusterGridUAV);
+	SafeRelease(LightCulling.SpotLightClusterGrid);
+
+	SafeRelease(LightCulling.SpotLightGlobalIndicesSRV);
+	SafeRelease(LightCulling.SpotLightGlobalIndicesUAV);
+	SafeRelease(LightCulling.SpotLightGlobalIndices);
+
+	SafeRelease(LightCulling.SpotLightGlobalCounterUAV);
+	SafeRelease(LightCulling.SpotLightGlobalCounter);
 }
 
 void FRenderResources::Release()
