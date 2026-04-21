@@ -1,0 +1,90 @@
+{
+  "Actors" : [{
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [],
+      "PrimitiveKey" : "8093",
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UTextRenderComponent",
+            "Properties" : {
+              "Font" : "Default",
+              "Font Size" : 1.000000,
+              "Location" : [0.000000, 0.000000, 1.300000],
+              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Text" : "UUID : 8093",
+              "Visible" : true,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "BasicShapeMaterial",
+            "UVScroll" : false
+          },
+          "Location" : [-4.928885, 0.538397, 5.543586],
+          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "APointLight",
+      "NonSceneComponents" : [],
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UBillboardComponent",
+            "Properties" : {
+              "Height" : 1.000000,
+              "Location" : [0.000000, 0.000000, 0.000000],
+              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Texture" : "PointLightIcon",
+              "Visible" : true,
+              "Width" : 1.000000,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UPointLightComponent",
+        "Properties" : {
+          "Attenuation Radius" : 5.000000,
+          "Intensity" : 5.000000,
+          "LightColor" : [1.000000, 1.000000, 1.000000, 1.000000],
+          "LightFalloffExponent" : 1.000000,
+          "Location" : [-4.928885, -2.226175, 5.543586],
+          "Rotation" : [-0.000000, 0.000000, 0.000000],
+          "Scale" : [1.000000, 1.000000, 1.000000],
+          "Visible" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }],
+  "ClassName" : "UWorld",
+  "ContextHandle" : "NewScene",
+  "ContextName" : "New Scene",
+  "Name" : "adsf",
+  "PerspectiveCamera" : {
+    "FOV" : 1.047198,
+    "FarClip" : 1000.000000,
+    "Location" : [-7.259032, -9.131682, 7.295705],
+    "NearClip" : 0.100000,
+    "Rotation" : [0.000000, 9.990845, 76.451714]
+  },
+  "Primitives" : {
+    "8093" : {
+      "Location" : [-4.928885, 0.538397, 5.543586],
+      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
+      "Rotation" : [0.000000, -0.000000, 0.000000],
+      "Scale" : [1.000000, 1.000000, 1.000000],
+      "Type" : "StaticMeshComp"
+    }
+  },
+  "Version" : 2,
+  "WorldType" : "Editor"
+}

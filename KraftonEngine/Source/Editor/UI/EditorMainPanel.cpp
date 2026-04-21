@@ -741,6 +741,7 @@ void FEditorMainPanel::RenderEditorDebugPanel()
 
 	ImGui::Separator();
 	ImGui::Checkbox("Show Light Culling Heatmap", &Settings.UI.bLightCullingDebug);
+	ImGui::Checkbox("Show Clustered based Culling", &Settings.UI.bUseClusteredLightCulling);
 
 	PushFXAAConstantsToRenderer(EditorEngine, Settings);
 

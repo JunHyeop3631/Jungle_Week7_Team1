@@ -58,6 +58,8 @@ public:
 	const FVector& GetCameraRight() const { return CameraRight; }
 	float GetNearPlane() const { return NearPlane; }
 	float GetFarPlane() const { return FarPlane; }
+	float GetClusterScale() const { return ClusterScale; }
+	float GetClusterBias() const { return ClusterBias; }
 	bool  IsOrtho()        const { return bIsOrtho; }
 	bool  IsFixedOrtho()   const { return bIsOrtho && ViewportType != ELevelViewportType::Perspective && ViewportType != ELevelViewportType::FreeOrthographic; }
 	float GetOrthoWidth()  const { return OrthoWidth; }
@@ -125,6 +127,9 @@ private:
 	FVector CameraUp;
 	float NearPlane = 0.1f;
 	float FarPlane = 1000.0f;
+	
+	float ClusterScale = 0.0f;
+	float ClusterBias = 0.0f;
 
 	float viewportWidth = 0.0f;
 	float viewportHeight = 0.0f;
