@@ -52,7 +52,9 @@ void InitializeTileAndFrustum(uint3 groupId, uint3 dispatchThreadId, uint groupI
         float depth = DepthTexture.Load(int3(dispatchThreadId.xy, 0)).r;
         if (depth < 1.0f)
         {
-            viewZ = 1.0f / (depth * InvDeviceZToWorldZTransform2 - InvDeviceZToWorldZTransform3);
+            float4 clip = float4(0.0f, 0.0f, depth, 1.0f);
+            float4 view = mul(clip, InverseProjection);
+            viewZ = view.z / view.w;
         }
     }
 
@@ -61,35 +63,42 @@ void InitializeTileAndFrustum(uint3 groupId, uint3 dispatchThreadId, uint groupI
     InterlockedMax(g_MaxDepthInt, zInt);
     GroupMemoryBarrierWithGroupSync();
 
+    // minDepth, maxDepth기반 절두체의 normal 계산 -> 빛의 원의 거리 계산에 사용
     if (groupIndex == 0)
     {
         float2 screenDims = float2((float) screenWidth, (float) screenHeight);
         uint2 tileMin = groupId.xy * TILE_SIZE;
         uint2 tileMax = tileMin + TILE_SIZE;
 
-        float3 viewBottomLeft = ScreenToView(float4(tileMin.x, tileMax.y, 1.0f, 1.0f), screenDims);
-        float3 viewTopLeft = ScreenToView(float4(tileMin.x, tileMin.y, 1.0f, 1.0f), screenDims);
-        float3 viewTopRight = ScreenToView(float4(tileMax.x, tileMin.y, 1.0f, 1.0f), screenDims);
-        float3 viewBottomRight = ScreenToView(float4(tileMax.x, tileMax.y, 1.0f, 1.0f), screenDims);
+       // Far 평면의 4꼭짓점
+        float3 vBL_Far = ScreenToView(float4(tileMin.x, tileMax.y, 1.0f, 1.0f), screenDims);
+        float3 vTL_Far = ScreenToView(float4(tileMin.x, tileMin.y, 1.0f, 1.0f), screenDims);
+        float3 vTR_Far = ScreenToView(float4(tileMax.x, tileMin.y, 1.0f, 1.0f), screenDims);
+        float3 vBR_Far = ScreenToView(float4(tileMax.x, tileMax.y, 1.0f, 1.0f), screenDims);
+
+		// Near 평면의 4꼭짓점
+        float3 vBL_Near = ScreenToView(float4(tileMin.x, tileMax.y, 0.0f, 1.0f), screenDims);
+        float3 vTL_Near = ScreenToView(float4(tileMin.x, tileMin.y, 0.0f, 1.0f), screenDims);
+        float3 vTR_Near = ScreenToView(float4(tileMax.x, tileMin.y, 0.0f, 1.0f), screenDims);
+        float3 vBR_Near = ScreenToView(float4(tileMax.x, tileMax.y, 0.0f, 1.0f), screenDims);
         
         float3 viewCenter = ScreenToView(float4((tileMin.x + tileMax.x) * 0.5f, (tileMin.y + tileMax.y) * 0.5f, 1.0f, 1.0f), screenDims);
 
+        // 3개의 점(벡터)을 외적하여 각 면의 안쪽을 향하는 Normal(법선) 생성
         float3 planeNormals[4];
-        planeNormals[0] = normalize(cross(viewBottomLeft, viewTopLeft));
-        planeNormals[1] = normalize(cross(viewTopLeft, viewTopRight));
-        planeNormals[2] = normalize(cross(viewTopRight, viewBottomRight));
-        planeNormals[3] = normalize(cross(viewBottomRight, viewBottomLeft));
-
+        planeNormals[0] = normalize(cross(vTL_Near - vBL_Near, vBL_Far - vBL_Near));
+        planeNormals[1] = normalize(cross(vTR_Near - vTL_Near, vTL_Far - vTL_Near));
+        planeNormals[2] = normalize(cross(vBR_Near - vTR_Near, vTR_Far - vTR_Near));
+        planeNormals[3] = normalize(cross(vBL_Near - vBR_Near, vBR_Far - vBR_Near));
+        // 평면 데이터 저장 (법선 및 원점과의 거리 d)
         for (int p = 0; p < 4; p++)
         {
-            if (dot(planeNormals[p], viewCenter) < 0.0f)
-            {
-                planeNormals[p] = -planeNormals[p];
-            }
-                
             g_FrustumPlanes[p].Normal = planeNormals[p];
-            g_FrustumPlanes[p].DistanceToOrigin = 0.0f;
         }
+        g_FrustumPlanes[0].DistanceToOrigin = -dot(planeNormals[0], vBL_Near);
+        g_FrustumPlanes[1].DistanceToOrigin = -dot(planeNormals[1], vTL_Near);
+        g_FrustumPlanes[2].DistanceToOrigin = -dot(planeNormals[2], vTR_Near);
+        g_FrustumPlanes[3].DistanceToOrigin = -dot(planeNormals[3], vBR_Near);
     }
     GroupMemoryBarrierWithGroupSync();
 }
@@ -117,7 +126,7 @@ void CS_Point(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID
         bool bInFrustum = true;
         for (int p = 0; p < 4; p++)
         {
-            if (dot(g_FrustumPlanes[p].Normal, LightViewPosition) < -light.AttenuationRadius)
+            if (dot(g_FrustumPlanes[p].Normal, LightViewPosition) + g_FrustumPlanes[p].DistanceToOrigin < -light.AttenuationRadius)
             {
                 bInFrustum = false;
                 break;
@@ -189,7 +198,7 @@ void CS_Spot(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThreadID,
         bool bInFrustum = true;
         for (int p = 0; p < 4; p++)
         {
-            if (dot(g_FrustumPlanes[p].Normal, boundingCenter) < -boundingRadius)
+            if (dot(g_FrustumPlanes[p].Normal, boundingCenter) + g_FrustumPlanes[p].DistanceToOrigin < -boundingRadius)
             {
                 bInFrustum = false;
                 break;
