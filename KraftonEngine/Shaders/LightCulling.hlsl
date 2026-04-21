@@ -13,8 +13,8 @@ RWStructuredBuffer<uint> GlobalCounts: register(u2);
 
 #define TILE_SIZE 16
 #define CLUSTER_SLICES 24
-#define MAX_LIGHTS_PER_CLUSTER 64
-#define MAX_GLOBAL_LIGHT_INDICES 500000
+#define MAX_LIGHTS_PER_CLUSTER 256
+#define MAX_GLOBAL_LIGHT_INDICES 2000000
 
 groupshared uint g_MinDepthInt;
 groupshared uint g_MaxDepthInt;
@@ -80,6 +80,12 @@ void InitializeTileAndFrustum(uint3 groupId, uint3 dispatchThreadId, uint groupI
     // minDepth, maxDepth기반 절두체의 normal 계산 -> 빛의 원의 거리 계산에 사용
     if (groupIndex == 0)
     {
+        if (g_MaxDepthInt == 0)
+        {
+            g_MinDepthInt = asuint(NearPlane);
+            g_MaxDepthInt = asuint(FarPlane);
+        }
+
         float2 screenDims = float2((float) screenWidth, (float) screenHeight);
         uint2 tileMin = groupId.xy * TILE_SIZE;
         uint2 tileMax = tileMin + TILE_SIZE;

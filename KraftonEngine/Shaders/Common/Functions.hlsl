@@ -291,7 +291,7 @@ LightingResult ComputeSpotLight_BlinnPhong(float3 cameraPos, float3 worldPos, fl
 
     for (uint i = 0; i < lightCount; ++i)
     {
-        uint lightIndex = SpotLightClusterGrid[offset + i];
+        uint lightIndex = SpotLightGlobalIndices[offset + i];
         FSpotLightInfo light = SpotLightData[lightIndex];
 
         float3 toLight = light.Position.xyz - worldPos;
@@ -381,7 +381,7 @@ LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal, flo
 
     for (uint i = 0; i < lightCount; ++i)
     {
-        uint lightIndex = SpotLightClusterGrid[offset + i];
+        uint lightIndex = SpotLightGlobalIndices[offset + i];
         FSpotLightInfo light = SpotLightData[lightIndex];
         
         float3 toLight = light.Position.xyz - worldPos;
