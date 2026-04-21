@@ -11,6 +11,7 @@
 #include "GameFramework/World.h"
 #include "GameFramework/AActor.h"
 #include "Core/TickFunction.h"
+#include "Render/Resource/ShaderManager.h"
 
 DEFINE_CLASS(UEngine, UObject)
 
@@ -80,6 +81,11 @@ void UEngine::Tick(float DeltaTime)
 
 void UEngine::Render(float DeltaTime)
 {
+	if (ID3D11Device* Device = Renderer.GetFD3DDevice().GetDevice())
+	{
+		FShaderManager::Get().TickHotReload(Device);
+	}
+
 	if (RenderPipeline)
 	{
 		SCOPE_STAT_CAT("UEngine::Render", "2_Render");

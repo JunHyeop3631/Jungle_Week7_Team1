@@ -281,6 +281,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Source\Engine\Components\PointLightComponent.cpp" />
+    <ClCompile Include="Source\Engine\FileSystem\DirectoryWatcher.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\AmbientLight.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\DirectionalLight.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\PointLight.cpp" />
@@ -430,6 +431,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Engine\Components\PointLightComponent.h" />
+    <ClInclude Include="Source\Engine\FileSystem\DirectoryWatcher.h" />
     <ClInclude Include="Source\Engine\GameFramework\AmbientLight.h" />
     <ClInclude Include="Source\Engine\GameFramework\DirectionalLight.h" />
     <ClInclude Include="Source\Engine\GameFramework\PointLight.h" />

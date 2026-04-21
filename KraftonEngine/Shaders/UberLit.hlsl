@@ -148,5 +148,6 @@ float4 PS(PS_Lighting input) : SV_TARGET
         return float4(heatColor, 1.0f);
     }
     
+    //finalColor = float4(1.0f, 0.0f, 1.0f, 1.0f);
     return finalColor;
 }

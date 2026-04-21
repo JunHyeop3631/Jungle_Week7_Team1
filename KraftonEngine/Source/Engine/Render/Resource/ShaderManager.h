@@ -3,6 +3,7 @@
 #include "Core/Singleton.h"
 #include "Render/Resource/Shader.h"
 #include "Core/CoreTypes.h"
+#include "FileSystem/DirectoryWatcher.h"
 
 enum class EShaderType : uint32
 {
@@ -43,6 +44,8 @@ public:
 	FShader* GetShader(EShaderType InType);
 	FShader* GetStaticMeshShader(EViewMode InViewMode);
 
+	void TickHotReload(ID3D11Device* InDevice);
+
 private:
 	FShaderManager() = default;
 	static constexpr uint32 StaticMeshLightingShaderCount = 5;
@@ -50,4 +53,6 @@ private:
 	FShader Shaders[(uint32)EShaderType::MAX];
     FShader StaticMeshLightingShaders[StaticMeshLightingShaderCount];
 	bool bIsInitialized = false;
+
+	FDirectoryWatcher ShaderWatcher;
 };

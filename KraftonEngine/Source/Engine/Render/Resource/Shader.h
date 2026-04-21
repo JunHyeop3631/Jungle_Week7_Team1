@@ -3,11 +3,17 @@
 #include "Render/Types/ViewTypes.h"
 #include "Core/CoreTypes.h"
 
+#include <string>
+#include <filesystem>
+#include <vector>
+
 class FShader
 {
 public:
 	FShader() = default;
 	~FShader() { Release(); }
+
+	void CheckAndHotReload(ID3D11Device* InDevice);
 
 	static void SetCurrentLightingViewMode(EViewMode InViewMode);
 	static EViewMode GetCurrentLightingViewMode();
@@ -38,4 +44,18 @@ private:
 	size_t CachedVertexShaderSize = 0;
 	size_t CachedPixelShaderSize = 0;
 	size_t CachedComputeShaderSize = 0;
+
+	// === 핫 리로드용 캐시 데이터 ===
+	std::wstring CachedFilePath;
+	std::string CachedVSEntry;
+	std::string CachedPSEntry;
+	std::string CachedCSEntry; // 컴퓨트 셰이더 엔트리 포인트 캐싱용 추가
+	bool bIsComputeShader = false; // 컴퓨트 셰이더 여부 구분용 추가
+
+	// 포인터 배열을 안전하게 보관하기 위한 vector
+	std::vector<D3D11_INPUT_ELEMENT_DESC> CachedInputElements;
+	std::vector<D3D_SHADER_MACRO> CachedDefines;
+
+	std::filesystem::file_time_type LastWriteTime;
+	bool bCanHotReload = false;
 };

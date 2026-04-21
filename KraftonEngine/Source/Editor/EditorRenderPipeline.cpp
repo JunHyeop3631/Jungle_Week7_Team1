@@ -34,6 +34,11 @@ void FEditorRenderPipeline::Execute(float DeltaTime, FRenderer& Renderer)
 	FGPUProfiler::Get().BeginFrame();
 #endif
 
+	if (UWorld* World = Editor->GetWorld())
+	{
+		World->GetScene().UpdateDirtyLightProxies();
+	}
+
 	for (FLevelEditorViewportClient* ViewportClient : Editor->GetLevelViewportClients())
 	{
 		SCOPE_STAT_CAT("RenderViewport", "2_Render");
@@ -118,7 +123,6 @@ void FEditorRenderPipeline::RenderViewport(FLevelEditorViewportClient* VC, FRend
 
 	Bus.SetCameraInfo(Camera);
 	Bus.SetRenderSettings(ViewMode, EffectiveShowFlags);
-	World->GetScene().UpdateDirtyLightProxies();
 	Bus.SetLightingData(World->GetScene().GetLightingData());
 	PopulateScenePostProcessConstants(World, Bus);
 	Bus.SetViewportInfo(VP);
