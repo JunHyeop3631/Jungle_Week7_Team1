@@ -13,7 +13,7 @@ namespace
 	}
 
 	// 최대 처리 가능한 라이트 개수 (필요에 따라 늘리거나 줄이세요)
-	constexpr uint32 MAX_CULLING_LIGHTS = 1024;
+	constexpr uint32 MAX_CULLING_LIGHTS = 5000;
 }
 
 void FRenderResources::Create(ID3D11Device* InDevice)

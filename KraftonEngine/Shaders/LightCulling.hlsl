@@ -13,7 +13,7 @@ RWStructuredBuffer<uint> GlobalCounts: register(u2);
 
 #define TILE_SIZE 16
 #define CLUSTER_SLICES 24
-#define MAX_LIGHTS_PER_CLUSTER 64
+#define MAX_LIGHTS_PER_CLUSTER 256
 #define MAX_GLOBAL_LIGHT_INDICES 500000
 
 groupshared uint g_MinDepthInt;
