@@ -1112,17 +1112,28 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 {
 	const bool bNoPointLights = Bus.GetPointLights().empty();
 	const bool bNoSpotLights = Bus.GetSpotLights().empty();
-
 	const uint32 ClearZero[4] = { 0, 0, 0, 0 };
 
-	if (bNoPointLights && Resources.LightCulling.PointLightCountsUAV)
-	{
-		Context->ClearUnorderedAccessViewUint(Resources.LightCulling.PointLightCountsUAV, ClearZero);
-	}
+	bool bUseClustered = FEditorSettings::Get().UI.bUseClusteredLightCulling;
 
-	if (bNoSpotLights && Resources.LightCulling.SpotLightCountsUAV)
+	if (bUseClustered)
 	{
-		Context->ClearUnorderedAccessViewUint(Resources.LightCulling.SpotLightCountsUAV, ClearZero);
+		if (Resources.LightCulling.PointLightGlobalCounterUAV)
+			Context->ClearUnorderedAccessViewUint(Resources.LightCulling.PointLightGlobalCounterUAV, ClearZero);
+		if (Resources.LightCulling.SpotLightGlobalCounterUAV)
+			Context->ClearUnorderedAccessViewUint(Resources.LightCulling.SpotLightGlobalCounterUAV, ClearZero);
+
+		if (bNoPointLights && Resources.LightCulling.PointLightClusterGridUAV)
+			Context->ClearUnorderedAccessViewUint(Resources.LightCulling.PointLightClusterGridUAV, ClearZero);
+		if (bNoSpotLights && Resources.LightCulling.SpotLightClusterGridUAV)
+			Context->ClearUnorderedAccessViewUint(Resources.LightCulling.SpotLightClusterGridUAV, ClearZero);
+	}
+	else
+	{
+		if (bNoPointLights && Resources.LightCulling.PointLightTileCountsUAV)
+			Context->ClearUnorderedAccessViewUint(Resources.LightCulling.PointLightTileCountsUAV, ClearZero);
+		if (bNoSpotLights && Resources.LightCulling.SpotLightTileCountsUAV)
+			Context->ClearUnorderedAccessViewUint(Resources.LightCulling.SpotLightTileCountsUAV, ClearZero);
 	}
 
 	if (bNoPointLights && bNoSpotLights) return;
@@ -1132,8 +1143,8 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 	Context->OMSetRenderTargets(1, &NullRTV, NullDSV);
 
 	// PS에서 사용되는 애들 비활성화
-	ID3D11ShaderResourceView* NullPS_SRVs[4] = { nullptr, nullptr, nullptr, nullptr };
-	Context->PSSetShaderResources(10, 4, NullPS_SRVs);
+	ID3D11ShaderResourceView* NullPS_SRVs[8] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+	Context->PSSetShaderResources(10, 8, NullPS_SRVs);
 
 	SCOPE_STAT_CAT("LightCulling", "4_ExecutePass");
 	GPU_SCOPE_STAT("LightCullingCS");
@@ -1165,44 +1176,70 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 	uint32 ThreadGroupY = (ViewportHeight + 15) / 16;
 
 	// PointLight UAV
-	if (!Bus.GetPointLights().empty())
+	if (!bNoPointLights)
 	{
-		FShader* PointCullingShader = FShaderManager::Get().GetShader(EShaderType::LightCullingCS_Point);
+		EShaderType ShaderType = bUseClustered ? EShaderType::LightCullingCS_Point : EShaderType::LightCullingTiledCS_Point;
+		FShader* PointCullingShader = FShaderManager::Get().GetShader(ShaderType);
 		if (PointCullingShader)
 		{
 			PointCullingShader->BindCompute(Context);
 
-			ID3D11UnorderedAccessView* PointUAVs[2] = {
-				Resources.LightCulling.PointLightIndicesUAV,
-				Resources.LightCulling.PointLightCountsUAV
-			};
-			Context->CSSetUnorderedAccessViews(0, 2, PointUAVs, nullptr);
+			if (bUseClustered)
+			{
+				ID3D11UnorderedAccessView* PointUAVs[3] = {
+					Resources.LightCulling.PointLightClusterGridUAV,   // u0
+					Resources.LightCulling.PointLightGlobalIndicesUAV, // u1
+					Resources.LightCulling.PointLightGlobalCounterUAV  // u2
+				};
+				Context->CSSetUnorderedAccessViews(0, 3, PointUAVs, nullptr);
+			}
+			else
+			{
+				ID3D11UnorderedAccessView* PointUAVs[2] = {
+					Resources.LightCulling.PointLightTileIndicesUAV, // u0
+					Resources.LightCulling.PointLightTileCountsUAV   // u1
+				};
+				Context->CSSetUnorderedAccessViews(0, 2, PointUAVs, nullptr);
+			}
 
 			Context->Dispatch(ThreadGroupX, ThreadGroupY, 1);
 		}
 	}
 
 	// SpotLight UAV
-	if (!Bus.GetSpotLights().empty())
+	if (!bNoSpotLights)
 	{
-		FShader* SpotCullingShader = FShaderManager::Get().GetShader(EShaderType::LightCullingCS_Spot);
+		EShaderType ShaderType = bUseClustered ? EShaderType::LightCullingCS_Spot : EShaderType::LightCullingTiledCS_Spot;
+		FShader* SpotCullingShader = FShaderManager::Get().GetShader(ShaderType);
 		if (SpotCullingShader)
 		{
 			SpotCullingShader->BindCompute(Context);
 
-			ID3D11UnorderedAccessView* SpotUAVs[2] = {
-				Resources.LightCulling.SpotLightIndicesUAV,
-				Resources.LightCulling.SpotLightCountsUAV
-			};
-			Context->CSSetUnorderedAccessViews(0, 2, SpotUAVs, nullptr);
+			if (bUseClustered)
+			{
+				ID3D11UnorderedAccessView* SpotUAVs[3] = {
+					Resources.LightCulling.SpotLightClusterGridUAV,   // u0
+					Resources.LightCulling.SpotLightGlobalIndicesUAV, // u1
+					Resources.LightCulling.SpotLightGlobalCounterUAV  // u2
+				};
+				Context->CSSetUnorderedAccessViews(0, 3, SpotUAVs, nullptr);
+			}
+			else
+			{
+				ID3D11UnorderedAccessView* SpotUAVs[2] = {
+					Resources.LightCulling.SpotLightTileIndicesUAV, // u0
+					Resources.LightCulling.SpotLightTileCountsUAV   // u1
+				};
+				Context->CSSetUnorderedAccessViews(0, 2, SpotUAVs, nullptr);
+			}
 
 			Context->Dispatch(ThreadGroupX, ThreadGroupY, 1);
 		}
 	}
 
 	// 전부 사용 후 비활성화
-	ID3D11UnorderedAccessView* NullUAVs[2] = { nullptr, nullptr };
-	Context->CSSetUnorderedAccessViews(0, 2, NullUAVs, nullptr);
+	ID3D11UnorderedAccessView* NullUAVs[3] = { nullptr, nullptr, nullptr };
+	Context->CSSetUnorderedAccessViews(0, 3, NullUAVs, nullptr);
 
 	ID3D11ShaderResourceView* NullSRVs[3] = { nullptr, nullptr, nullptr };
 	Context->CSSetShaderResources(1, 1, NullSRVs);
@@ -1219,13 +1256,17 @@ void FRenderer::RestoreMainRenderTargets(const FRenderBus& Bus, ID3D11DeviceCont
 
 void FRenderer::BindLightCullingResults(ID3D11DeviceContext* Context)
 {
-	ID3D11ShaderResourceView* CullingSRVs[4] = {
-		Resources.LightCulling.PointLightIndicesSRV, // t10
-		Resources.LightCulling.PointLightCountsSRV,  // t11
-		Resources.LightCulling.SpotLightIndicesSRV,  // t12
-		Resources.LightCulling.SpotLightCountsSRV    // t13
+	ID3D11ShaderResourceView* CullingSRVs[8] = {
+		Resources.LightCulling.PointLightClusterGridSRV,   // t10 (Offset, Count)
+		Resources.LightCulling.PointLightGlobalIndicesSRV, // t11 (빛 번호 리스트)
+		Resources.LightCulling.SpotLightClusterGridSRV,    // t12
+		Resources.LightCulling.SpotLightGlobalIndicesSRV,  // t13
+		Resources.LightCulling.PointLightTileCountsSRV,    // t14
+		Resources.LightCulling.PointLightTileIndicesSRV,   // t15
+		Resources.LightCulling.SpotLightTileCountsSRV,     // t16
+		Resources.LightCulling.SpotLightTileIndicesSRV     // t17
 	};
-	Context->PSSetShaderResources(10, 4, CullingSRVs);
+	Context->PSSetShaderResources(10, 8, CullingSRVs);
 }
 
 void FRenderer::EnsurePostProcessTargets(const FRenderBus& Bus)
@@ -1335,6 +1376,7 @@ void FRenderer::UpdateLightingBuffer(ID3D11DeviceContext* Context, const FRender
 	LightData.SpotLightCount = static_cast<uint32>(SpotLights.size());
 
 	LightData.bDebugLightCulling = FEditorSettings::Get().UI.bLightCullingDebug ? 1 : 0;
+	LightData.bUseClusteredLightCulling = FEditorSettings::Get().UI.bUseClusteredLightCulling ? 1 : 0;
 
 	FConstantBuffer* LightCB = FConstantBufferPool::Get().GetBuffer(ECBSlot::Lighting, sizeof(FLightingConstants));
 	if (LightCB)
@@ -1763,6 +1805,8 @@ void FRenderer::UpdateFrameBuffer(ID3D11DeviceContext* Context, const FRenderBus
 	frameConstantData.WireframeColor = InRenderBus.GetWireframeColor();
 	frameConstantData.NearPlane = InRenderBus.GetNearPlane();
 	frameConstantData.FarPlane = InRenderBus.GetFarPlane();
+	frameConstantData.ClusterScale = InRenderBus.GetClusterScale();
+	frameConstantData.ClusterBias = InRenderBus.GetClusterBias();
 	frameConstantData.CameraPosition = InRenderBus.GetCameraPosition();
 	frameConstantData.InverseView = InRenderBus.GetView().GetInverse();
 	frameConstantData.InverseProjection = InRenderBus.GetProj().GetInverse();

@@ -71,6 +71,7 @@ public:
 		bool bHiZDebug = false;
 #endif
 		bool bLightCullingDebug = false;
+		bool bUseClusteredLightCulling = true;
 	} UI;
 
 	void SaveToFile(const FString& Path) const;

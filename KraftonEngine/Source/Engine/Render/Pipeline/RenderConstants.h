@@ -74,9 +74,9 @@ struct FFrameConstants
 	float Time;
 	float NearPlane;
 	float FarPlane;
-	float _pad0;
+	float ClusterScale;
+	float ClusterBias;
 	FVector CameraPosition;
-	float _pad1;
 	FGPUFloat4x4 InverseView;
 	FGPUFloat4x4 InverseProjection;
 	FGPUFloat4x4 InverseViewProjection;
@@ -168,7 +168,7 @@ struct FLightingConstants
 	uint32 SpotLightCount = 0;
 	
 	uint32 bDebugLightCulling = 0;
-	uint32 _pad = 0;
+	uint32 bUseClusteredLightCulling = 1;
 };
 
 struct FCollectedLightData

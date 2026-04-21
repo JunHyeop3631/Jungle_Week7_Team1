@@ -30,6 +30,8 @@ enum class EShaderType : uint32
 	IDPickDebugVisualize,
 	LightCullingCS_Point,
 	LightCullingCS_Spot,
+	LightCullingTiledCS_Point,
+	LightCullingTiledCS_Spot,
 	MAX,
 };
 

@@ -39,10 +39,18 @@ void FEditorRenderPipeline::Execute(float DeltaTime, FRenderer& Renderer)
 		World->GetScene().UpdateDirtyLightProxies();
 	}
 
-	for (FLevelEditorViewportClient* ViewportClient : Editor->GetLevelViewportClients())
+	if (!Editor->IsSplitViewport())
 	{
 		SCOPE_STAT_CAT("RenderViewport", "2_Render");
-		RenderViewport(ViewportClient, Renderer);
+		RenderViewport(Editor->GetActiveViewport(), Renderer);
+	}
+	else
+	{
+		for (FLevelEditorViewportClient* ViewportClient : Editor->GetLevelViewportClients())
+		{
+			SCOPE_STAT_CAT("RenderViewport", "2_Render");
+			RenderViewport(ViewportClient, Renderer);
+		}
 	}
 	// 뷰포트별 오프스크린 렌더 (각 VP의 RT에 3D 씬 렌더)
 

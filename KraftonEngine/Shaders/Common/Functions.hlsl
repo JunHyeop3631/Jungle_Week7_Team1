@@ -86,7 +86,7 @@ LightingResult ComputeDirectionalLight_Lambert(float3 worldNormal)
     float3 N = normalize(worldNormal);
     float3 L = normalize(-Directional.Direction.xyz);
     
-    float diffIntensity = saturate(dot(N, L) * 0.5f + 0.5f);
+    float diffIntensity = saturate(dot(N, L));
     diffuse += Directional.LightColor.rgb * diffIntensity;
         
     result.Diffuse = diffuse;
@@ -178,7 +178,7 @@ LightingResult ComputePointLight_Lambert_NoTile(float3 worldPos, float3 worldNor
         float3 toLight = light.Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
-        float NdotL = saturate(dot(N, L) * 0.5f + 0.5f);
+        float NdotL = saturate(dot(N, L));
         float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
         float atten = pow(distanceAtten, light.FalloffExponent);
         
@@ -199,7 +199,7 @@ LightingResult ComputeSpotLight_Lambert_NoTile(float3 worldPos, float3 worldNorm
         float3 toLight = light.Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
-        float NdotL = saturate(dot(N, L) * 0.5f + 0.5f);
+        float NdotL = saturate(dot(N, L));
         float3 lightDir = normalize(light.Direction.xyz);
         float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
         float spotCos = dot(lightDir, -L);
@@ -215,6 +215,8 @@ LightingResult ComputeSpotLight_Lambert_NoTile(float3 worldPos, float3 worldNorm
 // ============================================================
 // [PS용] 타일 컬링이 적용된 핵심 조명 계산 함수들 (Tile-Culled)
 // ============================================================
+#define MAX_LIGHTS_PER_TILE 256
+
 LightingResult ComputePointLight_BlinnPhong(float3 cameraPos, float3 worldPos, float3 worldNormal, float shininess, float2 screenPos)
 {
     LightingResult result = (LightingResult) 0;
@@ -229,31 +231,68 @@ LightingResult ComputePointLight_BlinnPhong(float3 cameraPos, float3 worldPos, f
     uint numTilesX = ((uint) ScreenWidth + 15) / 16;
     uint tileIndex = tileY * numTilesX + tileX;
 
-    uint lightCount = PointLightCounts[tileIndex];
-    uint tileOffset = tileIndex * 64;
-    
-    for (uint i = 0; i < lightCount; ++i)
+    if (bUseClusteredLightCulling != 0)
     {
-        uint lightIndex = PointLightIndices[tileOffset + i];
-        FPointLightInfo light = PointLightData[lightIndex];
-        
-        float3 toLight = light.Position.xyz - worldPos;
-        float dist = length(toLight);
-        float3 L = toLight / max(dist, 0.0001f);
+        // z깊이 구해서 24층 중 몇 층인지 알아내야 함.
+        float viewZ = mul(float4(worldPos, 1.0f), View).z;
+        uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
+        uint cluster3DIndex = tileIndex * 24 + zSlice;
 
-        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
-        float atten = pow(distanceAtten, light.FalloffExponent);
-
-        float NdotLRaw = dot(N, L);
-        float NdotL = max(NdotLRaw, 0.0f);
-
-        diffuse += light.LightColor.rgb * NdotL * atten;
-
-        if (NdotLRaw > 0.0f && atten > 0.0f)
+        uint2 clusterData = PointLightClusterGrid[cluster3DIndex];
+        uint offset = clusterData.x;
+        uint lightCount = clusterData.y;
+    
+        for (uint i = 0; i < lightCount; ++i)
         {
-            float3 H = normalize(L + V);
-            float spec = pow(max(dot(N, H), 0.0f), shininess);
-            specular += light.LightColor.rgb * spec * atten;
+            uint lightIndex = PointLightGlobalIndices[offset + i];
+            FPointLightInfo light = PointLightData[lightIndex];
+        
+            float3 toLight = light.Position.xyz - worldPos;
+            float dist = length(toLight);
+            float3 L = toLight / max(dist, 0.0001f);
+
+            float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+            float atten = pow(distanceAtten, light.FalloffExponent);
+
+            float NdotLRaw = dot(N, L);
+            float NdotL = max(NdotLRaw, 0.0f);
+
+            diffuse += light.LightColor.rgb * NdotL * atten;
+
+            if (NdotLRaw > 0.0f && atten > 0.0f)
+            {
+                float3 H = normalize(L + V);
+                float spec = pow(max(dot(N, H), 0.0f), shininess);
+                specular += light.LightColor.rgb * spec * atten;
+            }
+        }
+    }
+    else
+    {
+        uint lightCount = PointLightTileCounts[tileIndex];
+        for (uint i = 0; i < lightCount; ++i)
+        {
+            uint lightIndex = PointLightTileIndices[tileIndex * MAX_LIGHTS_PER_TILE + i];
+            FPointLightInfo light = PointLightData[lightIndex];
+        
+            float3 toLight = light.Position.xyz - worldPos;
+            float dist = length(toLight);
+            float3 L = toLight / max(dist, 0.0001f);
+
+            float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+            float atten = pow(distanceAtten, light.FalloffExponent);
+
+            float NdotLRaw = dot(N, L);
+            float NdotL = max(NdotLRaw, 0.0f);
+
+            diffuse += light.LightColor.rgb * NdotL * atten;
+
+            if (NdotLRaw > 0.0f && atten > 0.0f)
+            {
+                float3 H = normalize(L + V);
+                float spec = pow(max(dot(N, H), 0.0f), shininess);
+                specular += light.LightColor.rgb * spec * atten;
+            }
         }
     }
 
@@ -275,34 +314,73 @@ LightingResult ComputeSpotLight_BlinnPhong(float3 cameraPos, float3 worldPos, fl
     uint numTilesX = ((uint) ScreenWidth + 15) / 16;
     uint tileIndex = tileY * numTilesX + tileX;
     
-    uint lightCount = SpotLightCounts[tileIndex];
-    uint tileOffset = tileIndex * 64; // MAX_LIGHTS_PER_TILE
-
-    for (uint i = 0; i < lightCount; ++i)
+    if (bUseClusteredLightCulling != 0)
     {
-        uint lightIndex = SpotLightIndices[tileOffset + i];
-        FSpotLightInfo light = SpotLightData[lightIndex];
+        float viewZ = mul(float4(worldPos, 1.0f), View).z;
+        uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
+        uint cluster3DIndex = tileIndex * 24 + zSlice;
 
-        float3 toLight = light.Position.xyz - worldPos;
-        float dist = length(toLight);
-        float3 L = toLight / max(dist, 0.0001f);
-        
-        float3 lightDir = normalize(light.Direction.xyz);
-        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
-        float spotCos = dot(lightDir, -L);
-        float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
-        float atten = distanceAtten * spotFactor;
-        
-        float NdotLRaw = dot(N, L);
-        float NdotL = max(NdotLRaw, 0.0f);
+        uint2 clusterData = SpotLightClusterGrid[cluster3DIndex];
+        uint offset = clusterData.x;
+        uint lightCount = clusterData.y;
 
-        diffuse += light.LightColor.rgb * NdotL * atten;
-
-        if (NdotLRaw > 0.0f && atten > 0.0f)
+        for (uint i = 0; i < lightCount; ++i)
         {
-            float3 H = normalize(L + V);
-            float spec = pow(max(dot(N, H), 0.0f), shininess);
-            specular += light.LightColor.rgb * spec * atten;
+            uint lightIndex = SpotLightGlobalIndices[offset + i];
+            FSpotLightInfo light = SpotLightData[lightIndex];
+
+            float3 toLight = light.Position.xyz - worldPos;
+            float dist = length(toLight);
+            float3 L = toLight / max(dist, 0.0001f);
+        
+            float3 lightDir = normalize(light.Direction.xyz);
+            float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+            float spotCos = dot(lightDir, -L);
+            float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
+            float atten = distanceAtten * spotFactor;
+        
+            float NdotLRaw = dot(N, L);
+            float NdotL = max(NdotLRaw, 0.0f);
+
+            diffuse += light.LightColor.rgb * NdotL * atten;
+
+            if (NdotLRaw > 0.0f && atten > 0.0f)
+            {
+                float3 H = normalize(L + V);
+                float spec = pow(max(dot(N, H), 0.0f), shininess);
+                specular += light.LightColor.rgb * spec * atten;
+            }
+        }
+    }
+    else
+    {
+        uint lightCount = SpotLightTileCounts[tileIndex];
+        for (uint i = 0; i < lightCount; ++i)
+        {
+            uint lightIndex = SpotLightTileIndices[tileIndex * MAX_LIGHTS_PER_TILE + i];
+            FSpotLightInfo light = SpotLightData[lightIndex];
+
+            float3 toLight = light.Position.xyz - worldPos;
+            float dist = length(toLight);
+            float3 L = toLight / max(dist, 0.0001f);
+        
+            float3 lightDir = normalize(light.Direction.xyz);
+            float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+            float spotCos = dot(lightDir, -L);
+            float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
+            float atten = distanceAtten * spotFactor;
+        
+            float NdotLRaw = dot(N, L);
+            float NdotL = max(NdotLRaw, 0.0f);
+
+            diffuse += light.LightColor.rgb * NdotL * atten;
+
+            if (NdotLRaw > 0.0f && atten > 0.0f)
+            {
+                float3 H = normalize(L + V);
+                float spec = pow(max(dot(N, H), 0.0f), shininess);
+                specular += light.LightColor.rgb * spec * atten;
+            }
         }
     }
 
@@ -322,22 +400,49 @@ LightingResult ComputePointLight_Lambert(float3 worldPos, float3 worldNormal, fl
     uint numTilesX = ((uint) ScreenWidth + 15) / 16;
     uint tileIndex = tileY * numTilesX + tileX;
 
-    uint lightCount = PointLightCounts[tileIndex];
-    uint tileOffset = tileIndex * 64;
-
-    for (uint i = 0; i < lightCount; ++i)
+    if (bUseClusteredLightCulling != 0)
     {
-        uint lightIndex = PointLightIndices[tileOffset + i];
-        FPointLightInfo light = PointLightData[lightIndex];
+        float viewZ = mul(float4(worldPos, 1.0f), View).z;
+        uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
+        uint cluster3DIndex = tileIndex * 24 + zSlice;
+
+        uint2 clusterData = PointLightClusterGrid[cluster3DIndex];
+        uint offset = clusterData.x;
+        uint lightCount = clusterData.y;
+    
+
+        for (uint i = 0; i < lightCount; ++i)
+        {
+            uint lightIndex = PointLightGlobalIndices[offset + i];
+            FPointLightInfo light = PointLightData[lightIndex];
         
-        float3 toLight = light.Position.xyz - worldPos;
-        float dist = length(toLight);
-        float3 L = toLight / max(dist, 0.0001f);
-        float NdotL = saturate(dot(N, L) * 0.5f + 0.5f);
-        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
-        float atten = pow(distanceAtten, light.FalloffExponent);
+            float3 toLight = light.Position.xyz - worldPos;
+            float dist = length(toLight);
+            float3 L = toLight / max(dist, 0.0001f);
+            float NdotL = saturate(dot(N, L));
+            float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+            float atten = pow(distanceAtten, light.FalloffExponent);
         
-        diffuse += light.LightColor.rgb * NdotL * atten;
+            diffuse += light.LightColor.rgb * NdotL * atten;
+        }
+    }
+    else
+    {
+        uint lightCount = PointLightTileCounts[tileIndex];
+        for (uint i = 0; i < lightCount; ++i)
+        {
+            uint lightIndex = PointLightTileIndices[tileIndex * MAX_LIGHTS_PER_TILE + i];
+            FPointLightInfo light = PointLightData[lightIndex];
+        
+            float3 toLight = light.Position.xyz - worldPos;
+            float dist = length(toLight);
+            float3 L = toLight / max(dist, 0.0001f);
+            float NdotL = saturate(dot(N, L));
+            float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+            float atten = pow(distanceAtten, light.FalloffExponent);
+        
+            diffuse += light.LightColor.rgb * NdotL * atten;
+        }
     }
     result.Diffuse = diffuse;
     return result;
@@ -354,24 +459,52 @@ LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal, flo
     uint numTilesX = ((uint) ScreenWidth + 15) / 16;
     uint tileIndex = tileY * numTilesX + tileX;
 
-    uint lightCount = SpotLightCounts[tileIndex];
-    uint tileOffset = tileIndex * 64;
-
-    for (uint i = 0; i < lightCount; ++i)
+    if (bUseClusteredLightCulling != 0)
     {
-        uint lightIndex = SpotLightIndices[tileOffset + i];
-        FSpotLightInfo light = SpotLightData[lightIndex];
+        float viewZ = mul(float4(worldPos, 1.0f), View).z;
+        uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
+        uint cluster3DIndex = tileIndex * 24 + zSlice;
+
+        uint2 clusterData = SpotLightClusterGrid[cluster3DIndex];
+        uint offset = clusterData.x;
+        uint lightCount = clusterData.y;
+
+        for (uint i = 0; i < lightCount; ++i)
+        {
+            uint lightIndex = SpotLightGlobalIndices[offset + i];
+            FSpotLightInfo light = SpotLightData[lightIndex];
         
-        float3 toLight = light.Position.xyz - worldPos;
-        float dist = length(toLight);
-        float3 L = toLight / max(dist, 0.0001f);
-        float NdotL = saturate(dot(N, L) * 0.5f + 0.5f);
-        float3 lightDir = normalize(light.Direction.xyz);
-        float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
-        float spotCos = dot(lightDir, -L);
-        float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
+            float3 toLight = light.Position.xyz - worldPos;
+            float dist = length(toLight);
+            float3 L = toLight / max(dist, 0.0001f);
+            float NdotL = saturate(dot(N, L));
+            float3 lightDir = normalize(light.Direction.xyz);
+            float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+            float spotCos = dot(lightDir, -L);
+            float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
         
-        diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
+            diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
+        }
+    }
+    else
+    {
+        uint lightCount = SpotLightTileCounts[tileIndex];
+        for (uint i = 0; i < lightCount; ++i)
+        {
+            uint lightIndex = SpotLightTileIndices[tileIndex * MAX_LIGHTS_PER_TILE + i];
+            FSpotLightInfo light = SpotLightData[lightIndex];
+        
+            float3 toLight = light.Position.xyz - worldPos;
+            float dist = length(toLight);
+            float3 L = toLight / max(dist, 0.0001f);
+            float NdotL = saturate(dot(N, L));
+            float3 lightDir = normalize(light.Direction.xyz);
+            float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
+            float spotCos = dot(lightDir, -L);
+            float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
+        
+            diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
+        }
     }
     result.Diffuse = diffuse;
     return result;

@@ -117,31 +117,38 @@ float4 PS(PS_Lighting input) : SV_TARGET
     
     if (bDebugLightCulling != 0)
     {
-        // 1. 현재 픽셀이 속한 타일 인덱스 구하기 (TILE_SIZE는 16)
         uint2 pixelPos = uint2(input.position.xy);
-        uint numTilesX = (uint) (ScreenWidth + 16 - 1) / 16;
+        uint numTilesX = (uint) (ScreenWidth + 15) / 16;
         uint tileIndex = (pixelPos.y / 16) * numTilesX + (pixelPos.x / 16);
 
-        // 2. 현재 타일에 들어온 빛의 총합 (Point + Spot)
-        // (주의: ConstantBuffers.hlsl에 t11, t13으로 선언되어 있어야 함!)
-        uint pCount = PointLightCounts[tileIndex];
-        uint sCount = SpotLightCounts[tileIndex];
-        uint totalLights = pCount + sCount;
-
-        // 3. 색상 매핑 (0개: 까만색, 적음: 파란색, 많음: 빨간색)
-        float maxLights = 16.0f; // 빨간색으로 표시될 최대 빛 개수 (필요시 조절)
-        float ratio = saturate((float) totalLights / maxLights);
-        
-        // 파랑 -> 초록 -> 빨강 부드러운 그라데이션 공식
-        float3 heatColor = float3(ratio, 1.0f - abs(ratio - 0.5f) * 2.0f, 1.0f - ratio);
-
-        // 4. 가시성을 극대화하기 위한 타일 외곽선(Grid) 그리기 (선택 사항)
-        if (pixelPos.x % 16 == 0 || pixelPos.y % 16 == 0)
+        uint totalLights = 0;
+        if (bUseClusteredLightCulling != 0)
         {
-            heatColor = float3(0.5f, 0.5f, 0.5f); // 경계선은 회색으로
+            float viewZ = mul(float4(input.worldPosition, 1.0f), View).z;
+            uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
+            uint cluster3DIndex = tileIndex * 24 + zSlice;
+
+            uint pCount = PointLightClusterGrid[cluster3DIndex].y;
+            uint sCount = SpotLightClusterGrid[cluster3DIndex].y;
+            totalLights = pCount + sCount;
+        }
+        else
+        {
+            uint pCount = PointLightTileCounts[tileIndex];
+            uint sCount = SpotLightTileCounts[tileIndex];
+            totalLights = pCount + sCount;
         }
 
-        // 빛이 아예 없는 곳은 원본 색상을 아주 어둡게 살려둠
+        float maxLights = 16.0f;
+        float ratio = saturate((float) totalLights / maxLights);
+
+        float3 heatColor = float3(ratio, 1.0f - abs(ratio - 0.5f) * 2.0f, 1.0f - ratio);
+
+        if (pixelPos.x % 16 == 0 || pixelPos.y % 16 == 0)
+        {
+            heatColor = float3(0.5f, 0.5f, 0.5f);
+        }
+
         if (totalLights == 0)
             heatColor = finalColor.rgb * 0.1f;
 

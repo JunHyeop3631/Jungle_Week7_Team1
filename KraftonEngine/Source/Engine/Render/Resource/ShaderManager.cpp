@@ -129,6 +129,10 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 	Shaders[(uint32)EShaderType::LightCullingCS_Spot].CreateCompute(InDevice, L"Shaders/LightCulling.hlsl",
 		"CS_Spot");
 
+	Shaders[(uint32)EShaderType::LightCullingTiledCS_Point].CreateCompute(InDevice, L"Shaders/LightCullingTiled.hlsl",
+		"CS_Point");
+	Shaders[(uint32)EShaderType::LightCullingTiledCS_Spot].CreateCompute(InDevice, L"Shaders/LightCullingTiled.hlsl",
+		"CS_Spot");
 	bIsInitialized = true;
 	ShaderWatcher.Start(L"Shaders");
 }
