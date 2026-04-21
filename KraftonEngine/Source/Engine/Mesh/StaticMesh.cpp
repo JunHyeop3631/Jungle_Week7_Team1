@@ -93,7 +93,7 @@ void UStaticMesh::InitResources(ID3D11Device* InDevice)
 	}
 
 	// ── LOD 생성 (LOD1: 90%, LOD2: 55%, LOD3: 15%) ──
-	if (StaticMeshAsset->Vertices.size() >= 100)
+	/*if (StaticMeshAsset->Vertices.size() >= 100)
 	{
 		static const float LODRatios[] = { 0.9f, 0.55f, 0.15f };
 		for (int lod = 0; lod < 3; ++lod)
@@ -121,7 +121,7 @@ void UStaticMesh::InitResources(ID3D11Device* InDevice)
 			AdditionalLODs[lod].RenderBuffer->Create(InDevice, LODRenderData);
 		}
 		bHasLOD = true;
-	}
+	}*/
 }
 
 const FString& UStaticMesh::GetAssetPathFileName() const

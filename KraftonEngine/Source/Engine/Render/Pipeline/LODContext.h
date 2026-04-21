@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Engine/Math/Vector.h"
 #include "Engine/Core/CoreTypes.h"
@@ -20,6 +20,8 @@ static_assert((LOD_UPDATE_SLICE_COUNT & (LOD_UPDATE_SLICE_COUNT - 1)) == 0,
 
 inline uint32 SelectLOD(uint32 CurLOD, float DistSq)
 {
+	// 피카츄 반갈죽 방지용
+	return 0;
 	uint32 LOD = CurLOD;
 	if (CurLOD == 0 && DistSq > LOD1_DIST_SQ)  LOD = 1;
 	if (CurLOD <= 1 && DistSq > LOD2_DIST_SQ)  LOD = 2;
