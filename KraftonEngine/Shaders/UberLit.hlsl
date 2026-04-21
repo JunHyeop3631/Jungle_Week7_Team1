@@ -52,7 +52,23 @@ PS_Lighting VS(VS_Input_PNCT input)
 float4 PS(PS_Lighting input) : SV_TARGET
 {
     float4 finalColor = float4(1.0f, 0.0f, 1.0f, 1.0f);
-    float4 texColor = g_txColor.Sample(g_Sample, input.texCoord) * SectionColor;
+    float2 texCoord = input.texCoord;
+    if (bClampUVToUnit != 0)
+    {
+        if (texCoord.x < 0.0f || texCoord.x > 1.0f || texCoord.y < 0.0f || texCoord.y > 1.0f)
+        {
+            discard;
+        }
+        texCoord = saturate(texCoord);
+    }
+
+    float4 texColor = g_txColor.Sample(g_Sample, texCoord) * SectionColor;
+    // Opaque pass에서는 반투명을 블렌딩할 수 없으므로,
+    // GeometryDecal cutout 경로는 알파 임계값 기반으로 잘라낸다.
+    if (bAlphaCutout != 0 && texColor.a <= 1e-4f)
+    {
+        discard;
+    }
     float3 worldNormal = normalize(input.worldNormal);
     
     if (bHasNormalMap != 0)

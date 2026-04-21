@@ -113,6 +113,8 @@ private:
 		FVector4     LastSpecularColor = { -1.0f, -1.0f, -1.0f, -1.0f };
 		float        LastSpecularRoughness = -1.0f;
 		int32        LastHasNormalMap = -1;
+		int32        LastAlphaCutout = -1;
+		int32        LastClampUVToUnit = -1;
 
 		ID3D11ShaderResourceView* LastNormalSRV = reinterpret_cast<ID3D11ShaderResourceView*>(~0ull);
 

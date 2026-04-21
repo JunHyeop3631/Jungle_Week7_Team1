@@ -280,10 +280,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Source\Engine\Components\GeometryDecalComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\PointLightComponent.cpp" />
     <ClCompile Include="Source\Engine\FileSystem\DirectoryWatcher.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\AmbientLight.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\DirectionalLight.cpp" />
+    <ClCompile Include="Source\Engine\GameFramework\GeometryDecalActor.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\PointLight.cpp" />
     <ClCompile Include="Source\Engine\Components\DirectionalLightComponent.cpp" />
     <ClCompile Include="Source\Engine\Components\AmbientLightComponent.cpp" />
@@ -388,7 +390,7 @@
     <ClCompile Include="Source\Engine\Render\Pipeline\RenderCollector.cpp" />
     <ClCompile Include="Source\Engine\Render\Pipeline\Renderer.cpp" />
     <ClCompile Include="Source\Engine\Render\Proxy\BillboardSceneProxy.cpp" />
-    <ClCompile Include="Source\Engine\Render\Proxy\DecalGeometryChecker.cpp" />
+    <ClCompile Include="Source\Engine\Render\Proxy\GeometryDecalSceneProxy.cpp" />
     <ClCompile Include="Source\Engine\Render\Proxy\DecalSceneProxy.cpp" />
     <ClCompile Include="Source\Engine\Render\Proxy\FScene.cpp" />
     <ClCompile Include="Source\Engine\Render\Proxy\GizmoSceneProxy.cpp" />
@@ -430,10 +432,12 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Source\Engine\Components\GeometryDecalComponent.h" />
     <ClInclude Include="Source\Engine\Components\PointLightComponent.h" />
     <ClInclude Include="Source\Engine\FileSystem\DirectoryWatcher.h" />
     <ClInclude Include="Source\Engine\GameFramework\AmbientLight.h" />
     <ClInclude Include="Source\Engine\GameFramework\DirectionalLight.h" />
+    <ClInclude Include="Source\Engine\GameFramework\GeometryDecalActor.h" />
     <ClInclude Include="Source\Engine\GameFramework\PointLight.h" />
     <ClInclude Include="Source\Engine\Components\DirectionalLightComponent.h" />
     <ClInclude Include="Source\Engine\Components\AmbientLightComponent.h" />
@@ -565,7 +569,7 @@
     <ClInclude Include="Source\Engine\Render\Pipeline\Renderer.h" />
     <ClInclude Include="Source\Engine\Render\Pipeline\SceneRenderSetup.h" />
     <ClInclude Include="Source\Engine\Render\Proxy\BillboardSceneProxy.h" />
-    <ClInclude Include="Source\Engine\Render\Proxy\DecalGeometryChecker.h" />
+    <ClInclude Include="Source\Engine\Render\Proxy\GeometryDecalSceneProxy.h" />
     <ClInclude Include="Source\Engine\Render\Proxy\DecalSceneProxy.h" />
     <ClInclude Include="Source\Engine\Render\Proxy\DirtyFlag.h" />
     <ClInclude Include="Source\Engine\Render\Proxy\FScene.h" />

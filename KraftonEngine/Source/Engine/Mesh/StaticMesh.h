@@ -43,6 +43,7 @@ public:
 	// Decal Geometry Checker용: 로컬 AABB와 겹치는 삼각형 정점을 수집 
 	// OutLocalTriVerts: [V0,V1,V2, V0,V1,V2, ...] 형태로 append (로컬 공간)
 	void QueryMeshTrianglesInBox(const FBoundingBox& LocalBox, TArray<FVector>& OutLocalTriVerts) const;
+	const FMeshTrianglePickingBVH& GetMeshTrianglePickingBVH() const { return MeshTrianglePickingBVH; }
 
 
 	// LOD 접근

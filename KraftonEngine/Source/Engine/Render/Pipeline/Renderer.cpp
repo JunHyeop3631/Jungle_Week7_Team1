@@ -788,8 +788,12 @@ void FRenderer::DrawSections(const FPrimitiveSceneProxy& Proxy, ID3D11DeviceCont
 		// Material CB — SectionColor 또는 UVScroll 변경 시만 업데이트
 		int32 curUVScroll = Section.bIsUVScroll ? 1 : 0;
 		int32 curHasNormalMap = (Section.NormalMapSRV != nullptr) ? 1 : 0;
+		int32 curAlphaCutout = Section.bAlphaCutout ? 1 : 0;
+		int32 curClampUVToUnit = Section.bClampUVToUnit ? 1 : 0;
 		if (curUVScroll != State.LastUVScroll
 			|| curHasNormalMap != State.LastHasNormalMap
+			|| curAlphaCutout != State.LastAlphaCutout
+			|| curClampUVToUnit != State.LastClampUVToUnit
 			|| memcmp(&Section.DiffuseColor, &State.LastSectionColor, sizeof(FVector4)) != 0
 			|| memcmp(&Section.AmbientColor, &State.LastAmbientColor, sizeof(FVector4)) != 0
 			|| memcmp(&Section.SpecularColor, &State.LastSpecularColor, sizeof(FVector4)) != 0
@@ -801,10 +805,15 @@ void FRenderer::DrawSections(const FPrimitiveSceneProxy& Proxy, ID3D11DeviceCont
 			MatConstants.Ka = Section.AmbientColor;
 			MatConstants.Ks = Section.SpecularColor;
 			MatConstants.SpecularRoughness = Section.SpecularExponent;
+			MatConstants.SpecularIntensity = 1.0f;
 			MatConstants.bHasNormalMap = curHasNormalMap;
+			MatConstants.bAlphaCutout = curAlphaCutout;
+			MatConstants.bClampUVToUnit = curClampUVToUnit;
 			MaterialCB->Update(Ctx, &MatConstants, sizeof(MatConstants));
 			State.LastUVScroll = curUVScroll;
 			State.LastHasNormalMap = curHasNormalMap;
+			State.LastAlphaCutout = curAlphaCutout;
+			State.LastClampUVToUnit = curClampUVToUnit;
 			State.LastSectionColor = Section.DiffuseColor;
 			State.LastAmbientColor = Section.AmbientColor;
 			State.LastSpecularColor = Section.SpecularColor;
@@ -863,8 +872,12 @@ void FRenderer::DrawSingleSection(const FPrimitiveSceneProxy& Proxy, ID3D11Devic
 	// Material CB — SectionColor 또는 UVScroll 변경 시만 업데이트
 	int32 curUVScroll = Section.bIsUVScroll ? 1 : 0;
 	int32 curHasNormalMap = (Section.NormalMapSRV != nullptr) ? 1 : 0;
+	int32 curAlphaCutout = Section.bAlphaCutout ? 1 : 0;
+	int32 curClampUVToUnit = Section.bClampUVToUnit ? 1 : 0;
 	if (curUVScroll != State.LastUVScroll
 		|| curHasNormalMap != State.LastHasNormalMap
+		|| curAlphaCutout != State.LastAlphaCutout
+		|| curClampUVToUnit != State.LastClampUVToUnit
 		|| memcmp(&Section.DiffuseColor, &State.LastSectionColor, sizeof(FVector4)) != 0
 		|| memcmp(&Section.AmbientColor, &State.LastAmbientColor, sizeof(FVector4)) != 0
 		|| memcmp(&Section.SpecularColor, &State.LastSpecularColor, sizeof(FVector4)) != 0
@@ -873,6 +886,9 @@ void FRenderer::DrawSingleSection(const FPrimitiveSceneProxy& Proxy, ID3D11Devic
 		FMaterialConstants MatConstants = {};
 		MatConstants.bIsUVScroll = curUVScroll;
 		MatConstants.SectionColor = Section.DiffuseColor;
+		MatConstants.SpecularIntensity = 1.0f;
+		MatConstants.bAlphaCutout = curAlphaCutout;
+		MatConstants.bClampUVToUnit = curClampUVToUnit;
 		MatConstants.bHasNormalMap = curHasNormalMap;
 		MatConstants.Ka = Section.AmbientColor;
 		MatConstants.Ks = Section.SpecularColor;
@@ -880,6 +896,8 @@ void FRenderer::DrawSingleSection(const FPrimitiveSceneProxy& Proxy, ID3D11Devic
 		MaterialCB->Update(Ctx, &MatConstants, sizeof(MatConstants));
 		State.LastUVScroll = curUVScroll;
 		State.LastHasNormalMap = curHasNormalMap;
+		State.LastAlphaCutout = curAlphaCutout;
+		State.LastClampUVToUnit = curClampUVToUnit;
 		State.LastSectionColor = Section.DiffuseColor;
 		State.LastAmbientColor = Section.AmbientColor;
 		State.LastSpecularColor = Section.SpecularColor;

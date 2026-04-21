@@ -1,16 +1,135 @@
-﻿#include "Render/Proxy/DecalGeometryChecker.h"
+﻿#include "Render/Proxy/GeometryDecalSceneProxy.h"
 
 #include "Components/DecalComponent.h"
+#include "Components/GeometryDecalComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Collision/WorldPrimitivePickingBVH.h"
+#include "Materials/MaterialInterface.h"
+#include "Render/Pipeline/RenderBus.h"
+#include "Render/Resource/ShaderManager.h"
 #include "Mesh/StaticMesh.h"
 #include "Mesh/StaticMeshAsset.h"
 #include "GameFramework/World.h"
 #include "Profiling/Stats.h"
+#include "Texture/Texture2D.h"
 
 #include <cmath>
 #include <cfloat>
+#include <utility>
 
+
+FGeometryDecalSceneProxy::FGeometryDecalSceneProxy(UGeometryDecalComponent* InComponent)
+	: FPrimitiveSceneProxy(InComponent)
+{
+	// GeometryDecal은 Decal과 동일하게 선택 시 OBB 와이어프레임을 사용한다.
+	bShowAABB = false;
+	// 선택 가이드(OBB)가 오클루전에 의해 사라지지 않도록 제외한다.
+	bSkipGPUOcclusion = true;
+}
+
+void FGeometryDecalSceneProxy::UpdateMesh()
+{
+	MeshBuffer = Owner->GetMeshBuffer();
+	Shader = FShaderManager::Get().GetShader(EShaderType::StaticMesh);
+	Pass = ERenderPass::Opaque;
+	RebuildSectionDraw();
+}
+
+void FGeometryDecalSceneProxy::UpdateMaterial()
+{
+	RebuildSectionDraw();
+}
+
+void FGeometryDecalSceneProxy::UpdateTransform()
+{
+	FPrimitiveSceneProxy::UpdateTransform();
+
+	if (UGeometryDecalComponent* GeoDecalComp = GetGeometryDecalComponent())
+	{
+		PerObjectConstants.Model = GeoDecalComp->GetTransformIncludingDecalSize();
+		PerObjectConstants.InvModel = PerObjectConstants.Model.GetInverse().GetTransposed();
+		CachedWorldPos = PerObjectConstants.Model.GetLocation();
+		CachedBounds = GeoDecalComp->GetWorldBoundingBox();
+		MarkPerObjectCBDirty();
+	}
+}
+
+void FGeometryDecalSceneProxy::RebuildSectionDraw()
+{
+	SectionDraws.clear();
+
+	UGeometryDecalComponent* GeoDecalComp = GetGeometryDecalComponent();
+	if (!GeoDecalComp || !MeshBuffer)
+	{
+		UpdateSortKey();
+		return;
+	}
+
+	const uint32 IndexCount = MeshBuffer->GetIndexBuffer().GetIndexCount();
+	if (IndexCount == 0)
+	{
+		UpdateSortKey();
+		return;
+	}
+
+	FMeshSectionDraw Draw = {};
+	Draw.FirstIndex = 0;
+	Draw.IndexCount = IndexCount;
+	Draw.bIsUVScroll = GeoDecalComp->IsUVScrollEnabled();
+	Draw.DiffuseColor = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
+	Draw.AmbientColor = FVector4(1.0f, 1.0f, 1.0f, 1.0f);
+	Draw.SpecularColor = FVector4(0.0f, 0.0f, 0.0f, 1.0f);
+	Draw.SpecularExponent = 0.0f;
+
+	if (const FTextureResource* Texture = GeoDecalComp->GetDecalTexture())
+	{
+		Draw.DiffuseSRV = Texture->SRV;
+	}
+	else if (UMaterialInterface* Material = GeoDecalComp->GetMaterial())
+	{
+		if (UTexture2D* DiffuseTexture = Material->GetDiffuseTexture())
+		{
+			Draw.DiffuseSRV = DiffuseTexture->GetSRV();
+		}
+		if (UTexture2D* NormalTexture = Material->GetNormalTexture())
+		{
+			Draw.NormalMapSRV = NormalTexture->GetSRV();
+		}
+
+		Draw.DiffuseColor = Material->GetDiffuseColor();
+		Draw.AmbientColor = Material->GetAmbientColor();
+		Draw.SpecularColor = Material->GetSpecularColor();
+		Draw.SpecularExponent = Material->GetSpecularExponent();
+	}
+
+	const bool bUsesTexture = (Draw.DiffuseSRV != nullptr);
+	Draw.bAlphaCutout = bUsesTexture;
+	Draw.bClampUVToUnit = bUsesTexture;
+
+	SectionDraws.push_back(Draw);
+	UpdateSortKey();
+}
+
+void FGeometryDecalSceneProxy::CollectEntries(FRenderBus& Bus)
+{
+	FPrimitiveSceneProxy::CollectEntries(Bus);
+
+	if (!bVisible || !bSelected)
+	{
+		return;
+	}
+
+	FOBBEntry Entry;
+	Entry.OBB.LocalBox = FBoundingBox(FVector(-0.5f, -0.5f, -0.5f), FVector(0.5f, 0.5f, 0.5f));
+	Entry.OBB.Transform = PerObjectConstants.Model;
+	Entry.OBB.Color = FColor::Green();
+	Bus.AddOBBEntry(std::move(Entry));
+}
+
+UGeometryDecalComponent* FGeometryDecalSceneProxy::GetGeometryDecalComponent() const
+{
+	return static_cast<UGeometryDecalComponent*>(Owner);
+}
 // ============================================================
 // 진입점
 // ============================================================

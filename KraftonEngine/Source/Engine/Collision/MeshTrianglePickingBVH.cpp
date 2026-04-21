@@ -305,6 +305,58 @@ void FMeshTrianglePickingBVH::QueryAABBLocal(const FBoundingBox& LocalBox, TArra
 	}
 }
 
+void FMeshTrianglePickingBVH::QueryAABBLocalIndices(const FBoundingBox& LocalBox, TArray<int32>& OutTriangleStartIndices) const
+{
+	if (Nodes.empty() || !Nodes[0].Bounds.IsIntersected(LocalBox))
+	{
+		return;
+	}
+
+	int32 NodeStack[MeshBVHMaxTraversalStack];
+	int32 StackSize = 0;
+	NodeStack[StackSize++] = 0;
+
+	while (StackSize > 0)
+	{
+		const int32 NodeIndex = NodeStack[--StackSize];
+		const FNode& Node = Nodes[NodeIndex];
+
+		if (Node.IsLeaf())
+		{
+			const FTrianglePacket& Packet = LeafPackets[Node.PacketIndex];
+			for (uint32 Lane = 0; Lane < Packet.TriangleCount; ++Lane)
+			{
+				if (!(Packet.LaneMask & (1u << Lane))) continue;
+
+				const FVector V0(Packet.V0X[Lane], Packet.V0Y[Lane], Packet.V0Z[Lane]);
+				const FVector V1(V0.X + Packet.Edge1X[Lane], V0.Y + Packet.Edge1Y[Lane], V0.Z + Packet.Edge1Z[Lane]);
+				const FVector V2(V0.X + Packet.Edge2X[Lane], V0.Y + Packet.Edge2Y[Lane], V0.Z + Packet.Edge2Z[Lane]);
+
+				FBoundingBox TriBounds;
+				TriBounds.Expand(V0); TriBounds.Expand(V1); TriBounds.Expand(V2);
+
+				if (TriBounds.IsIntersected(LocalBox))
+				{
+					// 정점 대신 원본 인덱스 버퍼의 시작 위치를 반환
+					OutTriangleStartIndices.push_back(Packet.TriangleStartIndices[Lane]);
+				}
+			}
+			continue;
+		}
+
+		for (int32 ChildSlot = 0; ChildSlot < Node.ChildCount; ++ChildSlot)
+		{
+			const FBoundingBox ChildBounds(
+				FVector(Node.ChildMinX[ChildSlot], Node.ChildMinY[ChildSlot], Node.ChildMinZ[ChildSlot]),
+				FVector(Node.ChildMaxX[ChildSlot], Node.ChildMaxY[ChildSlot], Node.ChildMaxZ[ChildSlot]));
+			if (ChildBounds.IsIntersected(LocalBox) && StackSize < MeshBVHMaxTraversalStack)
+			{
+				NodeStack[StackSize++] = Node.Children[ChildSlot];
+			}
+		}
+	}
+}
+
 int32 FMeshTrianglePickingBVH::BuildRecursive(const FStaticMesh& Mesh, int32 Start, int32 End)
 {
 	//triangle leaf 구간 [Start, End)를 하나의 node로 만들고, 필요하면 재귀 분할합니다.

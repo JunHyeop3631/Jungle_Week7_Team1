@@ -6,7 +6,7 @@
 //#include "Render/Resource/MeshBufferManager.h"
 //#include "Render/Resource/ShaderManager.h"
 //#include "Texture/Texture2D.h"
-#include "Render/Proxy/DecalGeometryChecker.h"
+#include "Render/Proxy/GeometryDecalSceneProxy.h"
 #include "Render/Pipeline/RenderBus.h"
 #include "Components/DecalComponent.h"
 #include "Materials/MaterialInterface.h"
