@@ -13,6 +13,7 @@
 #include "GameFramework/AActor.h"
 #include "GameFramework/StaticMeshActor.h"
 #include "GameFramework/DecalActor.h"
+#include "GameFramework/GeometryDecalActor.h"
 #include "GameFramework/SpotLightActor.h"
 #include "Components/BillboardComponent.h"
 #include "Components/TextRenderComponent.h"
@@ -117,6 +118,7 @@ constexpr const char* GPlaceableIdCube = "basic_shape_cube";
 constexpr const char* GPlaceableIdSphere = "basic_shape_sphere";
 constexpr const char* GPlaceableIdCylinder = "basic_shape_cylinder";
 constexpr const char* GPlaceableIdDecal = "basic_actor_decal";
+constexpr const char* GPlaceableIdGeometryDecal = "basic_actor_geometry_decal";
 constexpr const char* GPlaceableIdSpotLight = "basic_actor_spotlight";
 constexpr const char* GPlaceableIdPointLight = "basic_actor_pointlight";
 constexpr const char* GPlaceableIdAmbientLight = "basic_actor_ambientlight";
@@ -1200,6 +1202,24 @@ void UEditorEngine::RegisterDefaultPlaceableActors()
 				return false;
 			}
 
+			return true;
+		}
+		});
+
+	RegisterPlaceableActor({
+		GPlaceableIdGeometryDecal,
+		"Geometry Decal",
+		[](UWorld* World) -> AActor*
+		{
+			return World ? static_cast<AActor*>(World->SpawnActor<AGeometryDecalActor>()) : nullptr;
+		},
+		[](AActor* Actor) -> bool
+		{
+			AGeometryDecalActor* GeoDecalActor = Cast<AGeometryDecalActor>(Actor);
+			if (!GeoDecalActor) return false;
+
+			// 생성 직후 자동으로 주변 지오메트리를 캡처하여 메쉬를 만들도록 트리거할 수 있습니다.
+			GeoDecalActor->GenerateDecalMesh(); 
 			return true;
 		}
 		});

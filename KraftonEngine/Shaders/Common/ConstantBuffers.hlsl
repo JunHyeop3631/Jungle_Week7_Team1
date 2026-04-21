@@ -92,8 +92,11 @@ cbuffer MaterialBuffer : register(b4)
 {
     uint bIsUVScroll;
     uint bHasNormalMap; // 노멀맵 사용 여부
+    uint bAlphaCutout;
+    uint bClampUVToUnit;
     float SpecularRoughness; // Blinn-Phong Shininess
     float SpecularIntensity; // 반사광 세기
+    float2 _materialPad;
     float4 SectionColor;
     float4 ka; // Ambient coefficient
     float4 ks; // Specular coefficient

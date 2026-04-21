@@ -4,11 +4,28 @@
 #include "Engine/Core/EngineTypes.h"
 #include "Engine/Math/Vector.h"
 #include "Engine/Math/Matrix.h"
+#include "Render/Proxy/PrimitiveSceneProxy.h"
 
 class UDecalComponent;
+class UGeometryDecalComponent;
 class UStaticMeshComponent;
 class UWorld;
 class FWorldPrimitivePickingBVH;
+
+class FGeometryDecalSceneProxy : public FPrimitiveSceneProxy
+{
+public:
+	explicit FGeometryDecalSceneProxy(UGeometryDecalComponent* InComponent);
+
+	void UpdateMesh() override;
+	void UpdateMaterial() override;
+	void UpdateTransform() override;
+	void CollectEntries(FRenderBus& Bus) override;
+
+private:
+	void RebuildSectionDraw();
+	UGeometryDecalComponent* GetGeometryDecalComponent() const;
+};
 
 /**
  * FDecalGeometryChecker

@@ -571,7 +571,7 @@
     <ClCompile Include="Source\Editor\Input\EditorViewportModes.cpp" />
     <ClCompile Include="Source\Editor\Input\EditorViewportTools.cpp" />
     <ClCompile Include="Source\Engine\Render\Proxy\DecalSceneProxy.cpp" />
-    <ClCompile Include="Source\Engine\Render\Proxy\DecalGeometryChecker.cpp" />
+    <ClCompile Include="Source\Engine\Render\Proxy\GeometryDecalSceneProxy.cpp" />
     <ClCompile Include="Source\Engine\GameFramework\SpotLightActor.cpp" />
     <ClCompile Include="Source\Engine\Components\LightComponentBase.cpp" />
     <ClCompile Include="Source\Engine\Components\LightComponent.cpp" />
@@ -1077,7 +1077,7 @@
     <ClInclude Include="Source\Editor\Input\EditorViewportModes.h" />
     <ClInclude Include="Source\Editor\Input\EditorViewportTools.h" />
     <ClInclude Include="Source\Engine\Render\Proxy\DecalSceneProxy.h" />
-    <ClInclude Include="Source\Engine\Render\Proxy\DecalGeometryChecker.h" />
+    <ClInclude Include="Source\Engine\Render\Proxy\GeometryDecalSceneProxy.h" />
     <ClInclude Include="Source\Engine\GameFramework\SpotLightActor.h" />
     <ClInclude Include="Source\Engine\Components\LightComponentBase.h" />
     <ClInclude Include="Source\Engine\Components\LightComponent.h" />

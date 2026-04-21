@@ -111,8 +111,11 @@ struct FMaterialConstants
 {
 	uint32 bIsUVScroll = 0;
 	uint32 bHasNormalMap = 0;
+	uint32 bAlphaCutout = 0;
+	uint32 bClampUVToUnit = 0;
 	float SpecularRoughness = 0.0f;
 	float SpecularIntensity = 1.0f;
+	float _MaterialPad[2] = { 0.0f, 0.0f };
 	FVector4 SectionColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 	FVector4 Ka = { 1.0f, 1.0f, 1.0f, 1.0f };
 	FVector4 Ks = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -366,5 +369,7 @@ struct FMeshSectionDraw
 	uint32 FirstIndex = 0;
 	uint32 IndexCount = 0;
 	bool bIsUVScroll = false;
+	bool bAlphaCutout = false;
+	bool bClampUVToUnit = false;
 };
 

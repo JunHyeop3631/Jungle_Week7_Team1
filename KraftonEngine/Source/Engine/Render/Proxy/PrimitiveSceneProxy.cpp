@@ -34,6 +34,8 @@ namespace
 		Hash = HashCombine(Hash, HashPointer(Section.DiffuseSRV));
 		Hash = HashCombine(Hash, HashPointer(Section.NormalMapSRV));
 		Hash = HashCombine(Hash, Section.bIsUVScroll ? 1u : 0u);
+		Hash = HashCombine(Hash, Section.bAlphaCutout ? 1u : 0u);
+		Hash = HashCombine(Hash, Section.bClampUVToUnit ? 1u : 0u);
 		Hash = HashCombine(Hash, HashFloatBits(Section.DiffuseColor.X));
 		Hash = HashCombine(Hash, HashFloatBits(Section.DiffuseColor.Y));
 		Hash = HashCombine(Hash, HashFloatBits(Section.DiffuseColor.Z));
