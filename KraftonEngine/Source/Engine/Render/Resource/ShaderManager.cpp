@@ -128,15 +128,19 @@ void FShaderManager::Initialize(ID3D11Device* InDevice)
 		"CS_Point");
 	Shaders[(uint32)EShaderType::LightCullingCS_Spot].CreateCompute(InDevice, L"Shaders/LightCulling.hlsl",
 		"CS_Spot");
+
 	Shaders[(uint32)EShaderType::LightCullingTiledCS_Point].CreateCompute(InDevice, L"Shaders/LightCullingTiled.hlsl",
 		"CS_Point");
 	Shaders[(uint32)EShaderType::LightCullingTiledCS_Spot].CreateCompute(InDevice, L"Shaders/LightCullingTiled.hlsl",
 		"CS_Spot");
 	bIsInitialized = true;
+	ShaderWatcher.Start(L"Shaders");
 }
 
 void FShaderManager::Release()
 {
+	ShaderWatcher.Stop();
+
 	for (uint32 i = 0; i < (uint32)EShaderType::MAX; ++i)
 	{
 		Shaders[i].Release();
@@ -163,4 +167,32 @@ FShader* FShaderManager::GetShader(EShaderType InType)
 FShader* FShaderManager::GetStaticMeshShader(EViewMode InViewMode)
 {
 	return &StaticMeshLightingShaders[ToStaticMeshLightingShaderIndex(InViewMode)];
+}
+
+void FShaderManager::TickHotReload(ID3D11Device* InDevice)
+{
+	std::vector<std::wstring> ModifiedFiles;
+
+	if (ShaderWatcher.GetModifiedFiles(ModifiedFiles))
+	{
+		// 디바운싱: 파일 저장이 완전히 끝날 때까지 잠시 대기
+		std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+		for (const auto& File : ModifiedFiles)
+		{
+			OutputDebugStringW(L"[ShaderManager] Change Detected\n");
+		}
+
+		// 파일 하나만 바뀌어도 Include 된 다른 파일들에 영향을 줄 수 있으므로,
+		// 매니저가 관리하는 모든 셰이더에 대해 핫 리로드(재컴파일)를 지시합니다.
+		for (uint32 i = 0; i < (uint32)EShaderType::MAX; ++i)
+		{
+			Shaders[i].CheckAndHotReload(InDevice);
+		}
+
+		for (uint32 i = 0; i < StaticMeshLightingShaderCount; ++i)
+		{
+			StaticMeshLightingShaders[i].CheckAndHotReload(InDevice);
+		}
+	}
 }

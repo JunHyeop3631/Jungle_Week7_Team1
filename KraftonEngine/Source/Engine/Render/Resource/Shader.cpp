@@ -1,7 +1,5 @@
 ﻿#include "Shader.h"
 #include "Profiling/MemoryStats.h"
-
-#include <iostream>
 #include <string_view>
 
 static D3D_SHADER_MACRO Defines_Gouraud[] =
@@ -35,6 +33,110 @@ static D3D_SHADER_MACRO Defines_WorldNormal[] =
 };
 
 static EViewMode GLightingViewMode = EViewMode::Unlit;
+
+void FShader::CheckAndHotReload(ID3D11Device* InDevice)
+{
+	if (!bCanHotReload || CachedFilePath.empty()) return;
+
+	const D3D_SHADER_MACRO* DefinesPtr = CachedDefines.empty() ? nullptr : CachedDefines.data();
+	ID3DBlob* errorBlob = nullptr;
+
+	if (bIsComputeShader)
+	{
+		// === 컴퓨트 셰이더(CS) 리로드 로직 ===
+		ID3DBlob* newCS_CSO = nullptr;
+		HRESULT hr = D3DCompileFromFile(CachedFilePath.c_str(), DefinesPtr, D3D_COMPILE_STANDARD_FILE_INCLUDE, CachedCSEntry.c_str(), "cs_5_0", 0, 0, &newCS_CSO, &errorBlob);
+
+		if (FAILED(hr))
+		{
+			if (errorBlob)
+			{
+				std::string ErrorMsg = "HotReload CS Error in " + std::string(CachedFilePath.begin(), CachedFilePath.end()) + "\n";
+				ErrorMsg += (char*)errorBlob->GetBufferPointer();
+				ErrorMsg += "\n";
+				OutputDebugStringA(ErrorMsg.c_str());
+				errorBlob->Release();
+			}
+			return; // 실패 시 기존 셰이더 유지
+		}
+
+		// 컴파일 성공 시 기존 리소스 해제 후 교체
+		Release();
+
+		InDevice->CreateComputeShader(newCS_CSO->GetBufferPointer(), newCS_CSO->GetBufferSize(), nullptr, &ComputeShader);
+		CachedComputeShaderSize = newCS_CSO->GetBufferSize();
+		MemoryStats::AddComputeShaderMemory(static_cast<uint32>(CachedComputeShaderSize));
+
+		newCS_CSO->Release();
+
+		bCanHotReload = true;
+		bIsComputeShader = true; // Release() 호출 시 초기화될 수 있으므로 다시 true 설정
+
+		std::wstring SuccessMsg = L"[ShaderManager] Successfully hot-reloaded CS: " + CachedFilePath + L"\n";
+		OutputDebugStringW(SuccessMsg.c_str());
+	}
+	else
+	{
+		// === 버텍스/픽셀 셰이더(VS/PS) 리로드 로직 ===
+		ID3DBlob* newVS_CSO = nullptr;
+		ID3DBlob* newPS_CSO = nullptr;
+
+		// VS 컴파일 시도
+		HRESULT hr = D3DCompileFromFile(CachedFilePath.c_str(), DefinesPtr, D3D_COMPILE_STANDARD_FILE_INCLUDE, CachedVSEntry.c_str(), "vs_5_0", 0, 0, &newVS_CSO, &errorBlob);
+		if (FAILED(hr))
+		{
+			if (errorBlob)
+			{
+				std::string ErrorMsg = "HotReload VS Error in " + std::string(CachedFilePath.begin(), CachedFilePath.end()) + "\n";
+				ErrorMsg += (char*)errorBlob->GetBufferPointer();
+				ErrorMsg += "\n";
+				OutputDebugStringA(ErrorMsg.c_str());
+				errorBlob->Release();
+			}
+			return; // 실패 시 기존 셰이더 유지
+		}
+
+		// PS 컴파일 시도
+		hr = D3DCompileFromFile(CachedFilePath.c_str(), DefinesPtr, D3D_COMPILE_STANDARD_FILE_INCLUDE, CachedPSEntry.c_str(), "ps_5_0", 0, 0, &newPS_CSO, &errorBlob);
+		if (FAILED(hr))
+		{
+			if (errorBlob)
+			{
+				std::string ErrorMsg = "HotReload PS Error in " + std::string(CachedFilePath.begin(), CachedFilePath.end()) + "\n";
+				ErrorMsg += (char*)errorBlob->GetBufferPointer();
+				ErrorMsg += "\n";
+				OutputDebugStringA(ErrorMsg.c_str());
+				errorBlob->Release();
+			}
+			newVS_CSO->Release();
+			return; // 실패 시 기존 셰이더 유지
+		}
+
+		// === 컴파일 성공! 기존 리소스 해제 후 새 리소스로 교체 ===
+		Release(); // 기존 VS, PS, InputLayout 해제 (MemoryStats 반영 포함)
+
+		InDevice->CreateVertexShader(newVS_CSO->GetBufferPointer(), newVS_CSO->GetBufferSize(), nullptr, &VertexShader);
+		CachedVertexShaderSize = newVS_CSO->GetBufferSize();
+		MemoryStats::AddVertexShaderMemory(static_cast<uint32>(CachedVertexShaderSize));
+
+		InDevice->CreatePixelShader(newPS_CSO->GetBufferPointer(), newPS_CSO->GetBufferSize(), nullptr, &PixelShader);
+		CachedPixelShaderSize = newPS_CSO->GetBufferSize();
+		MemoryStats::AddPixelShaderMemory(static_cast<uint32>(CachedPixelShaderSize));
+
+		if (!CachedInputElements.empty())
+		{
+			InDevice->CreateInputLayout(CachedInputElements.data(), static_cast<UINT>(CachedInputElements.size()), newVS_CSO->GetBufferPointer(), newVS_CSO->GetBufferSize(), &InputLayout);
+		}
+
+		newVS_CSO->Release();
+		newPS_CSO->Release();
+
+		bCanHotReload = true;
+
+		std::wstring SuccessMsg = L"[ShaderManager] Successfully hot-reloaded: " + CachedFilePath + L"\n";
+		OutputDebugStringW(SuccessMsg.c_str());
+	}
+}
 
 void FShader::SetCurrentLightingViewMode(EViewMode InViewMode)
 {
@@ -114,15 +216,34 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 {
 	Release();
 
+	// 1. [핵심] UberLit 하드코딩 제거 및 매크로 그대로 사용
 	const D3D_SHADER_MACRO* ShaderDefines = InDefines;
-	if (!ShaderDefines && InFilePath)
+
+	// 2. 핫 리로드를 위한 데이터 캐싱
+	CachedFilePath = InFilePath ? InFilePath : L"";
+	CachedVSEntry = InVSEntryPoint ? InVSEntryPoint : "";
+	CachedPSEntry = InPSEntryPoint ? InPSEntryPoint : "";
+
+	CachedInputElements.clear();
+
+	if (InInputElements && InInputElementCount > 0)
 	{
-		constexpr std::wstring_view UberLitPath = L"Shaders/UberLit.hlsl";
-		if (std::wstring_view(InFilePath) == UberLitPath)
-		{
-			ShaderDefines = GetLightingModelShaderMacro(GLightingViewMode);
-		}
+		CachedInputElements.assign(InInputElements, InInputElements + InInputElementCount);
 	}
+
+	CachedDefines.clear();
+	if (InDefines)
+	{
+		const D3D_SHADER_MACRO* Macro = InDefines;
+		while (Macro->Name != nullptr)
+		{
+			CachedDefines.push_back(*Macro);
+			Macro++;
+		}
+		CachedDefines.push_back({ nullptr, nullptr }); // Null-terminator 필수
+	}
+
+	bCanHotReload = true;
 
 	ID3DBlob* vertexShaderCSO = nullptr;
 	ID3DBlob* pixelShaderCSO = nullptr;
@@ -141,7 +262,7 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 	}
 
 	// Pixel Shader 컴파일
- hr = D3DCompileFromFile(InFilePath, ShaderDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InPSEntryPoint, "ps_5_0", 0, 0, &pixelShaderCSO, &errorBlob);
+	hr = D3DCompileFromFile(InFilePath, ShaderDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InPSEntryPoint, "ps_5_0", 0, 0, &pixelShaderCSO, &errorBlob);
 	if (FAILED(hr))
 	{
 		if (errorBlob)
@@ -157,7 +278,8 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 	hr = InDevice->CreateVertexShader(vertexShaderCSO->GetBufferPointer(), vertexShaderCSO->GetBufferSize(), nullptr, &VertexShader);
 	if (FAILED(hr))
 	{
-		std::cerr << "Failed to create Vertex Shader (HRESULT: " << hr << ")" << std::endl;
+		std::string ErrorMsg = "Failed to create Vertex Shader (HRESULT: " + std::to_string(hr) + ")\n";
+		OutputDebugStringA(ErrorMsg.c_str());
 		vertexShaderCSO->Release();
 		pixelShaderCSO->Release();
 		return;
@@ -170,7 +292,8 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 	hr = InDevice->CreatePixelShader(pixelShaderCSO->GetBufferPointer(), pixelShaderCSO->GetBufferSize(), nullptr, &PixelShader);
 	if (FAILED(hr))
 	{
-		std::cerr << "Failed to create Pixel Shader (HRESULT: " << hr << ")" << std::endl;
+		std::string ErrorMsg = "Failed to create Pixel Shader (HRESULT: " + std::to_string(hr) + ")\n";
+		OutputDebugStringA(ErrorMsg.c_str());
 		Release();
 		vertexShaderCSO->Release();
 		pixelShaderCSO->Release();
@@ -186,7 +309,8 @@ void FShader::Create(ID3D11Device* InDevice, const wchar_t* InFilePath, const ch
 		hr = InDevice->CreateInputLayout(InInputElements, InInputElementCount, vertexShaderCSO->GetBufferPointer(), vertexShaderCSO->GetBufferSize(), &InputLayout);
 		if (FAILED(hr))
 		{
-			std::cerr << "Failed to create Input Layout (HRESULT: " << hr << ")" << std::endl;
+			std::string ErrorMsg = "Failed to create Input Layout (HRESULT: " + std::to_string(hr) + ")\n";
+			OutputDebugStringA(ErrorMsg.c_str());
 			Release();
 			vertexShaderCSO->Release();
 			pixelShaderCSO->Release();
@@ -203,8 +327,26 @@ void FShader::CreateCompute(ID3D11Device* InDevice, const wchar_t* InFilePath, c
 {
 	Release();
 
+	// === 컴퓨트 셰이더 핫 리로드용 데이터 캐싱 추가 ===
+	CachedFilePath = InFilePath ? InFilePath : L"";
+	CachedCSEntry = InCSEntryPoint ? InCSEntryPoint : "";
+	bIsComputeShader = true; // 컴퓨트 셰이더임을 명시
+
 	ID3DBlob* computeShaderCSO = nullptr;
 	ID3DBlob* errorBlob = nullptr;
+
+	CachedDefines.clear();
+	if (InDefines)
+	{
+		const D3D_SHADER_MACRO* Macro = InDefines;
+		while (Macro->Name != nullptr)
+		{
+			CachedDefines.push_back(*Macro);
+			Macro++;
+		}
+		CachedDefines.push_back({ nullptr, nullptr });
+	}
+	bCanHotReload = true;
 
 	HRESULT hr = D3DCompileFromFile(InFilePath, InDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, InCSEntryPoint, "cs_5_0", 0, 0, &computeShaderCSO, &errorBlob);
 	if (FAILED(hr))
@@ -220,7 +362,8 @@ void FShader::CreateCompute(ID3D11Device* InDevice, const wchar_t* InFilePath, c
 	hr = InDevice->CreateComputeShader(computeShaderCSO->GetBufferPointer(), computeShaderCSO->GetBufferSize(), nullptr, &ComputeShader);
 	if (FAILED(hr))
 	{
-		std::cerr << "Failed to create Compute Shader (HRESULT: " << hr << ")" << std::endl;
+		std::string ErrorMsg = "Failed to create Compute Shader (HRESULT: " + std::to_string(hr) + ")\n";
+		OutputDebugStringA(ErrorMsg.c_str());
 		computeShaderCSO->Release();
 		return;
 	}

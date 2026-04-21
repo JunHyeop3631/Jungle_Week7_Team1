@@ -773,13 +773,16 @@ void FRenderer::DrawSections(const FPrimitiveSceneProxy& Proxy, ID3D11DeviceCont
 		if (Section.IndexCount == 0) continue;
 
 		// SRV 변경 시에만 바인딩
-		if (Section.DiffuseSRV != State.LastSRV || Section.NormalMapSRV != State.LastNormalSRV)
+		ID3D11ShaderResourceView* SecondarySRV = (Proxy.Pass == ERenderPass::Decal)
+			? ActiveDepthSRV
+			: Section.NormalMapSRV;
+		if (Section.DiffuseSRV != State.LastSRV || SecondarySRV != State.LastNormalSRV)
 		{
-			ID3D11ShaderResourceView* srvs[2] = { Section.DiffuseSRV, Section.NormalMapSRV };
+			ID3D11ShaderResourceView* srvs[2] = { Section.DiffuseSRV, SecondarySRV };
 			Ctx->PSSetShaderResources(0, 2, srvs);
 
 			State.LastSRV = Section.DiffuseSRV;
-			State.LastNormalSRV = Section.NormalMapSRV;
+			State.LastNormalSRV = SecondarySRV;
 		}
 
 		// Material CB — SectionColor 또는 UVScroll 변경 시만 업데이트
@@ -845,13 +848,16 @@ void FRenderer::DrawSingleSection(const FPrimitiveSceneProxy& Proxy, ID3D11Devic
 	}
 
 	// SRV 변경 시에만 바인딩
-	if (Section.DiffuseSRV != State.LastSRV || Section.NormalMapSRV != State.LastNormalSRV)
+	ID3D11ShaderResourceView* SecondarySRV = (Proxy.Pass == ERenderPass::Decal)
+		? ActiveDepthSRV
+		: Section.NormalMapSRV;
+	if (Section.DiffuseSRV != State.LastSRV || SecondarySRV != State.LastNormalSRV)
 	{
-		ID3D11ShaderResourceView* srvs[2] = { Section.DiffuseSRV, Section.NormalMapSRV };
+		ID3D11ShaderResourceView* srvs[2] = { Section.DiffuseSRV, SecondarySRV };
 		Ctx->PSSetShaderResources(0, 2, srvs);
 
 		State.LastSRV = Section.DiffuseSRV;
-		State.LastNormalSRV = Section.NormalMapSRV;
+		State.LastNormalSRV = SecondarySRV;
 	}
 
 	// Material CB — SectionColor 또는 UVScroll 변경 시만 업데이트
