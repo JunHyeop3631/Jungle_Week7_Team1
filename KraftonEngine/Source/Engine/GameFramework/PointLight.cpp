@@ -14,7 +14,6 @@ APointLight::APointLight()
 	SpriteComponent->AttachToComponent(PointLight);
 	SpriteComponent->SetTexture(FName("PointLightIcon"));
 	PointLight->SetEditorIconBillboard(SpriteComponent);
-	PointLight->SetAttenuationRadius(5.0f);
 }
 
 void APointLight::BeginPlay()
