@@ -148,7 +148,7 @@ cbuffer LightingBuffer : register(b8)
     uint PointLightCount;
     uint SpotLightCount;
     uint bDebugLightCulling;
-    float _lightPad;
+    uint bUseClusteredLightCulling;
 };
 
 StructuredBuffer<FPointLightInfo> PointLightData : register(t8);
@@ -158,5 +158,10 @@ StructuredBuffer<uint2> PointLightClusterGrid : register(t10);
 StructuredBuffer<uint> PointLightGlobalIndices : register(t11);
 StructuredBuffer<uint2> SpotLightClusterGrid : register(t12);
 StructuredBuffer<uint> SpotLightGlobalIndices : register(t13);
+
+StructuredBuffer<uint> PointLightTileCounts : register(t14);
+StructuredBuffer<uint> PointLightTileIndices : register(t15);
+StructuredBuffer<uint> SpotLightTileCounts : register(t16);
+StructuredBuffer<uint> SpotLightTileIndices : register(t17);
 
 #endif // CONSTANT_BUFFERS_HLSL

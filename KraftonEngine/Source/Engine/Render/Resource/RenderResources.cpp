@@ -44,7 +44,7 @@ void FRenderResources::CreateLightCullingBuffers(ID3D11Device* InDevice, uint32 
 
 	// 전체 씬에서 Point/Spot 각각 허용할 수 있는 최대 조명 교차(장바구니) 개수
 	// 50만개면 메모리도 적게 먹으면서 오버플로우 걱정이 없는 아주 넉넉한 수치입니다.
-	const uint32 MAX_GLOBAL_LIGHT_INDICES = 500000;
+	const uint32 MAX_GLOBAL_LIGHT_INDICES = 2000000;
 
 	uint32 NumTilesX = (ViewportWidth + TILE_SIZE - 1) / TILE_SIZE;
 	uint32 NumTilesY = (ViewportHeight + TILE_SIZE - 1) / TILE_SIZE;
@@ -150,6 +150,43 @@ void FRenderResources::CreateLightCullingBuffers(ID3D11Device* InDevice, uint32 
 	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.SpotLightGlobalCounter);
 	uavDesc.Buffer.NumElements = 1;
 	InDevice->CreateUnorderedAccessView(LightCulling.SpotLightGlobalCounter, &uavDesc, &LightCulling.SpotLightGlobalCounterUAV);
+
+	// =========================================================
+	// [Tile Based] 결과 버퍼 생성
+	// =========================================================
+	const uint32 MAX_LIGHTS_PER_TILE = 256;
+	uint32 TotalTiles = NumTilesX * NumTilesY;
+
+	bufDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+
+	// Point Light Tile Counts
+	bufDesc.StructureByteStride = sizeof(uint32);
+	bufDesc.ByteWidth = TotalTiles * bufDesc.StructureByteStride;
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.PointLightTileCounts);
+	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalTiles;
+	InDevice->CreateUnorderedAccessView(LightCulling.PointLightTileCounts, &uavDesc, &LightCulling.PointLightTileCountsUAV);
+	InDevice->CreateShaderResourceView(LightCulling.PointLightTileCounts, &srvDesc, &LightCulling.PointLightTileCountsSRV);
+
+	// Point Light Tile Indices
+	bufDesc.ByteWidth = TotalTiles * MAX_LIGHTS_PER_TILE * bufDesc.StructureByteStride;
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.PointLightTileIndices);
+	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalTiles * MAX_LIGHTS_PER_TILE;
+	InDevice->CreateUnorderedAccessView(LightCulling.PointLightTileIndices, &uavDesc, &LightCulling.PointLightTileIndicesUAV);
+	InDevice->CreateShaderResourceView(LightCulling.PointLightTileIndices, &srvDesc, &LightCulling.PointLightTileIndicesSRV);
+
+	// Spot Light Tile Counts
+	bufDesc.ByteWidth = TotalTiles * bufDesc.StructureByteStride;
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.SpotLightTileCounts);
+	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalTiles;
+	InDevice->CreateUnorderedAccessView(LightCulling.SpotLightTileCounts, &uavDesc, &LightCulling.SpotLightTileCountsUAV);
+	InDevice->CreateShaderResourceView(LightCulling.SpotLightTileCounts, &srvDesc, &LightCulling.SpotLightTileCountsSRV);
+
+	// Spot Light Tile Indices
+	bufDesc.ByteWidth = TotalTiles * MAX_LIGHTS_PER_TILE * bufDesc.StructureByteStride;
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.SpotLightTileIndices);
+	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalTiles * MAX_LIGHTS_PER_TILE;
+	InDevice->CreateUnorderedAccessView(LightCulling.SpotLightTileIndices, &uavDesc, &LightCulling.SpotLightTileIndicesUAV);
+	InDevice->CreateShaderResourceView(LightCulling.SpotLightTileIndices, &srvDesc, &LightCulling.SpotLightTileIndicesSRV);
 }
 
 void FRenderResources::ReleaseLightCullingBuffers()
@@ -185,6 +222,23 @@ void FRenderResources::ReleaseLightCullingBuffers()
 
 	SafeRelease(LightCulling.SpotLightGlobalCounterUAV);
 	SafeRelease(LightCulling.SpotLightGlobalCounter);
+
+	// Tile 기반 결과
+	SafeRelease(LightCulling.PointLightTileIndicesSRV);
+	SafeRelease(LightCulling.PointLightTileIndicesUAV);
+	SafeRelease(LightCulling.PointLightTileIndices);
+
+	SafeRelease(LightCulling.PointLightTileCountsSRV);
+	SafeRelease(LightCulling.PointLightTileCountsUAV);
+	SafeRelease(LightCulling.PointLightTileCounts);
+
+	SafeRelease(LightCulling.SpotLightTileIndicesSRV);
+	SafeRelease(LightCulling.SpotLightTileIndicesUAV);
+	SafeRelease(LightCulling.SpotLightTileIndices);
+
+	SafeRelease(LightCulling.SpotLightTileCountsSRV);
+	SafeRelease(LightCulling.SpotLightTileCountsUAV);
+	SafeRelease(LightCulling.SpotLightTileCounts);
 }
 
 void FRenderResources::Release()

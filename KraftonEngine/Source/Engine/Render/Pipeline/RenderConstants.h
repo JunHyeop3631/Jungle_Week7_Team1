@@ -168,7 +168,7 @@ struct FLightingConstants
 	uint32 SpotLightCount = 0;
 	
 	uint32 bDebugLightCulling = 0;
-	uint32 _pad = 0;
+	uint32 bUseClusteredLightCulling = 1;
 };
 
 struct FCollectedLightData

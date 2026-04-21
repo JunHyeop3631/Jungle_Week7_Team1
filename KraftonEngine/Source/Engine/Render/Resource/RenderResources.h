@@ -40,6 +40,23 @@ struct FLightCullingBuffers
 
 	ID3D11Buffer* SpotLightGlobalCounter = nullptr; // 인덱스 할당용 카운터
 	ID3D11UnorderedAccessView* SpotLightGlobalCounterUAV = nullptr;
+
+	// Tile 기반 컬링 결과 버퍼 (Tiled Culling)
+	ID3D11Buffer* PointLightTileIndices = nullptr;
+	ID3D11UnorderedAccessView* PointLightTileIndicesUAV = nullptr;
+	ID3D11ShaderResourceView* PointLightTileIndicesSRV = nullptr;
+
+	ID3D11Buffer* PointLightTileCounts = nullptr;
+	ID3D11UnorderedAccessView* PointLightTileCountsUAV = nullptr;
+	ID3D11ShaderResourceView* PointLightTileCountsSRV = nullptr;
+
+	ID3D11Buffer* SpotLightTileIndices = nullptr;
+	ID3D11UnorderedAccessView* SpotLightTileIndicesUAV = nullptr;
+	ID3D11ShaderResourceView* SpotLightTileIndicesSRV = nullptr;
+
+	ID3D11Buffer* SpotLightTileCounts = nullptr;
+	ID3D11UnorderedAccessView* SpotLightTileCountsUAV = nullptr;
+	ID3D11ShaderResourceView* SpotLightTileCountsSRV = nullptr;
 };
 
 struct FRenderResources

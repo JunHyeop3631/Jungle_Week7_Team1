@@ -61,6 +61,7 @@ namespace Key
 	constexpr const char* ShowSceneManager = "ShowSceneManager";
 	constexpr const char* ShowStatProfiler = "ShowStatProfiler";
 	constexpr const char* ShowLightCullingDebug = "ShowLightCullingDebug";
+	constexpr const char* bUseClusteredLightCulling = "bUseClusteredLightCulling";
 
 	// Perspective Camera
 	constexpr const char* PerspectiveCamera = "PerspectiveCamera";
@@ -150,6 +151,10 @@ void FEditorSettings::SaveToFile(const FString& Path) const
 	WidgetsObj[Key::ShowSceneManager] = UI.bScene;
 	WidgetsObj[Key::ShowStatProfiler] = UI.bStat;
 	WidgetsObj[Key::ShowLightCullingDebug] = UI.bLightCullingDebug;
+	WidgetsObj[Key::bUseClusteredLightCulling] = UI.bUseClusteredLightCulling;
+
+	constexpr const char* ShowTiledCulling = "ShowTiledCulling";
+
 	Root[Key::UIWidgets] = WidgetsObj;
 
 	// Perspective Camera
@@ -320,6 +325,7 @@ void FEditorSettings::LoadFromFile(const FString& Path)
 		if (W.hasKey(Key::ShowSceneManager))   UI.bScene = W[Key::ShowSceneManager].ToBool();
 		if (W.hasKey(Key::ShowStatProfiler))   UI.bStat = W[Key::ShowStatProfiler].ToBool();
 		if (W.hasKey(Key::ShowLightCullingDebug))   UI.bLightCullingDebug = W[Key::ShowLightCullingDebug].ToBool();
+		if (W.hasKey(Key::bUseClusteredLightCulling))   UI.bUseClusteredLightCulling = W[Key::bUseClusteredLightCulling].ToBool();
 	}
 
 	// Perspective Camera
