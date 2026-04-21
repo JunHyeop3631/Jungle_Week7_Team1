@@ -86,7 +86,7 @@ LightingResult ComputeDirectionalLight_Lambert(float3 worldNormal)
     float3 N = normalize(worldNormal);
     float3 L = normalize(-Directional.Direction.xyz);
     
-    float diffIntensity = saturate(dot(N, L) * 0.5f + 0.5f);
+    float diffIntensity = saturate(dot(N, L));
     diffuse += Directional.LightColor.rgb * diffIntensity;
         
     result.Diffuse = diffuse;
@@ -178,7 +178,7 @@ LightingResult ComputePointLight_Lambert_NoTile(float3 worldPos, float3 worldNor
         float3 toLight = light.Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
-        float NdotL = saturate(dot(N, L) * 0.5f + 0.5f);
+        float NdotL = saturate(dot(N, L));
         float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
         float atten = pow(distanceAtten, light.FalloffExponent);
         
@@ -199,7 +199,7 @@ LightingResult ComputeSpotLight_Lambert_NoTile(float3 worldPos, float3 worldNorm
         float3 toLight = light.Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
-        float NdotL = saturate(dot(N, L) * 0.5f + 0.5f);
+        float NdotL = saturate(dot(N, L));
         float3 lightDir = normalize(light.Direction.xyz);
         float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
         float spotCos = dot(lightDir, -L);
@@ -419,7 +419,7 @@ LightingResult ComputePointLight_Lambert(float3 worldPos, float3 worldNormal, fl
             float3 toLight = light.Position.xyz - worldPos;
             float dist = length(toLight);
             float3 L = toLight / max(dist, 0.0001f);
-            float NdotL = saturate(dot(N, L) * 0.5f + 0.5f);
+            float NdotL = saturate(dot(N, L));
             float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
             float atten = pow(distanceAtten, light.FalloffExponent);
         
@@ -437,7 +437,7 @@ LightingResult ComputePointLight_Lambert(float3 worldPos, float3 worldNormal, fl
             float3 toLight = light.Position.xyz - worldPos;
             float dist = length(toLight);
             float3 L = toLight / max(dist, 0.0001f);
-            float NdotL = saturate(dot(N, L) * 0.5f + 0.5f);
+            float NdotL = saturate(dot(N, L));
             float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
             float atten = pow(distanceAtten, light.FalloffExponent);
         
@@ -477,7 +477,7 @@ LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal, flo
             float3 toLight = light.Position.xyz - worldPos;
             float dist = length(toLight);
             float3 L = toLight / max(dist, 0.0001f);
-            float NdotL = saturate(dot(N, L) * 0.5f + 0.5f);
+            float NdotL = saturate(dot(N, L));
             float3 lightDir = normalize(light.Direction.xyz);
             float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
             float spotCos = dot(lightDir, -L);
@@ -497,7 +497,7 @@ LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal, flo
             float3 toLight = light.Position.xyz - worldPos;
             float dist = length(toLight);
             float3 L = toLight / max(dist, 0.0001f);
-            float NdotL = saturate(dot(N, L) * 0.5f + 0.5f);
+            float NdotL = saturate(dot(N, L));
             float3 lightDir = normalize(light.Direction.xyz);
             float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
             float spotCos = dot(lightDir, -L);
