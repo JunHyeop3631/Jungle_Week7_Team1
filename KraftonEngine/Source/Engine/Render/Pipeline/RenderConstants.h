@@ -148,7 +148,7 @@ struct FLightData
 	float AttenuationRadius;
 
 	FVector Color;
-	uint32 LightType;
+	uint32 LightType;	// 0: Point, 1: Spot
 
 	FVector Direction;
 	float FalloffExponent;
@@ -159,35 +159,15 @@ struct FLightData
 	float _Padding1;
 };
 
-struct FPointLightInfo
-{
-	FVector4 LightColor = { 0.0f, 0.0f, 0.0f, 0.0f };
-	FVector4 Position = { 0.0f, 0.0f, 0.0f, 1.0f };
-	float AttenuationRadius = 1000.0f;
-	float FalloffExponent = 1.0f;
-	float pad[2] = { 0.0f, 0.0f };
-};
-
-struct FSpotLightInfo
-{
-	FVector4 LightColor = { 0.0f, 0.0f, 0.0f, 0.0f };
-	FVector4 Position = { 0.0f, 0.0f, 0.0f, 1.0f };
-	FVector4 Direction = { 0.0f, -1.0f, 0.0f, 0.0f };
-	float AttenuationRadius = 1000.0f;
-	float FalloffExponent = 1.0f;
-	float InnerConeAngle = 20.0f;
-	float OuterConeAngle = 40.0f;
-};
-
 struct FLightingConstants
 {
 	FAmbientLightInfo Ambient;
 	FDirectionalLightInfo Directional;
-	uint32 PointLightCount = 0;
-	uint32 SpotLightCount = 0;
+	uint32 LocalLightCount = 0;
 	
 	uint32 bDebugLightCulling = 0;
 	uint32 bUseClusteredLightCulling = 1;
+	float _Padding;
 };
 
 struct FCollectedLightData
