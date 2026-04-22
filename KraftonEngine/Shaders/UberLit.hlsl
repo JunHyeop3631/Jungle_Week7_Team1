@@ -26,7 +26,8 @@ PS_Lighting VS(VS_Input_PNCT input)
 // 구루 쉐이딩 (VS 단계이므로 타일 컬링 없이 _NoTile 함수 사용)
 #if LIGHTING_MODEL_GOURAUD
     float3 AmbientColor = Ambient.LightColor.rgb * ka * 0.1f;
-    float shininess = SpecularRoughness;
+    float roughness = clamp(SpecularRoughness, 0.01f, 1.0f);
+    float shininess = 2.0f / (pow(roughness, 4.0f) + 1e-4f) - 2.0f;
     shininess = max(shininess, 2.0f);
     
     LightingResult totalLighting = (LightingResult)0;
@@ -113,8 +114,10 @@ float4 PS(PS_Lighting input) : SV_TARGET
     
 // 블린 폰 쉐이딩 (PS 단계이므로 input.position.xy 를 넘겨 타일 컬링 적용)
 #elif LIGHTING_MODEL_PHONG
-    float shininess = SpecularRoughness;
+    float roughness = clamp(SpecularRoughness, 0.01f, 1.0f);
+    float shininess = 2.0f / (pow(roughness, 4.0f) + 1e-4f) - 2.0f;
     shininess = max(shininess, 2.0f);
+    
     tempLighting = ComputeDirectionalLight_BlinnPhong(CameraPosition.xyz, input.worldPosition, worldNormal, shininess);
     totalLighting.Diffuse += tempLighting.Diffuse;
     totalLighting.Specular += tempLighting.Specular;
