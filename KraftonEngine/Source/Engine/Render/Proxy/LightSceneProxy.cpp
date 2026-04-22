@@ -162,13 +162,25 @@ void FPointLightSceneProxy::UpdateLightData()
 
 void FPointLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult)
 {
-	FPointLightInfo PointInfo;
-	PointInfo.LightColor = BuildLightColor(this);
-	PointInfo.Position = BuildLightPosition(this);
-	PointInfo.AttenuationRadius = CachedAttenuationRadius;
-	PointInfo.FalloffExponent = CachedFalloffExponent;
+	FLightData LightInfo = {};
+	FVector4 Pos = BuildLightPosition(this);
+	FVector4 Col = BuildLightColor(this);
 
-	OutResult.PointLights.push_back(PointInfo);
+	LightInfo.Position = FVector(Pos.X, Pos.Y, Pos.Z);
+	LightInfo.AttenuationRadius = CachedAttenuationRadius;
+
+	LightInfo.Color = FVector(Col.X, Col.Y, Col.Z);
+	LightInfo.LightType = 0; // Point Light
+
+	LightInfo.Direction = FVector(0.0f, 0.0f, 0.0f);
+	LightInfo.FalloffExponent = CachedFalloffExponent;
+
+	LightInfo.InnerConeCos = 0.0f;
+	LightInfo.OuterConeCos = 0.0f;
+	LightInfo._Padding0 = 0.0f;
+	LightInfo._Padding1 = 0.0f;
+
+	OutResult.LocalLights.push_back(LightInfo);
 }
 
 FSpotLightSceneProxy::FSpotLightSceneProxy(USpotLightComponent* InComponent)
@@ -192,14 +204,25 @@ void FSpotLightSceneProxy::UpdateLightData()
 
 void FSpotLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FCollectedLightData& OutResult)
 {
-	FSpotLightInfo SpotInfo;
-	SpotInfo.LightColor = BuildLightColor(this);
-	SpotInfo.Position = BuildLightPosition(this);
-	SpotInfo.Direction = BuildLightDirection(this);
-	SpotInfo.AttenuationRadius = CachedAttenuationRadius;
-	SpotInfo.FalloffExponent = CachedFalloffExponent;
-	SpotInfo.InnerConeAngle = DegreesToConeCos(CachedInnerConeAngle);
-	SpotInfo.OuterConeAngle = DegreesToConeCos(CachedOuterConeAngle);
+	FVector4 Pos = BuildLightPosition(this);
+	FVector4 Col = BuildLightColor(this);
+	FVector4 Dir = BuildLightDirection(this);
 
-	OutResult.SpotLights.push_back(SpotInfo);
+	FLightData LightInfo = {};
+
+	LightInfo.Position = FVector(Pos.X, Pos.Y, Pos.Z);
+	LightInfo.AttenuationRadius = CachedAttenuationRadius;
+
+	LightInfo.Color = FVector(Col.X, Col.Y, Col.Z);
+	LightInfo.LightType = 1; // Spot Light
+
+	LightInfo.Direction = FVector(Dir.X, Dir.Y, Dir.Z);
+	LightInfo.FalloffExponent = CachedFalloffExponent;
+
+	LightInfo.InnerConeCos = DegreesToConeCos(CachedInnerConeAngle);
+	LightInfo.OuterConeCos = DegreesToConeCos(CachedOuterConeAngle);
+	LightInfo._Padding0 = 0.0f;
+	LightInfo._Padding1 = 0.0f;
+
+	OutResult.LocalLights.push_back(LightInfo);
 }

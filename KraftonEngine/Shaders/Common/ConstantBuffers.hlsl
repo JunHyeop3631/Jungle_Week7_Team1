@@ -123,24 +123,18 @@ struct FDirectionalLightInfo
     float4 Direction;
 };
 
-struct FPointLightInfo
+struct FLightData
 {
-    float4 LightColor;
-    float4 Position;
+    float3 Position;
     float AttenuationRadius;
+    float3 Color;
+    uint LightType; // 0: Point, 1: Spot
+    float3 Direction;
     float FalloffExponent;
-    float2 pad; // 16바이트 정렬을 위한 패딩
-};
-
-struct FSpotLightInfo
-{
-    float4 LightColor;
-    float4 Position;
-    float4 Direction;
-    float AttenuationRadius;
-    float FalloffExponent;
-    float InnerConeAngle;
-    float OuterConeAngle;
+    float InnerConeCos;
+    float OuterConeCos;
+    float _Padding0;
+    float _Padding1;
 };
 
 // [수정 완료] 팀의 원래 기획 + 엔진의 b8 슬롯 결합 
@@ -148,23 +142,20 @@ cbuffer LightingBuffer : register(b8)
 {
     FAmbientLightInfo Ambient;
     FDirectionalLightInfo Directional;
-    uint PointLightCount;
-    uint SpotLightCount;
+    uint LocalLightCount;
     uint bDebugLightCulling;
     uint bUseClusteredLightCulling;
+    uint _padLightingBuffer;
 };
 
-StructuredBuffer<FPointLightInfo> PointLightData : register(t8);
-StructuredBuffer<FSpotLightInfo> SpotLightData : register(t9);
 
-StructuredBuffer<uint2> PointLightClusterGrid : register(t10);
-StructuredBuffer<uint> PointLightGlobalIndices : register(t11);
-StructuredBuffer<uint2> SpotLightClusterGrid : register(t12);
-StructuredBuffer<uint> SpotLightGlobalIndices : register(t13);
 
-StructuredBuffer<uint> PointLightTileCounts : register(t14);
-StructuredBuffer<uint> PointLightTileIndices : register(t15);
-StructuredBuffer<uint> SpotLightTileCounts : register(t16);
-StructuredBuffer<uint> SpotLightTileIndices : register(t17);
+StructuredBuffer<FLightData> LocalLightData : register(t8);
+
+StructuredBuffer<uint2> LocalLightClusterGrid : register(t9);
+StructuredBuffer<uint> LocalLightGlobalIndices : register(t10);
+
+StructuredBuffer<uint> LocalLightTileCounts : register(t11);
+StructuredBuffer<uint> LocalLightTileIndices : register(t12);
 
 #endif // CONSTANT_BUFFERS_HLSL

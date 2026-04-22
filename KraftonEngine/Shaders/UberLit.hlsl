@@ -26,7 +26,8 @@ PS_Lighting VS(VS_Input_PNCT input)
 // 구루 쉐이딩 (VS 단계이므로 타일 컬링 없이 _NoTile 함수 사용)
 #if LIGHTING_MODEL_GOURAUD
     float3 AmbientColor = Ambient.LightColor.rgb * ka * 0.1f;
-    float shininess = SpecularRoughness;
+    float roughness = clamp(SpecularRoughness, 0.01f, 1.0f);
+    float shininess = 2.0f / (pow(roughness, 4.0f) + 1e-4f) - 2.0f;
     shininess = max(shininess, 2.0f);
     
     LightingResult totalLighting = (LightingResult)0;
@@ -36,11 +37,7 @@ PS_Lighting VS(VS_Input_PNCT input)
     totalLighting.Diffuse += tempLighting.Diffuse;
     totalLighting.Specular += tempLighting.Specular;
     
-    tempLighting = ComputePointLight_BlinnPhong_NoTile(CameraPosition.xyz, output.worldPosition, output.worldNormal, shininess);
-    totalLighting.Diffuse += tempLighting.Diffuse;
-    totalLighting.Specular += tempLighting.Specular;
-    
-    tempLighting = ComputeSpotLight_BlinnPhong_NoTile(CameraPosition.xyz, output.worldPosition, output.worldNormal, shininess);
+    tempLighting = ComputeLocalLight_BlinnPhong_NoTile(CameraPosition.xyz, output.worldPosition, output.worldNormal, shininess);
     totalLighting.Diffuse += tempLighting.Diffuse;
     totalLighting.Specular += tempLighting.Specular;
     
@@ -91,12 +88,8 @@ float4 PS(PS_Lighting input) : SV_TARGET
     tempLighting = ComputeDirectionalLight_Toon(worldNormal);
     totalLighting.Diffuse += tempLighting.Diffuse;
     
-    tempLighting = ComputePointLight_Toon(input.worldPosition, worldNormal, input.position.xy);
+    tempLighting = ComputeLocalLight_Toon(input.worldPosition, worldNormal, input.position.xy);
     totalLighting.Diffuse += tempLighting.Diffuse;
-    
-    tempLighting = ComputeSpotLight_Toon(input.worldPosition, worldNormal, input.position.xy);
-    totalLighting.Diffuse += tempLighting.Diffuse;
-    
     
     
     float3 albedo = texColor.rgb * input.color.rgb;
@@ -110,10 +103,7 @@ float4 PS(PS_Lighting input) : SV_TARGET
     tempLighting = ComputeDirectionalLight_Lambert(worldNormal);
     totalLighting.Diffuse += tempLighting.Diffuse;
     
-    tempLighting = ComputePointLight_Lambert(input.worldPosition, worldNormal, input.position.xy);
-    totalLighting.Diffuse += tempLighting.Diffuse;
-    
-    tempLighting = ComputeSpotLight_Lambert(input.worldPosition, worldNormal, input.position.xy);
+    tempLighting = ComputeLocalLight_Lambert(input.worldPosition, worldNormal, input.position.xy);
     totalLighting.Diffuse += tempLighting.Diffuse;
     
     float3 albedo = texColor.rgb * input.color.rgb;
@@ -124,17 +114,15 @@ float4 PS(PS_Lighting input) : SV_TARGET
     
 // 블린 폰 쉐이딩 (PS 단계이므로 input.position.xy 를 넘겨 타일 컬링 적용)
 #elif LIGHTING_MODEL_PHONG
-    float shininess = SpecularRoughness;
+    float roughness = clamp(SpecularRoughness, 0.01f, 1.0f);
+    float shininess = 2.0f / (pow(roughness, 4.0f) + 1e-4f) - 2.0f;
     shininess = max(shininess, 2.0f);
+    
     tempLighting = ComputeDirectionalLight_BlinnPhong(CameraPosition.xyz, input.worldPosition, worldNormal, shininess);
     totalLighting.Diffuse += tempLighting.Diffuse;
     totalLighting.Specular += tempLighting.Specular;
     
-    tempLighting = ComputePointLight_BlinnPhong(CameraPosition.xyz, input.worldPosition, worldNormal, shininess, input.position.xy);
-    totalLighting.Diffuse += tempLighting.Diffuse;
-    totalLighting.Specular += tempLighting.Specular;
-    
-    tempLighting = ComputeSpotLight_BlinnPhong(CameraPosition.xyz, input.worldPosition, worldNormal, shininess, input.position.xy);
+    tempLighting = ComputeLocalLight_BlinnPhong(CameraPosition.xyz, input.worldPosition, worldNormal, shininess, input.position.xy);
     totalLighting.Diffuse += tempLighting.Diffuse;
     totalLighting.Specular += tempLighting.Specular;
     
@@ -158,28 +146,24 @@ float4 PS(PS_Lighting input) : SV_TARGET
         uint tileIndex = (pixelPos.y / 16) * numTilesX + (pixelPos.x / 16);
 
         uint totalLights = 0;
+        
         if (bUseClusteredLightCulling != 0)
         {
             float viewZ = mul(float4(input.worldPosition, 1.0f), View).z;
             uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
             uint cluster3DIndex = tileIndex * 24 + zSlice;
-
-            uint pCount = PointLightClusterGrid[cluster3DIndex].y;
-            uint sCount = SpotLightClusterGrid[cluster3DIndex].y;
-            totalLights = pCount + sCount;
+            
+            totalLights = LocalLightClusterGrid[cluster3DIndex].y;
         }
         else
         {
-            uint pCount = PointLightTileCounts[tileIndex];
-            uint sCount = SpotLightTileCounts[tileIndex];
-            totalLights = pCount + sCount;
+            totalLights = LocalLightTileCounts[tileIndex];
         }
 
         float maxLights = 16.0f;
         float ratio = saturate((float) totalLights / maxLights);
 
         float3 heatColor = float3(ratio, 1.0f - abs(ratio - 0.5f) * 2.0f, 1.0f - ratio);
-
         if (pixelPos.x % 16 == 0 || pixelPos.y % 16 == 0)
         {
             heatColor = float3(0.5f, 0.5f, 0.5f);
@@ -187,10 +171,9 @@ float4 PS(PS_Lighting input) : SV_TARGET
 
         if (totalLights == 0)
             heatColor = finalColor.rgb * 0.1f;
-
+            
         return float4(heatColor, 1.0f);
     }
     
-    //finalColor = float4(1.0f, 0.0f, 1.0f, 1.0f);
     return finalColor;
 }
