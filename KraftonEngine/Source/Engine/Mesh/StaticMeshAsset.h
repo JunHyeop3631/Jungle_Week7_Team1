@@ -61,7 +61,7 @@ struct FStaticMaterial
 		FString InlineTexturePath;
 		FString InlineNormalTexturePath;
 		FVector4 InlineDiffuseColor = { 1.0f, 0.0f, 1.0f, 1.0f };
-		FVector4 InlineAmbientColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+		FVector4 InlineAmbientColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 		FVector4 InlineSpecularColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 		float InlineSpecularExponent = 0.0f;
 

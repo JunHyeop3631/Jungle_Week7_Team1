@@ -51,6 +51,8 @@ void FObjViewerRenderPipeline::RenderPreviewViewport(FRenderer& Renderer)
 	Bus.Clear();
 
 	UWorld* World = Engine->GetWorld();
+	if (!World) return;
+	World->GetScene().UpdateDirtyLightProxies();
 
 	Bus.SetCameraInfo(Camera);
 
@@ -60,6 +62,7 @@ void FObjViewerRenderPipeline::RenderPreviewViewport(FRenderer& Renderer)
 	ShowFlags.bBillboardText = false;
 	ShowFlags.bBoundingVolume = false;
 	Bus.SetRenderSettings(EViewMode::Unlit, ShowFlags);
+	Bus.SetLightingData(World->GetScene().GetLightingData());
 	Bus.SetViewportInfo(VP);
 
 	// 월드 수집

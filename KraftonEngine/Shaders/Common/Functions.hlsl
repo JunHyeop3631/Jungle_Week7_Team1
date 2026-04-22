@@ -59,7 +59,7 @@ float GetNdotL_ToonShade(float3 LightDir, float3 Normal)
 // ============================================================
 // Directional Light (전역 조명이므로 컬링 불필요)
 // ============================================================
-LightingResult ComputeDirectionalLight_BlinnPhong(float3 cameraPos, float3 worldPos, float3 worldNormal, float exp)
+LightingResult ComputeDirectionalLight_BlinnPhong(float3 cameraPos, float3 worldPos, float3 worldNormal, float shininess)
 {
     LightingResult result = (LightingResult) 0;
     float3 diffuse = 0;
@@ -76,7 +76,7 @@ LightingResult ComputeDirectionalLight_BlinnPhong(float3 cameraPos, float3 world
     {
         float3 H = normalize(L + V);
         float NdotH = saturate(dot(N, H));
-        float specIntensity = pow(NdotH, exp) * NdotL;
+        float specIntensity = pow(NdotH, shininess * 4.0f);
         specular = Directional.LightColor.rgb * specIntensity;
     }
     
@@ -124,7 +124,7 @@ LightingResult ComputeLocalLight_BlinnPhong_NoTile(float3 cameraPos, float3 worl
     for (uint i = 0; i < LocalLightCount; ++i)
     {
         FLightData light = LocalLightData[i];
-        float3 toLight = light.Position - worldPos;
+        float3 toLight = light.Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
         
@@ -133,7 +133,7 @@ LightingResult ComputeLocalLight_BlinnPhong_NoTile(float3 cameraPos, float3 worl
 
         if (light.LightType == 1)
         {
-            float3 lightDir = normalize(light.Direction);
+            float3 lightDir = normalize(light.Direction.xyz);
             float spotCos = dot(lightDir, -L);
             float spotFactor = saturate((spotCos - light.OuterConeCos) / max(light.InnerConeCos - light.OuterConeCos, 0.0001f));
             atten *= spotFactor;
@@ -147,7 +147,7 @@ LightingResult ComputeLocalLight_BlinnPhong_NoTile(float3 cameraPos, float3 worl
         if (NdotLRaw > 0.0f && atten > 0.0f)
         {
             float3 H = normalize(L + V);
-            float spec = pow(max(dot(N, H), 0.0f), shininess);
+            float spec = pow(max(dot(N, H), 0.0f), shininess * 4.0f);
             specular += light.Color * spec * atten;
         }
     }
@@ -166,7 +166,7 @@ LightingResult ComputeLocalLight_Lambert_NoTile(float3 worldPos, float3 worldNor
     {
         FLightData light = LocalLightData[i];
 
-        float3 toLight = light.Position - worldPos;
+        float3 toLight = light.Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
         float NdotL = saturate(dot(N, L));
@@ -175,7 +175,7 @@ LightingResult ComputeLocalLight_Lambert_NoTile(float3 worldPos, float3 worldNor
         
         if (light.LightType == 1)
         {
-            float3 lightDir = normalize(light.Direction);
+            float3 lightDir = normalize(light.Direction.xyz);
             float spotCos = dot(lightDir, -L);
             float spotFactor = saturate((spotCos - light.OuterConeCos) / max(light.InnerConeCos - light.OuterConeCos, 0.0001f));
             atten *= spotFactor;
@@ -195,7 +195,7 @@ LightingResult ComputeLocalLight_Toon_NoTile(float3 worldPos, float3 worldNormal
     for (uint i = 0; i < LocalLightCount; ++i)
     {
         FLightData light = LocalLightData[i];
-        float3 toLight = light.Position - worldPos;
+        float3 toLight = light.Position.xyz - worldPos;
         float dist = length(toLight);
         float3 L = toLight / max(dist, 0.0001f);
         float NdotL = GetNdotL_ToonShade(L, N);
@@ -204,7 +204,7 @@ LightingResult ComputeLocalLight_Toon_NoTile(float3 worldPos, float3 worldNormal
         
         if (light.LightType == 1)
         {
-            float3 lightDir = normalize(light.Direction);
+            float3 lightDir = normalize(light.Direction.xyz);
             float spotCos = dot(lightDir, -L);
             float spotFactor = saturate((spotCos - light.OuterConeCos) / max(light.InnerConeCos - light.OuterConeCos, 0.0001f));
             atten *= spotFactor;
@@ -250,7 +250,7 @@ LightingResult ComputeLocalLight_BlinnPhong(float3 cameraPos, float3 worldPos, f
             uint lightIndex = LocalLightGlobalIndices[offset + i];
             FLightData light = LocalLightData[lightIndex];
         
-            float3 toLight = light.Position - worldPos;
+            float3 toLight = light.Position.xyz - worldPos;
             float dist = length(toLight);
             float3 L = toLight / max(dist, 0.0001f);
 
@@ -259,7 +259,7 @@ LightingResult ComputeLocalLight_BlinnPhong(float3 cameraPos, float3 worldPos, f
 
             if (light.LightType == 1)
             {
-                float3 lightDir = normalize(light.Direction);
+                float3 lightDir = normalize(light.Direction.xyz);
                 float spotCos = dot(lightDir, -L);
                 float spotFactor = saturate((spotCos - light.OuterConeCos) / max(light.InnerConeCos - light.OuterConeCos, 0.0001f));
                 atten *= spotFactor;
@@ -273,7 +273,7 @@ LightingResult ComputeLocalLight_BlinnPhong(float3 cameraPos, float3 worldPos, f
             if (NdotLRaw > 0.0f && atten > 0.0f)
             {
                 float3 H = normalize(L + V);
-                float spec = pow(max(dot(N, H), 0.0f), shininess);
+                float spec = pow(max(dot(N, H), 0.0f), shininess * 4.0f);
                 specular += light.Color * spec * atten;
             }
         }
@@ -286,7 +286,7 @@ LightingResult ComputeLocalLight_BlinnPhong(float3 cameraPos, float3 worldPos, f
             uint lightIndex = LocalLightTileIndices[tileIndex * MAX_LIGHTS_PER_TILE + i];
             FLightData light = LocalLightData[lightIndex];
         
-            float3 toLight = light.Position - worldPos;
+            float3 toLight = light.Position.xyz - worldPos;
             float dist = length(toLight);
             float3 L = toLight / max(dist, 0.0001f);
 
@@ -295,7 +295,7 @@ LightingResult ComputeLocalLight_BlinnPhong(float3 cameraPos, float3 worldPos, f
 
             if (light.LightType == 1)
             {
-                float3 lightDir = normalize(light.Direction);
+                float3 lightDir = normalize(light.Direction.xyz);
                 float spotCos = dot(lightDir, -L);
                 float spotFactor = saturate((spotCos - light.OuterConeCos) / max(light.InnerConeCos - light.OuterConeCos, 0.0001f));
                 atten *= spotFactor;
@@ -309,7 +309,7 @@ LightingResult ComputeLocalLight_BlinnPhong(float3 cameraPos, float3 worldPos, f
             if (NdotLRaw > 0.0f && atten > 0.0f)
             {
                 float3 H = normalize(L + V);
-                float spec = pow(max(dot(N, H), 0.0f), shininess);
+                float spec = pow(max(dot(N, H), 0.0f), shininess * 4.0f);
                 specular += light.Color * spec * atten;
             }
         }
@@ -356,7 +356,7 @@ LightingResult ComputeLocalLight_Lambert(float3 worldPos, float3 worldNormal, fl
 
             if (light.LightType == 1)
             {
-                float3 lightDir = normalize(light.Direction);
+                float3 lightDir = normalize(light.Direction.xyz);
                 float spotCos = dot(lightDir, -L);
                 float spotFactor = saturate((spotCos - light.OuterConeCos) / max(light.InnerConeCos - light.OuterConeCos, 0.0001f));
                 atten *= spotFactor;
@@ -382,7 +382,7 @@ LightingResult ComputeLocalLight_Lambert(float3 worldPos, float3 worldNormal, fl
 
             if (light.LightType == 1)
             {
-                float3 lightDir = normalize(light.Direction);
+                float3 lightDir = normalize(light.Direction.xyz);
                 float spotCos = dot(lightDir, -L);
                 float spotFactor = saturate((spotCos - light.OuterConeCos) / max(light.InnerConeCos - light.OuterConeCos, 0.0001f));
                 atten *= spotFactor;
@@ -423,7 +423,7 @@ LightingResult ComputeLocalLight_Toon(float3 worldPos, float3 worldNormal, float
             uint lightIndex = LocalLightGlobalIndices[offset + i];
             FLightData light = LocalLightData[lightIndex];
         
-            float3 toLight = light.Position - worldPos;
+            float3 toLight = light.Position.xyz - worldPos;
             float dist = length(toLight);
             float3 L = toLight / max(dist, 0.0001f);
             float NdotL = GetNdotL_ToonShade(L, N);
@@ -432,7 +432,7 @@ LightingResult ComputeLocalLight_Toon(float3 worldPos, float3 worldNormal, float
         
             if (light.LightType == 1)
             {
-                float3 lightDir = normalize(light.Direction);
+                float3 lightDir = normalize(light.Direction.xyz);
                 float spotCos = dot(lightDir, -L);
                 float spotFactor = saturate((spotCos - light.OuterConeCos) / max(light.InnerConeCos - light.OuterConeCos, 0.0001f));
                 atten *= spotFactor;
@@ -449,7 +449,7 @@ LightingResult ComputeLocalLight_Toon(float3 worldPos, float3 worldNormal, float
             uint lightIndex = LocalLightTileIndices[tileIndex * MAX_LIGHTS_PER_TILE + i];
             FLightData light = LocalLightData[lightIndex];
         
-            float3 toLight = light.Position - worldPos;
+            float3 toLight = light.Position.xyz - worldPos;
             float dist = length(toLight);
             float3 L = toLight / max(dist, 0.0001f);
             float NdotL = GetNdotL_ToonShade(L, N);
@@ -458,7 +458,7 @@ LightingResult ComputeLocalLight_Toon(float3 worldPos, float3 worldNormal, float
         
             if (light.LightType == 1)
             {
-                float3 lightDir = normalize(light.Direction);
+                float3 lightDir = normalize(light.Direction.xyz);
                 float spotCos = dot(lightDir, -L);
                 float spotFactor = saturate((spotCos - light.OuterConeCos) / max(light.InnerConeCos - light.OuterConeCos, 0.0001f));
                 atten *= spotFactor;

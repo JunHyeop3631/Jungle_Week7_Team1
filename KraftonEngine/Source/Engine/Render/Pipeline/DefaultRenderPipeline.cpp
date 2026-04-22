@@ -20,6 +20,11 @@ void FDefaultRenderPipeline::Execute(float DeltaTime, FRenderer& Renderer)
 	Bus.Clear();
 
 	UWorld* World = Engine->GetWorld();
+	if (World)
+	{
+		World->GetScene().UpdateDirtyLightProxies();
+	}
+
 	UCameraComponent* Camera = World ? World->GetActiveCamera() : nullptr;
 	if (Camera)
 	{
@@ -28,6 +33,7 @@ void FDefaultRenderPipeline::Execute(float DeltaTime, FRenderer& Renderer)
 
 		Bus.SetCameraInfo(Camera);
 		Bus.SetRenderSettings(ViewMode, ShowFlags);
+		Bus.SetLightingData(World->GetScene().GetLightingData());
 		PopulateScenePostProcessConstants(World, Bus);
 
 		Collector.CollectWorld(World, Bus);
