@@ -137,8 +137,9 @@ FString UTextRenderComponent::GetOwnerUUIDToString() const
 
 void UTextRenderComponent::RefreshOwnerUUIDText()
 {
-	static const FString UUIDPrefix = "UUID : ";
-	SetText(UUIDPrefix + GetOwnerUUIDToString());
+	/*static const FString UUIDPrefix = "UUID : ";
+	SetText(UUIDPrefix + GetOwnerUUIDToString());*/
+	SetText("");
 }
 
 FString UTextRenderComponent::GetOwnerNameToString() const
