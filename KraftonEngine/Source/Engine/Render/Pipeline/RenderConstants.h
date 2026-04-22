@@ -157,7 +157,7 @@ struct FSpotLightInfo
 	FVector4 Position = { 0.0f, 0.0f, 0.0f, 1.0f };
 	FVector4 Direction = { 0.0f, -1.0f, 0.0f, 0.0f };
 	float AttenuationRadius = 1000.0f;
-	float SpotFalloffExponent = 1.0f;
+	float FalloffExponent = 1.0f;
 	float InnerConeAngle = 20.0f;
 	float OuterConeAngle = 40.0f;
 };

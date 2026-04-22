@@ -138,7 +138,7 @@ struct FSpotLightInfo
     float4 Position;
     float4 Direction;
     float AttenuationRadius;
-    float SpotFalloffExponent;
+    float FalloffExponent;
     float InnerConeAngle;
     float OuterConeAngle;
 };

@@ -168,8 +168,7 @@ LightingResult ComputeSpotLight_BlinnPhong_NoTile(float3 cameraPos, float3 world
         float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
         float spotCos = dot(lightDir, -L);
         float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
-        spotFactor = pow(spotFactor, light.SpotFalloffExponent);
-        float atten = distanceAtten * spotFactor;
+        float atten = pow(distanceAtten, light.FalloffExponent) * spotFactor;
         
         float NdotLRaw = dot(N, L);
         float NdotL = max(NdotLRaw, 0.0f);
@@ -225,9 +224,9 @@ LightingResult ComputeSpotLight_Lambert_NoTile(float3 worldPos, float3 worldNorm
         float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
         float spotCos = dot(lightDir, -L);
         float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
-        spotFactor = pow(spotFactor, light.SpotFalloffExponent);
+        float atten = pow(distanceAtten, light.FalloffExponent) * spotFactor;
         
-        diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
+        diffuse += light.LightColor.rgb * NdotL * atten;
     }
     result.Diffuse = diffuse;
     return result;
@@ -270,9 +269,9 @@ LightingResult ComputeSpotLight_Toon_NoTile(float3 worldPos, float3 worldNormal)
         float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
         float spotCos = dot(lightDir, -L);
         float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
-        spotFactor = pow(spotFactor, light.SpotFalloffExponent);
+        float atten = pow(distanceAtten, light.FalloffExponent) * spotFactor;
         
-        diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
+        diffuse += light.LightColor.rgb * NdotL * atten;
     }
     result.Diffuse = diffuse;
     return result;
@@ -403,8 +402,7 @@ LightingResult ComputeSpotLight_BlinnPhong(float3 cameraPos, float3 worldPos, fl
             float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
             float spotCos = dot(lightDir, -L);
             float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
-            spotFactor = pow(spotFactor, light.SpotFalloffExponent);
-            float atten = distanceAtten * spotFactor;
+            float atten = pow(distanceAtten, light.FalloffExponent) * spotFactor;
         
             float NdotLRaw = dot(N, L);
             float NdotL = max(NdotLRaw, 0.0f);
@@ -435,8 +433,7 @@ LightingResult ComputeSpotLight_BlinnPhong(float3 cameraPos, float3 worldPos, fl
             float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
             float spotCos = dot(lightDir, -L);
             float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
-            spotFactor = pow(spotFactor, light.SpotFalloffExponent);
-            float atten = distanceAtten * spotFactor;
+            float atten = pow(distanceAtten, light.FalloffExponent) * spotFactor;
         
             float NdotLRaw = dot(N, L);
             float NdotL = max(NdotLRaw, 0.0f);
@@ -550,9 +547,9 @@ LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal, flo
             float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
             float spotCos = dot(lightDir, -L);
             float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
-            spotFactor = pow(spotFactor, light.SpotFalloffExponent);
-            
-            diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
+            float atten = pow(distanceAtten, light.FalloffExponent) * spotFactor;
+        
+            diffuse += light.LightColor.rgb * NdotL * atten;
         }
     }
     else
@@ -571,9 +568,9 @@ LightingResult ComputeSpotLight_Lambert(float3 worldPos, float3 worldNormal, flo
             float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
             float spotCos = dot(lightDir, -L);
             float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
-            spotFactor = pow(spotFactor, light.SpotFalloffExponent);
-            
-            diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
+            float atten = pow(distanceAtten, light.FalloffExponent) * spotFactor;
+        
+            diffuse += light.LightColor.rgb * NdotL * atten;
         }
     }
     result.Diffuse = diffuse;
@@ -673,8 +670,9 @@ LightingResult ComputeSpotLight_Toon(float3 worldPos, float3 worldNormal, float2
             float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
             float spotCos = dot(lightDir, -L);
             float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
+            float atten = pow(distanceAtten, light.FalloffExponent) * spotFactor;
         
-            diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
+            diffuse += light.LightColor.rgb * NdotL * atten;
         }
     }
     else
@@ -693,11 +691,13 @@ LightingResult ComputeSpotLight_Toon(float3 worldPos, float3 worldNormal, float2
             float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
             float spotCos = dot(lightDir, -L);
             float spotFactor = saturate((spotCos - light.OuterConeAngle) / max(light.InnerConeAngle - light.OuterConeAngle, 0.0001f));
+            float atten = pow(distanceAtten, light.FalloffExponent) * spotFactor;
         
-            diffuse += light.LightColor.rgb * NdotL * distanceAtten * spotFactor;
+            diffuse += light.LightColor.rgb * NdotL * atten;
         }
     }
     result.Diffuse = diffuse;
     return result;
 }
+
 #endif // FUNCTIONS_HLSL
