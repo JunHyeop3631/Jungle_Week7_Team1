@@ -14,26 +14,17 @@ struct FLightCullingBuffers
 	ID3D11Buffer* LocalLightData = nullptr;
 	ID3D11ShaderResourceView* LocalLightDataSRV = nullptr;
 
-	// 클러스터 기반 컬링 결과 버퍼
-	ID3D11Buffer* LocalLightClusterGrid = nullptr; // Offset, Count 저장
-	ID3D11UnorderedAccessView* LocalLightClusterGridUAV = nullptr;
-	ID3D11ShaderResourceView* LocalLightClusterGridSRV = nullptr;
+	// 컬링 결과 버퍼
+	ID3D11Buffer* LocalLightGrid = nullptr; // Offset, Count 저장
+	ID3D11UnorderedAccessView* LocalLightGridUAV = nullptr;
+	ID3D11ShaderResourceView* LocalLightGridSRV = nullptr;
 
-	ID3D11Buffer* LocalLightGlobalIndices = nullptr; // 실제 조명 인덱스가 담기는 배열
-	ID3D11UnorderedAccessView* LocalLightGlobalIndicesUAV = nullptr;
-	ID3D11ShaderResourceView* LocalLightGlobalIndicesSRV = nullptr;
+	ID3D11Buffer* LocalLightIndexList = nullptr; // 실제 조명 인덱스가 담기는 배열
+	ID3D11UnorderedAccessView* LocalLightIndexListUAV = nullptr;
+	ID3D11ShaderResourceView* LocalLightIndexListSRV = nullptr;
 
 	ID3D11Buffer* LocalLightGlobalCounter = nullptr; // 인덱스 할당용 카운터
 	ID3D11UnorderedAccessView* LocalLightGlobalCounterUAV = nullptr;
-
-	// Tile 기반 컬링 결과 버퍼 (Tiled Culling)
-	ID3D11Buffer* LocalLightTileIndices = nullptr;
-	ID3D11UnorderedAccessView* LocalLightTileIndicesUAV = nullptr;
-	ID3D11ShaderResourceView* LocalLightTileIndicesSRV = nullptr;
-
-	ID3D11Buffer* LocalLightTileCounts = nullptr;
-	ID3D11UnorderedAccessView* LocalLightTileCountsUAV = nullptr;
-	ID3D11ShaderResourceView* LocalLightTileCountsSRV = nullptr;
 };
 
 struct FRenderResources
