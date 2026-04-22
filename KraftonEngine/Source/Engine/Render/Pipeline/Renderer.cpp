@@ -1139,19 +1139,14 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 
 	bool bUseClustered = FEditorSettings::Get().UI.bUseClusteredLightCulling;
 
-	if (bUseClustered)
+	if (Resources.LightCulling.LocalLightGlobalCounterUAV)
 	{
-		if (Resources.LightCulling.LocalLightGlobalCounterUAV)
-			Context->ClearUnorderedAccessViewUint(Resources.LightCulling.LocalLightGlobalCounterUAV, ClearZero);
-
-		if (bNoLocalLights && Resources.LightCulling.LocalLightClusterGridUAV)
-			Context->ClearUnorderedAccessViewUint(Resources.LightCulling.LocalLightClusterGridUAV, ClearZero);
-		
+		Context->ClearUnorderedAccessViewUint(Resources.LightCulling.LocalLightGlobalCounterUAV, ClearZero);
 	}
-	else
+
+	if (bNoLocalLights && Resources.LightCulling.LocalLightGridUAV)
 	{
-		if (bNoLocalLights && Resources.LightCulling.LocalLightTileCountsUAV)
-			Context->ClearUnorderedAccessViewUint(Resources.LightCulling.LocalLightTileCountsUAV, ClearZero);
+		Context->ClearUnorderedAccessViewUint(Resources.LightCulling.LocalLightGridUAV, ClearZero);
 	}
 
 	if (bNoLocalLights) return;
@@ -1199,23 +1194,13 @@ void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext
 		{
 			PointCullingShader->BindCompute(Context);
 
-			if (bUseClustered)
-			{
-				ID3D11UnorderedAccessView* PointUAVs[3] = {
-					Resources.LightCulling.LocalLightClusterGridUAV,   // u0
-					Resources.LightCulling.LocalLightGlobalIndicesUAV, // u1
-					Resources.LightCulling.LocalLightGlobalCounterUAV  // u2
-				};
-				Context->CSSetUnorderedAccessViews(0, 3, PointUAVs, nullptr);
-			}
-			else
-			{
-				ID3D11UnorderedAccessView* PointUAVs[2] = {
-					Resources.LightCulling.LocalLightTileIndicesUAV, // u0
-					Resources.LightCulling.LocalLightTileCountsUAV   // u1
-				};
-				Context->CSSetUnorderedAccessViews(0, 2, PointUAVs, nullptr);
-			}
+			// Tiled든 Clustered든 무조건 u0(Grid), u1(Index), u2(Counter) 3개 꽂음!
+			ID3D11UnorderedAccessView* UAVs[3] = {
+				Resources.LightCulling.LocalLightGridUAV,          // u0
+				Resources.LightCulling.LocalLightIndexListUAV,     // u1
+				Resources.LightCulling.LocalLightGlobalCounterUAV  // u2
+			};
+			Context->CSSetUnorderedAccessViews(0, 3, UAVs, nullptr);
 
 			Context->Dispatch(ThreadGroupX, ThreadGroupY, 1);
 		}
@@ -1240,13 +1225,11 @@ void FRenderer::RestoreMainRenderTargets(const FRenderBus& Bus, ID3D11DeviceCont
 
 void FRenderer::BindLightCullingResults(ID3D11DeviceContext* Context)
 {
-	ID3D11ShaderResourceView* CullingSRVs[4] = {
-		Resources.LightCulling.LocalLightClusterGridSRV,   // t19 (Offset, Count)
-		Resources.LightCulling.LocalLightGlobalIndicesSRV, // t10 (빛 번호 리스트)
-		Resources.LightCulling.LocalLightTileCountsSRV,    // t11
-		Resources.LightCulling.LocalLightTileIndicesSRV,   // t12
+	ID3D11ShaderResourceView* CullingSRVs[2] = {
+		Resources.LightCulling.LocalLightGridSRV,       // t9
+		Resources.LightCulling.LocalLightIndexListSRV   // t10
 	};
-	Context->PSSetShaderResources(9, 4, CullingSRVs);
+	Context->PSSetShaderResources(9, 2, CullingSRVs);
 }
 
 void FRenderer::EnsurePostProcessTargets(const FRenderBus& Bus)

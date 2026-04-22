@@ -4,6 +4,11 @@
 #include "Common/ConstantBuffers.hlsl"
 #include "Common/VertexLayouts.hlsl"
 
+#define TILE_SIZE 16
+#define MAX_LIGHTS_PER_CELL 256
+#define MAX_GLOBAL_LIGHT_INDICES 2000000
+#define CLUSTER_SLICES 24
+
 // Model -> View -> Projection 변환
 float4 ApplyMVP(float3 pos)
 {
@@ -73,30 +78,27 @@ VisibleLightInfo GetVisibleLightInfo(float2 screenPos, float3 worldPos)
     uint numTilesX = ((uint) ScreenWidth + 15) / 16;
     uint tileIndex = tileY * numTilesX + tileX;
 
+    uint index1D = 0;
     if (info.bIsClustered)
     {
         float viewZ = mul(float4(worldPos, 1.0f), View).z;
         uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
-        uint cluster3DIndex = tileIndex * 24 + zSlice;
-
-        uint2 clusterData = LocalLightClusterGrid[cluster3DIndex];
-        info.StartOffset = clusterData.x;
-        info.Count = clusterData.y;
+        index1D = tileIndex * 24 + zSlice;
     }
     else
     {
-        info.StartOffset = tileIndex * 256;
-        info.Count = LocalLightTileCounts[tileIndex];
+        index1D = tileIndex;
     }
+    uint2 gridData = LocalLightGrid[index1D];
+    info.StartOffset = gridData.x;
+    info.Count = gridData.y;
+
     return info;
 }
 
 uint GetLocalLightIndex(VisibleLightInfo info, uint listIndex)
 {
-	if (info.bIsClustered)
-        return LocalLightGlobalIndices[info.StartOffset + listIndex];
-	else
-        return LocalLightTileIndices[info.StartOffset + listIndex];
+    return LocalLightIndexList[info.StartOffset + listIndex];
 }
 
 // ============================================================
@@ -238,7 +240,7 @@ LightingResult ComputeLocalLight_Toon_NoTile(float3 worldPos, float3 worldNormal
 
 
 // [PS용] 타일 컬링이 적용된 핵심 조명 계산 함수들 (Tile-Culled)
-#define MAX_LIGHTS_PER_TILE 256
+
 
 LightingResult ComputeLocalLight_BlinnPhong(float3 cameraPos, float3 worldPos, float3 worldNormal, float shininess, float2 screenPos)
 {
