@@ -7,16 +7,15 @@
 Texture2D<float> DepthTexture : register(t1);
 
 // UAV
-RWStructuredBuffer<uint> LightIndices : register(u0);
-RWStructuredBuffer<uint> LightCounts : register(u1);
-
-#define TILE_SIZE 16
-#define MAX_LIGHTS_PER_TILE 256
+RWStructuredBuffer<uint2> LightGrid : register(u0);
+RWStructuredBuffer<uint> GlobalIndices : register(u1);
+RWStructuredBuffer<uint> GlobalCounts : register(u2);
 
 groupshared uint g_MinDepthInt;
 groupshared uint g_MaxDepthInt;
 groupshared uint g_TileLightCount;
-groupshared uint g_TileLightIndices[MAX_LIGHTS_PER_TILE];
+groupshared uint g_TileStartOffset;
+groupshared uint g_TileLightIndices[MAX_LIGHTS_PER_CELL];
 
 struct Plane
 {
@@ -40,8 +39,9 @@ void InitializeTileAndFrustum(uint3 groupId, uint3 dispatchThreadId, uint groupI
         g_MinDepthInt = 0x7f7fffff;
         g_MaxDepthInt = 0;
         g_TileLightCount = 0;
+        g_TileStartOffset = 0;
         
-        for (int i = 0; i < MAX_LIGHTS_PER_TILE; ++i)
+        for (int i = 0; i < MAX_LIGHTS_PER_CELL; ++i)
             g_TileLightIndices[i] = 0;
     }
     GroupMemoryBarrierWithGroupSync();
@@ -151,7 +151,7 @@ void CS_LocalLight(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThr
         {
             uint slot;
             InterlockedAdd(g_TileLightCount, 1, slot);
-            if (slot < MAX_LIGHTS_PER_TILE)
+            if (slot < MAX_LIGHTS_PER_CELL)
                 g_TileLightIndices[slot] = i;
         }
     }
@@ -159,13 +159,43 @@ void CS_LocalLight(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThr
 
     uint numTilesX = (screenWidth + TILE_SIZE - 1) / TILE_SIZE;
     uint tileIndex = groupId.y * numTilesX + groupId.x;
-
-    if (groupIndex == 0)
-        LightCounts[tileIndex] = min(g_TileLightCount, (uint) MAX_LIGHTS_PER_TILE);
     
-    uint exportCount = min(g_TileLightCount, (uint) MAX_LIGHTS_PER_TILE);
-    for (uint j = groupIndex; j < exportCount; j += 256)
+    uint count = min(g_TileLightCount, (uint) MAX_LIGHTS_PER_CELL);
+    
+    if (groupIndex == 0)
     {
-        LightIndices[tileIndex * MAX_LIGHTS_PER_TILE + j] = g_TileLightIndices[j];
+        if (count > 0)
+        {
+            uint startOffset;
+            InterlockedAdd(GlobalCounts[0], count, startOffset);
+
+            if (startOffset >= MAX_GLOBAL_LIGHT_INDICES)
+            {
+                count = 0;
+                startOffset = 0;
+            }
+            else if (startOffset + count > MAX_GLOBAL_LIGHT_INDICES)
+            {
+                count = MAX_GLOBAL_LIGHT_INDICES - startOffset;
+            }
+            
+            g_TileStartOffset = startOffset;
+            LightGrid[tileIndex] = uint2(startOffset, count);
+        }
+        else
+        {
+            g_TileStartOffset = 0;
+            LightGrid[tileIndex] = uint2(0, 0);
+        }
+    }
+    
+    GroupMemoryBarrierWithGroupSync();
+    
+    if (count > 0)
+    {
+        for (uint j = groupIndex; j < count; j += 256)
+        {
+            GlobalIndices[g_TileStartOffset + j] = g_TileLightIndices[j];
+        }
     }
 }

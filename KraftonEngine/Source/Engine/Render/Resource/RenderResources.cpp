@@ -92,18 +92,18 @@ void FRenderResources::CreateLightCullingBuffers(ID3D11Device* InDevice, uint32 
 	// 2-1. Cluster Grid (uint2: Offset, Count)
 	bufDesc.StructureByteStride = sizeof(uint32) * 2;
 	bufDesc.ByteWidth = TotalClusters * bufDesc.StructureByteStride;
-	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.LocalLightClusterGrid);
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.LocalLightGrid);
 	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalClusters;
-	InDevice->CreateUnorderedAccessView(LightCulling.LocalLightClusterGrid, &uavDesc, &LightCulling.LocalLightClusterGridUAV);
-	InDevice->CreateShaderResourceView(LightCulling.LocalLightClusterGrid, &srvDesc, &LightCulling.LocalLightClusterGridSRV);
+	InDevice->CreateUnorderedAccessView(LightCulling.LocalLightGrid, &uavDesc, &LightCulling.LocalLightGridUAV);
+	InDevice->CreateShaderResourceView(LightCulling.LocalLightGrid, &srvDesc, &LightCulling.LocalLightGridSRV);
 
 	// 2-2. Global Indices (uint)
 	bufDesc.StructureByteStride = sizeof(uint32);
 	bufDesc.ByteWidth = MAX_GLOBAL_LIGHT_INDICES * bufDesc.StructureByteStride;
-	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.LocalLightGlobalIndices);
+	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.LocalLightIndexList);
 	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = MAX_GLOBAL_LIGHT_INDICES;
-	InDevice->CreateUnorderedAccessView(LightCulling.LocalLightGlobalIndices, &uavDesc, &LightCulling.LocalLightGlobalIndicesUAV);
-	InDevice->CreateShaderResourceView(LightCulling.LocalLightGlobalIndices, &srvDesc, &LightCulling.LocalLightGlobalIndicesSRV);
+	InDevice->CreateUnorderedAccessView(LightCulling.LocalLightIndexList, &uavDesc, &LightCulling.LocalLightIndexListUAV);
+	InDevice->CreateShaderResourceView(LightCulling.LocalLightIndexList, &srvDesc, &LightCulling.LocalLightIndexListSRV);
 
 	// 2-3. Global Counter (uint, 1칸짜리, SRV는 필요 없음)
 	bufDesc.ByteWidth = sizeof(uint32);
@@ -117,22 +117,6 @@ void FRenderResources::CreateLightCullingBuffers(ID3D11Device* InDevice, uint32 
 	uint32 TotalTiles = NumTilesX * NumTilesY;
 
 	bufDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-
-	// Tile Counts
-	bufDesc.StructureByteStride = sizeof(uint32);
-	bufDesc.ByteWidth = TotalTiles * bufDesc.StructureByteStride;
-	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.LocalLightTileCounts);
-	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalTiles;
-	InDevice->CreateUnorderedAccessView(LightCulling.LocalLightTileCounts, &uavDesc, &LightCulling.LocalLightTileCountsUAV);
-	InDevice->CreateShaderResourceView(LightCulling.LocalLightTileCounts, &srvDesc, &LightCulling.LocalLightTileCountsSRV);
-
-	// Point Light Tile Indices
-	bufDesc.ByteWidth = TotalTiles * MAX_LIGHTS_PER_TILE * bufDesc.StructureByteStride;
-	InDevice->CreateBuffer(&bufDesc, nullptr, &LightCulling.LocalLightTileIndices);
-	uavDesc.Buffer.NumElements = srvDesc.Buffer.NumElements = TotalTiles * MAX_LIGHTS_PER_TILE;
-	InDevice->CreateUnorderedAccessView(LightCulling.LocalLightTileIndices, &uavDesc, &LightCulling.LocalLightTileIndicesUAV);
-	InDevice->CreateShaderResourceView(LightCulling.LocalLightTileIndices, &srvDesc, &LightCulling.LocalLightTileIndicesSRV);
-
 }
 
 void FRenderResources::ReleaseLightCullingBuffers()
@@ -141,26 +125,16 @@ void FRenderResources::ReleaseLightCullingBuffers()
 	SafeRelease(LightCulling.LocalLightDataSRV);
 	SafeRelease(LightCulling.LocalLightData);
 
-	// Point Light 클러스터 결과
-	SafeRelease(LightCulling.LocalLightClusterGridSRV);
-	SafeRelease(LightCulling.LocalLightClusterGridUAV);
-	SafeRelease(LightCulling.LocalLightClusterGrid);
+	SafeRelease(LightCulling.LocalLightGridSRV);
+	SafeRelease(LightCulling.LocalLightGridUAV);
+	SafeRelease(LightCulling.LocalLightGrid);
 
-	SafeRelease(LightCulling.LocalLightGlobalIndicesSRV);
-	SafeRelease(LightCulling.LocalLightGlobalIndicesUAV);
-	SafeRelease(LightCulling.LocalLightGlobalIndices);
+	SafeRelease(LightCulling.LocalLightIndexListSRV);
+	SafeRelease(LightCulling.LocalLightIndexListUAV);
+	SafeRelease(LightCulling.LocalLightIndexList);
 
 	SafeRelease(LightCulling.LocalLightGlobalCounterUAV);
 	SafeRelease(LightCulling.LocalLightGlobalCounter);
-
-	// Tile 기반 결과
-	SafeRelease(LightCulling.LocalLightTileIndicesSRV);
-	SafeRelease(LightCulling.LocalLightTileIndicesUAV);
-	SafeRelease(LightCulling.LocalLightTileIndices);
-
-	SafeRelease(LightCulling.LocalLightTileCountsSRV);
-	SafeRelease(LightCulling.LocalLightTileCountsUAV);
-	SafeRelease(LightCulling.LocalLightTileCounts);
 }
 
 void FRenderResources::Release()

@@ -151,11 +151,7 @@ cbuffer LightingBuffer : register(b8)
 
 
 StructuredBuffer<FLightData> LocalLightData : register(t8);
-
-StructuredBuffer<uint2> LocalLightClusterGrid : register(t9);
-StructuredBuffer<uint> LocalLightGlobalIndices : register(t10);
-
-StructuredBuffer<uint> LocalLightTileCounts : register(t11);
-StructuredBuffer<uint> LocalLightTileIndices : register(t12);
+StructuredBuffer<uint2> LocalLightGrid : register(t9);
+StructuredBuffer<uint> LocalLightIndexList : register(t10);
 
 #endif // CONSTANT_BUFFERS_HLSL

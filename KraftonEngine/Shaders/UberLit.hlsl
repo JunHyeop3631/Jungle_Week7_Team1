@@ -145,20 +145,17 @@ float4 PS(PS_Lighting input) : SV_TARGET
         uint numTilesX = (uint) (ScreenWidth + 15) / 16;
         uint tileIndex = (pixelPos.y / 16) * numTilesX + (pixelPos.x / 16);
 
-        uint totalLights = 0;
-        
+        // [수정] 통합 Grid에서 타일/클러스터 카운트 읽어오기
+        uint index1D = tileIndex;
         if (bUseClusteredLightCulling != 0)
         {
             float viewZ = mul(float4(input.worldPosition, 1.0f), View).z;
             uint zSlice = (uint) clamp(log2(viewZ) * ClusterScale + ClusterBias, 0, 23);
-            uint cluster3DIndex = tileIndex * 24 + zSlice;
-            
-            totalLights = LocalLightClusterGrid[cluster3DIndex].y;
+            index1D = tileIndex * 24 + zSlice;
         }
-        else
-        {
-            totalLights = LocalLightTileCounts[tileIndex];
-        }
+        
+        // y값에 조명 개수(Count)가 들어있음
+        uint totalLights = LocalLightGrid[index1D].y;
 
         float maxLights = 16.0f;
         float ratio = saturate((float) totalLights / maxLights);

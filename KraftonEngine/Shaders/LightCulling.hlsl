@@ -7,21 +7,16 @@
 Texture2D<float> DepthTexture : register(t1);
 
 // UAV
-RWStructuredBuffer<uint2> ClusterGrid : register(u0);
+RWStructuredBuffer<uint2> LightGrid : register(u0);
 RWStructuredBuffer<uint> GlobalIndices : register(u1);
 RWStructuredBuffer<uint> GlobalCounts: register(u2);
-
-#define TILE_SIZE 16
-#define CLUSTER_SLICES 24
-#define MAX_LIGHTS_PER_CLUSTER 256
-#define MAX_GLOBAL_LIGHT_INDICES 2000000
 
 groupshared uint g_MinDepthInt;
 groupshared uint g_MaxDepthInt;
 
 groupshared uint g_ClusterLightCount[CLUSTER_SLICES];
 groupshared uint g_ClusterStartOffset[CLUSTER_SLICES];
-groupshared uint g_ClusterLightIndices[CLUSTER_SLICES][MAX_LIGHTS_PER_CLUSTER];
+groupshared uint g_ClusterLightIndices[CLUSTER_SLICES][MAX_LIGHTS_PER_CELL];
 
 struct Plane
 {
@@ -182,7 +177,7 @@ void CS_LocalLight(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThr
             {
                 uint slot;
                 InterlockedAdd(g_ClusterLightCount[z], 1, slot);
-				if (slot < MAX_LIGHTS_PER_CLUSTER)
+                if (slot < MAX_LIGHTS_PER_CELL)
 				{
                     g_ClusterLightIndices[z][slot] = i;
                 }
@@ -199,7 +194,7 @@ void CS_LocalLight(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThr
     if (groupIndex < CLUSTER_SLICES)
     {
         uint z = groupIndex;
-        uint count = min(g_ClusterLightCount[z], (uint) MAX_LIGHTS_PER_CLUSTER);
+        uint count = min(g_ClusterLightCount[z], (uint) MAX_LIGHTS_PER_CELL);
 
         uint cluster3DIndex = tileIndex * CLUSTER_SLICES + z;
         if (z >= tileStartSlice && z <= tileEndSlice && count > 0)
@@ -218,23 +213,23 @@ void CS_LocalLight(uint3 groupId : SV_GroupID, uint3 groupThreadId : SV_GroupThr
                 count = MAX_GLOBAL_LIGHT_INDICES - startOffset;
             }
 			// 해당하는 클러스터 인덱스에 정보 저장
-            ClusterGrid[cluster3DIndex] = uint2(startOffset, count);
+            LightGrid[cluster3DIndex] = uint2(startOffset, count);
             g_ClusterStartOffset[z] = startOffset;
             g_ClusterLightCount[z] = count;
         }
 		else
 		{
-            ClusterGrid[cluster3DIndex] = uint2(0, 0);
+            LightGrid[cluster3DIndex] = uint2(0, 0);
             g_ClusterLightCount[z] = 0;
         }
     }
     GroupMemoryBarrierWithGroupSync();
 
-    for (uint idx = groupIndex; idx < CLUSTER_SLICES * MAX_LIGHTS_PER_CLUSTER; idx += 256)
+    for (uint idx = groupIndex; idx < CLUSTER_SLICES * MAX_LIGHTS_PER_CELL; idx += 256)
     {
         // 1차원 배열 2차원 배열화
-        uint z = idx / MAX_LIGHTS_PER_CLUSTER;
-        uint lightSlot = idx % MAX_LIGHTS_PER_CLUSTER;
+        uint z = idx / MAX_LIGHTS_PER_CELL;
+        uint lightSlot = idx % MAX_LIGHTS_PER_CELL;
 
         if (lightSlot < g_ClusterLightCount[z])
         {
