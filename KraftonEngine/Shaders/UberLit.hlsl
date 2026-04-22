@@ -22,7 +22,7 @@ PS_Lighting VS(VS_Input_PNCT input)
     float3 worldTanXYZ = normalize(mul(input.tangent.xyz, (float3x3) Model));
     output.worldTangent = float4(worldTanXYZ, input.tangent.w);
     output.color = input.color;
-    
+
 // 구루 쉐이딩 (VS 단계이므로 타일 컬링 없이 _NoTile 함수 사용)
 #if LIGHTING_MODEL_GOURAUD
     float3 AmbientColor = Ambient.LightColor.rgb * ka * 0.1f;
@@ -86,6 +86,25 @@ float4 PS(PS_Lighting input) : SV_TARGET
     finalColor = texColor * input.color * float4(input.vertexLighting, 1.0f);
     
 // 램버트 쉐이딩 (PS 단계이므로 input.position.xy 를 넘겨 타일 컬링 적용)
+#elif LIGHTING_MODEL_TOON
+    tempLighting = ComputeDirectionalLight_Toon(worldNormal);
+    totalLighting.Diffuse += tempLighting.Diffuse;
+    
+    tempLighting = ComputePointLight_Toon(input.worldPosition, worldNormal, input.position.xy);
+    totalLighting.Diffuse += tempLighting.Diffuse;
+    
+    tempLighting = ComputeSpotLight_Toon(input.worldPosition, worldNormal, input.position.xy);
+    totalLighting.Diffuse += tempLighting.Diffuse;
+    
+    
+    
+    float3 albedo = texColor.rgb * input.color.rgb;
+    float3 ambient = Ambient.LightColor.rgb * ka * albedo* 0.1f;
+    float3 diffuse  = totalLighting.Diffuse * albedo;
+    float3 final = ambient + diffuse;
+    finalColor = float4(final, input.color.a * texColor.a);
+    
+// 블린 폰 쉐이딩 (PS 단계이므로 input.position.xy 를 넘겨 타일 컬링 적용)
 #elif LIGHTING_MODEL_LAMBERT
     tempLighting = ComputeDirectionalLight_Lambert(worldNormal);
     totalLighting.Diffuse += tempLighting.Diffuse;

@@ -197,6 +197,7 @@ void FSpotLightSceneProxy::CollectEntries(FLightingBuildContext& Context, FColle
 	SpotInfo.Position = BuildLightPosition(this);
 	SpotInfo.Direction = BuildLightDirection(this);
 	SpotInfo.AttenuationRadius = CachedAttenuationRadius;
+	SpotInfo.SpotFalloffExponent = CachedFalloffExponent;
 	SpotInfo.InnerConeAngle = DegreesToConeCos(CachedInnerConeAngle);
 	SpotInfo.OuterConeAngle = DegreesToConeCos(CachedOuterConeAngle);
 

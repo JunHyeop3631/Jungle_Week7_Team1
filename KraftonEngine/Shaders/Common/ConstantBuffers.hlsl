@@ -138,9 +138,9 @@ struct FSpotLightInfo
     float4 Position;
     float4 Direction;
     float AttenuationRadius;
+    float SpotFalloffExponent;
     float InnerConeAngle;
     float OuterConeAngle;
-    float pad; // 16바이트 정렬을 위한 패딩
 };
 
 // [수정 완료] 팀의 원래 기획 + 엔진의 b8 슬롯 결합 

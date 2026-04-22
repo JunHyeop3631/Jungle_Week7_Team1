@@ -32,6 +32,12 @@ static D3D_SHADER_MACRO Defines_WorldNormal[] =
 	{ nullptr, nullptr }
 };
 
+static D3D_SHADER_MACRO Defines_Toon[] =
+{
+	{ "LIGHTING_MODEL_TOON", "1" },
+	{ nullptr, nullptr }
+};
+
 static EViewMode GLightingViewMode = EViewMode::Unlit;
 
 void FShader::CheckAndHotReload(ID3D11Device* InDevice)

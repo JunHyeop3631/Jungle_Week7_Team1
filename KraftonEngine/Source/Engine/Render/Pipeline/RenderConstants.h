@@ -157,9 +157,9 @@ struct FSpotLightInfo
 	FVector4 Position = { 0.0f, 0.0f, 0.0f, 1.0f };
 	FVector4 Direction = { 0.0f, -1.0f, 0.0f, 0.0f };
 	float AttenuationRadius = 1000.0f;
+	float SpotFalloffExponent = 1.0f;
 	float InnerConeAngle = 20.0f;
 	float OuterConeAngle = 40.0f;
-	float pad = 0.0f; // HLSL과 메모리 정렬을 맞추기 위한 4바이트 패딩
 };
 
 // [수정 완료] RenderBus와 Renderer가 주고받을 최종 조명 수납공간
