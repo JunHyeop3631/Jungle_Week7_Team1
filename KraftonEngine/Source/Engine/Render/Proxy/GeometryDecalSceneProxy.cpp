@@ -31,7 +31,7 @@ void FGeometryDecalSceneProxy::UpdateMesh()
 {
 	MeshBuffer = Owner->GetMeshBuffer();
 	Shader = FShaderManager::Get().GetShader(EShaderType::StaticMesh);
-	Pass = ERenderPass::Opaque;
+	Pass = ERenderPass::Translucent;
 	RebuildSectionDraw();
 }
 

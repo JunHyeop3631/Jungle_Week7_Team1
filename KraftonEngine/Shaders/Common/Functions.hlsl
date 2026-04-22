@@ -104,7 +104,7 @@ uint GetLocalLightIndex(VisibleLightInfo info, uint listIndex)
 // ============================================================
 // Directional Light (전역 조명이므로 컬링 불필요)
 // ============================================================
-LightingResult ComputeDirectionalLight_BlinnPhong(float3 cameraPos, float3 worldPos, float3 worldNormal, float exp)
+LightingResult ComputeDirectionalLight_BlinnPhong(float3 cameraPos, float3 worldPos, float3 worldNormal, float shininess)
 {
     LightingResult result = (LightingResult) 0;
     float3 diffuse = 0;
@@ -121,7 +121,7 @@ LightingResult ComputeDirectionalLight_BlinnPhong(float3 cameraPos, float3 world
     {
         float3 H = normalize(L + V);
         float NdotH = saturate(dot(N, H));
-        float specIntensity = pow(NdotH, exp) * NdotL;
+        float specIntensity = pow(NdotH, shininess * 4.0f);
         specular = Directional.LightColor.rgb * specIntensity;
     }
     
@@ -160,7 +160,7 @@ LightingResult ComputeDirectionalLight_Toon(float3 worldNormal)
 
 void ApplyLocalLightAttenuation(FLightData light, float3 worldPos, out float3 L, out float atten)
 {
-    float3 toLight = light.Position - worldPos;
+    float3 toLight = light.Position.xyz - worldPos;
     float dist = length(toLight);
     L = toLight / max(dist, 0.0001f);
 
@@ -198,7 +198,7 @@ LightingResult ComputeLocalLight_BlinnPhong_NoTile(float3 cameraPos, float3 worl
         if (NdotLRaw > 0.0f && atten > 0.0f)
         {
             float3 H = normalize(L + V);
-            result.Specular += light.Color * pow(max(dot(N, H), 0.0f), shininess) * atten;
+            result.Specular += light.Color * pow(max(dot(N, H), 0.0f), shininess * 4.0f) * atten;
         }
     }
     return result;

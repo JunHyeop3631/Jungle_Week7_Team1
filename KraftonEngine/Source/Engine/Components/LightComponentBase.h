@@ -38,7 +38,7 @@ protected:
 	void OnTransformDirty() override;
 
 	FLightSceneProxy* LightProxy = nullptr;
-	float Intensity = 5.f;
+	float Intensity = 0.5f;
 	FLinearColor LightColor = FLinearColor(1.f, 1.f, 1.f, 1.f);
 	bool bVisible = true;
 };

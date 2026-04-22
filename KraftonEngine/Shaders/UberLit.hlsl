@@ -25,10 +25,8 @@ PS_Lighting VS(VS_Input_PNCT input)
 
 // 구루 쉐이딩 (VS 단계이므로 타일 컬링 없이 _NoTile 함수 사용)
 #if LIGHTING_MODEL_GOURAUD
-    float3 AmbientColor = Ambient.LightColor.rgb * ka * 0.1f;
-    float roughness = clamp(SpecularRoughness, 0.01f, 1.0f);
-    float shininess = 2.0f / (pow(roughness, 4.0f) + 1e-4f) - 2.0f;
-    shininess = max(shininess, 2.0f);
+    float3 AmbientColor = Ambient.LightColor.rgb * ka.rgb;
+    float shininess = SpecularRoughness;
     
     LightingResult totalLighting = (LightingResult)0;
     LightingResult tempLighting = (LightingResult)0;
@@ -41,7 +39,7 @@ PS_Lighting VS(VS_Input_PNCT input)
     totalLighting.Diffuse += tempLighting.Diffuse;
     totalLighting.Specular += tempLighting.Specular;
     
-    output.vertexLighting = AmbientColor + totalLighting.Diffuse + (totalLighting.Specular * SpecularIntensity * ks);
+    output.vertexLighting = AmbientColor + totalLighting.Diffuse + (totalLighting.Specular * SpecularIntensity * ks.rgb);
 #endif
     
     return output;
@@ -93,7 +91,7 @@ float4 PS(PS_Lighting input) : SV_TARGET
     
     
     float3 albedo = texColor.rgb * input.color.rgb;
-    float3 ambient = Ambient.LightColor.rgb * ka * albedo* 0.1f;
+    float3 ambient = Ambient.LightColor.rgb * ka.rgb * albedo;
     float3 diffuse  = totalLighting.Diffuse * albedo;
     float3 final = ambient + diffuse;
     finalColor = float4(final, input.color.a * texColor.a);
@@ -107,16 +105,14 @@ float4 PS(PS_Lighting input) : SV_TARGET
     totalLighting.Diffuse += tempLighting.Diffuse;
     
     float3 albedo = texColor.rgb * input.color.rgb;
-    float3 ambient = Ambient.LightColor.rgb * ka * albedo* 0.1f;
+    float3 ambient = Ambient.LightColor.rgb * ka.rgb * albedo;
     float3 diffuse  = totalLighting.Diffuse * albedo;
     float3 final = ambient + diffuse;
     finalColor = float4(final, input.color.a * texColor.a);
     
 // 블린 폰 쉐이딩 (PS 단계이므로 input.position.xy 를 넘겨 타일 컬링 적용)
 #elif LIGHTING_MODEL_PHONG
-    float roughness = clamp(SpecularRoughness, 0.01f, 1.0f);
-    float shininess = 2.0f / (pow(roughness, 4.0f) + 1e-4f) - 2.0f;
-    shininess = max(shininess, 2.0f);
+    float shininess = SpecularRoughness;
     
     tempLighting = ComputeDirectionalLight_BlinnPhong(CameraPosition.xyz, input.worldPosition, worldNormal, shininess);
     totalLighting.Diffuse += tempLighting.Diffuse;
@@ -127,9 +123,9 @@ float4 PS(PS_Lighting input) : SV_TARGET
     totalLighting.Specular += tempLighting.Specular;
     
     float3 albedo = texColor.rgb * input.color.rgb;
-    float3 ambient = Ambient.LightColor.rgb * ka * albedo * 0.1f;
+    float3 ambient = Ambient.LightColor.rgb * ka.rgb * albedo;
     float3 diffuse = totalLighting.Diffuse * albedo;
-    float3 specular = totalLighting.Specular * SpecularIntensity * ks;
+    float3 specular = totalLighting.Specular * SpecularIntensity * ks.rgb;
     
     float3 final = ambient + diffuse + specular;
     finalColor = float4(final, input.color.a * texColor.a);
@@ -167,7 +163,7 @@ float4 PS(PS_Lighting input) : SV_TARGET
         }
 
         if (totalLights == 0)
-            heatColor = finalColor.rgb * 0.1f;
+            heatColor = finalColor.rgb;
             
         return float4(heatColor, 1.0f);
     }

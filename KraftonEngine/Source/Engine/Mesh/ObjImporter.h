@@ -31,9 +31,9 @@ struct FObjMaterialInfo
 	FString map_Kd; // diffuse texture file path
 	FString map_Bump;
 
-	FVector Ka = FVector(0.0f, 0.0f, 0.0f); // ambient color
-	FVector Ks = FVector(0.0f, 0.0f, 0.0f); // specular color
-	float Ns = 16.0f; // specular exponent
+	FVector Ka = FVector(1.0f, 1.0f, 1.0f); // ambient color (UE fallback default)
+	FVector Ks = FVector(0.0f, 0.0f, 0.0f); // specular color (UE fallback default)
+	float Ns = 0.0f; // specular exponent (UE fallback default)
 	float Ni = 0.0f; // optical density
 	int32 illum = 0; // illumination model
 };
