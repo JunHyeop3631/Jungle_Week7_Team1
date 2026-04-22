@@ -72,10 +72,7 @@ public:
 
 	void SetLightingData(const FCollectedLightData& InConstants);
 	const FLightingConstants& GetLightingConstants() const { return LightingConstants; }
-	void AddPointLight(const FPointLightInfo& Light) { PointLights.push_back(Light); }
-	void AddSpotLight(const FSpotLightInfo& Light) { SpotLights.push_back(Light); }
-	const TArray<FPointLightInfo>& GetPointLights() const { return PointLights; }
-	const TArray<FSpotLightInfo>& GetSpotLights() const { return SpotLights; }
+	const TArray<FLightData>& GetLocalLights() const { return LocalLights; }
 
 
 	const float GetViewportWidth() const { return viewportWidth; }
@@ -116,8 +113,7 @@ private:
 	FSceneEffectConstants SceneEffectConstants = {};
 	FFogPostProcessConstants FogPostProcessConstants = {};
 	FLightingConstants LightingConstants = {};
-	TArray<FPointLightInfo> PointLights;
-	TArray<FSpotLightInfo> SpotLights;
+	TArray<FLightData> LocalLights;
 
 	FMatrix View;
 	FMatrix Proj;

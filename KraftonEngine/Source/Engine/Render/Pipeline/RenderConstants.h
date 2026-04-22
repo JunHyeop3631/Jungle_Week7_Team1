@@ -142,13 +142,30 @@ struct FDirectionalLightInfo
 	FVector4 Direction = { 0.0f, -1.0f, 0.0f, 0.0f };
 };
 
+struct FLightData
+{
+	FVector Position;
+	float AttenuationRadius;
+
+	FVector Color;
+	uint32 LightType;
+
+	FVector Direction;
+	float FalloffExponent;
+
+	float InnerConeCos;
+	float OuterConeCos;
+	float _Padding0;
+	float _Padding1;
+};
+
 struct FPointLightInfo
 {
 	FVector4 LightColor = { 0.0f, 0.0f, 0.0f, 0.0f };
 	FVector4 Position = { 0.0f, 0.0f, 0.0f, 1.0f };
 	float AttenuationRadius = 1000.0f;
 	float FalloffExponent = 1.0f;
-	float pad[2] = { 0.0f, 0.0f }; // HLSL과 메모리 정렬을 맞추기 위한 8바이트 패딩
+	float pad[2] = { 0.0f, 0.0f };
 };
 
 struct FSpotLightInfo
@@ -162,7 +179,6 @@ struct FSpotLightInfo
 	float OuterConeAngle = 40.0f;
 };
 
-// [수정 완료] RenderBus와 Renderer가 주고받을 최종 조명 수납공간
 struct FLightingConstants
 {
 	FAmbientLightInfo Ambient;
@@ -177,8 +193,7 @@ struct FLightingConstants
 struct FCollectedLightData
 {
 	FLightingConstants Constants;
-	TArray<FPointLightInfo> PointLights;
-	TArray<FSpotLightInfo> SpotLights;
+	TArray<FLightData> LocalLights;
 };
 
 struct FGizmoConstants

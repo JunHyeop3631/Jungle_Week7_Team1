@@ -1134,8 +1134,13 @@ void FRenderer::ExecuteDepthPrePass(const FRenderBus& Bus, ID3D11DeviceContext* 
 
 void FRenderer::ExecuteLightCullingCS(const FRenderBus& Bus, ID3D11DeviceContext* Context)
 {
-	const bool bNoPointLights = Bus.GetPointLights().empty();
-	const bool bNoSpotLights = Bus.GetSpotLights().empty();
+	bool bNoPointLights = true;
+	bool bNoSpotLights = true;
+	for (const FLightData& Light : Bus.GetLocalLights())
+	{
+		if (Light.LightType == 0) bNoPointLights = false;
+		else if (Light.LightType == 1) bNoSpotLights = false;
+	}
 	const uint32 ClearZero[4] = { 0, 0, 0, 0 };
 
 	bool bUseClustered = FEditorSettings::Get().UI.bUseClusteredLightCulling;
@@ -1393,11 +1398,38 @@ void FRenderer::BlitSRVToRTV(ID3D11ShaderResourceView* SourceSRV, ID3D11RenderTa
 void FRenderer::UpdateLightingBuffer(ID3D11DeviceContext* Context, const FRenderBus& InRenderBus)
 {
 	FLightingConstants LightData = InRenderBus.GetLightingConstants();
-	const auto& PointLights = InRenderBus.GetPointLights();
-	const auto& SpotLights = InRenderBus.GetSpotLights();
+	const auto& LocalLights = InRenderBus.GetLocalLights();
 
-	LightData.PointLightCount = static_cast<uint32>(PointLights.size());
-	LightData.SpotLightCount = static_cast<uint32>(SpotLights.size());
+	std::vector<FPointLightInfo> TempPointLights;
+	std::vector<FSpotLightInfo> TempSpotLights;
+
+	for (const FLightData& Light : LocalLights)
+	{
+		if (Light.LightType == 0) // Point Light
+		{
+			FPointLightInfo P = {};
+			P.LightColor = FVector4(Light.Color.X, Light.Color.Y, Light.Color.Z, 1.0f);
+			P.Position = FVector4(Light.Position.X, Light.Position.Y, Light.Position.Z, 1.0f);
+			P.AttenuationRadius = Light.AttenuationRadius;
+			P.FalloffExponent = Light.FalloffExponent;
+			TempPointLights.push_back(P);
+		}
+		else if (Light.LightType == 1) // Spot Light
+		{
+			FSpotLightInfo S = {};
+			S.LightColor = FVector4(Light.Color.X, Light.Color.Y, Light.Color.Z, 1.0f);
+			S.Position = FVector4(Light.Position.X, Light.Position.Y, Light.Position.Z, 1.0f);
+			S.Direction = FVector4(Light.Direction.X, Light.Direction.Y, Light.Direction.Z, 0.0f);
+			S.AttenuationRadius = Light.AttenuationRadius;
+			S.FalloffExponent = Light.FalloffExponent;
+			S.InnerConeAngle = Light.InnerConeCos; // 기존 코드도 Cos 값을 저장하고 있었으므로 그대로 넣습니다.
+			S.OuterConeAngle = Light.OuterConeCos;
+			TempSpotLights.push_back(S);
+		}
+	}
+
+	LightData.PointLightCount = static_cast<uint32>(TempPointLights.size());
+	LightData.SpotLightCount = static_cast<uint32>(TempSpotLights.size());
 
 	LightData.bDebugLightCulling = FEditorSettings::Get().UI.bLightCullingDebug ? 1 : 0;
 	LightData.bUseClusteredLightCulling = FEditorSettings::Get().UI.bUseClusteredLightCulling ? 1 : 0;
@@ -1411,22 +1443,22 @@ void FRenderer::UpdateLightingBuffer(ID3D11DeviceContext* Context, const FRender
 		Context->PSSetConstantBuffers(ECBSlot::Lighting, 1, &cb8);
 	}
 
-	if (!PointLights.empty() && Resources.LightCulling.PointLightData)
+	if (!TempPointLights.empty() && Resources.LightCulling.PointLightData)
 	{
 		D3D11_MAPPED_SUBRESOURCE Mapped;
 		if (SUCCEEDED(Context->Map(Resources.LightCulling.PointLightData, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped)))
 		{
-			memcpy(Mapped.pData, PointLights.data(), sizeof(FPointLightInfo) * PointLights.size());
+			memcpy(Mapped.pData, TempPointLights.data(), sizeof(FPointLightInfo) * TempPointLights.size());
 			Context->Unmap(Resources.LightCulling.PointLightData, 0);
 		}
 	}
 
-	if (!SpotLights.empty() && Resources.LightCulling.SpotLightData)
+	if (!TempSpotLights.empty() && Resources.LightCulling.SpotLightData)
 	{
 		D3D11_MAPPED_SUBRESOURCE Mapped;
 		if (SUCCEEDED(Context->Map(Resources.LightCulling.SpotLightData, 0, D3D11_MAP_WRITE_DISCARD, 0, &Mapped)))
 		{
-			memcpy(Mapped.pData, SpotLights.data(), sizeof(FSpotLightInfo) * SpotLights.size());
+			memcpy(Mapped.pData, TempSpotLights.data(), sizeof(FSpotLightInfo) * TempSpotLights.size());
 			Context->Unmap(Resources.LightCulling.SpotLightData, 0);
 		}
 	}
