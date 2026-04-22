@@ -1,0 +1,334 @@
+# Blender 5.1.0 MTL File: 'None'
+# www.blender.org
+
+newmtl Glass_-_Clear
+Ns 96.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.080000 0.080000 0.080000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl Glass_-_Clear_-_Bumps
+Ns 96.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.080000 0.080000 0.080000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl Glass_-_Clear_-_Ridged_
+Ns 96.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.080000 0.080000 0.080000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl Glass_-_Clear_-_Ridged_-_UV
+Ns 96.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.080000 0.080000 0.080000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl Glass_-_Red
+Ns 96.000000
+Kd 1.000000 0.000000 0.000000
+Ks 0.080000 0.080000 0.080000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl Glass_-_Red_-_Rough
+Ns 96.000000
+Kd 0.723817 0.002372 0.000000
+Ks 0.080000 0.080000 0.080000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.200000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl Glass_ext
+Ns 96.000000
+Kd 0.000000 0.000000 0.000000
+Ks 0.080000 0.080000 0.080000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 0.500000
+illum 9
+Pr 0.000000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl Glass_ext-tinted
+Ns 96.000000
+Kd 0.000000 0.000000 0.000000
+Ks 0.080000 0.080000 0.080000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 0.875000
+illum 9
+Pr 0.000000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl Rubber_-_Black
+Ns 24.000000
+Kd 0.008075 0.008075 0.008075
+Ks 0.030000 0.030000 0.030000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.350000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl black-metal
+Ns 64.000000
+Kd 0.007926 0.007926 0.007926
+Ks 0.100000 0.100000 0.100000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl car-body
+Pr 0.350000
+Ns 128.000000
+Ks 0.120000 0.120000 0.120000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+map_Kd Car_Body_Base_Color.png
+map_Pm Car_Body_Metallic.png
+map_Pr Car_Body_Roughness.png
+map_Bump -bm 1.000000 Car_Body_Normal_DirectX.png
+
+
+newmtl front-grille-texture
+Ns 32.000000
+Ks 0.040000 0.040000 0.040000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+map_Kd front-grille-texture.png
+map_d front-grille-texture.png
+
+
+newmtl interior
+Pr 0.650000
+Ns 32.000000
+Ks 0.040000 0.040000 0.040000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+map_Kd interior_Base_Color.png
+map_Pm interior_Metallic.png
+map_Pr interior_Roughness.png
+map_Bump -bm 1.000000 interior_Normal_DirectX.png
+
+
+newmtl mechanics
+Pr 0.450000
+Ns 128.000000
+Ks 0.100000 0.100000 0.100000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+map_Kd mechanics_Base_Color.png
+map_Pm mechanics_Metallic.png
+map_Pr mechanics_Roughness.png
+map_Bump -bm 1.000000 mechanics_Normal_DirectX.png
+
+
+newmtl media
+Ns 32.000000
+Ks 0.040000 0.040000 0.040000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+map_Kd media.png
+map_d media.png
+
+
+newmtl mirror
+Ns 128.000000
+Kd 0.023106 0.023106 0.023106
+Ks 0.180000 0.180000 0.180000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+Pr 0.900000
+Pm 0.345455
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+
+
+newmtl tire-low.001
+Pr 0.750000
+Ns 24.000000
+Ks 0.030000 0.030000 0.030000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+map_Kd tire-low-diffuse.png
+map_Pr tire-low-roughness.png
+map_d tire-low-diffuse.png
+map_Bump -bm 1.000000 tire-low-normal.png
+
+
+newmtl wheel-brake-disc
+Pr 0.450000
+Ns 64.000000
+Ks 0.100000 0.100000 0.100000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000
+map_Kd wheel-brake-disc_Base_Color.png
+map_Pm wheel-brake-disc_Metallic.png
+map_Pr wheel-brake-disc_roughness.png
+map_d wheel-brake-disc_Base_Color.png
+map_Bump -bm 1.000000 wheel-brake-disc_Normal_DirectX.png
+
+
+newmtl wipers
+Ns 24.000000
+Kd 0.012982 0.012982 0.012982
+Ks 0.030000 0.030000 0.030000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+Pr 0.500000
+Pm 0.000000
+Ps 0.000000
+Pc 0.000000
+Pcr 0.030000
+aniso 0.000000
+anisor 0.000000

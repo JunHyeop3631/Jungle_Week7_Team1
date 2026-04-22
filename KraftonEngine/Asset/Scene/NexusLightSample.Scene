@@ -1,160 +1,8 @@
 {
   "Actors" : [{
       "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [{
-          "ClassName" : "URotatingMovementComponent",
-          "Properties" : {
-            "Auto Register Updated" : true,
-            "Pivot Translation" : [0.000000, 0.000000, 0.000000],
-            "Rotation In Local Space" : false,
-            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
-            "Updated Component" : "",
-            "bTickEnable" : true
-          }
-        }],
+      "NonSceneComponents" : [],
       "PrimitiveKey" : "8",
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UTextRenderComponent",
-            "Properties" : {
-              "Font" : "Default",
-              "Font Size" : 1.000000,
-              "Location" : [0.000000, 0.000000, 1.300000],
-              "Rotation" : [0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Text" : "",
-              "Visible" : true,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "Porsche_911GT3_2022_Wheel1A_3D_3DWheel1A_Material",
-            "UVScroll" : false
-          },
-          "Element 1" : {
-            "Path" : "Porsche_911GT3_2022_CallipersCalliperA_Zone_Material",
-            "UVScroll" : false
-          },
-          "Element 10" : {
-            "Path" : "Porsche_911GT3_2022Coloured_Material",
-            "UVScroll" : false
-          },
-          "Element 11" : {
-            "Path" : "Porsche_911GT3_2022LightA_Material",
-            "UVScroll" : false
-          },
-          "Element 12" : {
-            "Path" : "Porsche_911GT3_2022BadgeA_Material",
-            "UVScroll" : false
-          },
-          "Element 13" : {
-            "Path" : "Porsche_911GT3_2022InteriorTillingA_Material",
-            "UVScroll" : false
-          },
-          "Element 14" : {
-            "Path" : "Porsche_911GT3_2022Carbon1_Material",
-            "UVScroll" : false
-          },
-          "Element 15" : {
-            "Path" : "Porsche_911GT3_2022ManufacturerPlateA_Material",
-            "UVScroll" : false
-          },
-          "Element 16" : {
-            "Path" : "Porsche_911GT3_2022Grille7A_Material",
-            "UVScroll" : false
-          },
-          "Element 17" : {
-            "Path" : "Porsche_911GT3_2022Grille4A_Material",
-            "UVScroll" : false
-          },
-          "Element 18" : {
-            "Path" : "RED_GLASS",
-            "UVScroll" : false
-          },
-          "Element 19" : {
-            "Path" : "Porsche_911GT3_2022Grille6A_Material",
-            "UVScroll" : false
-          },
-          "Element 2" : {
-            "Path" : "Porsche_911GT3_2022Window_Material",
-            "UVScroll" : false
-          },
-          "Element 3" : {
-            "Path" : "Porsche_911GT3_2022Grille2A_Material",
-            "UVScroll" : false
-          },
-          "Element 4" : {
-            "Path" : "Porsche_911GT3_2022Base_Material",
-            "UVScroll" : false
-          },
-          "Element 5" : {
-            "Path" : "Porsche_911GT3_2022Grille3A_Material",
-            "UVScroll" : false
-          },
-          "Element 6" : {
-            "Path" : "Porsche_911GT3_2022InteriorA_Material",
-            "UVScroll" : false
-          },
-          "Element 7" : {
-            "Path" : "Porsche_911GT3_2022Grille1A_Material",
-            "UVScroll" : false
-          },
-          "Element 8" : {
-            "Path" : "Porsche_911GT3_2022Grille5A_Material",
-            "UVScroll" : false
-          },
-          "Element 9" : {
-            "Path" : "Porsche_911GT3_2022Paint_Material",
-            "UVScroll" : false
-          },
-          "Location" : [-110.061104, -0.027277, 0.383381],
-          "Rotation" : [0.000000, 0.000000, 3.557266],
-          "Scale" : [200.000000, 200.000000, 200.000000],
-          "Visible" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [],
-      "PrimitiveKey" : "14",
-      "RootComponent" : {
-        "Children" : [{
-            "Children" : [],
-            "ClassName" : "UTextRenderComponent",
-            "Properties" : {
-              "Font" : "Default",
-              "Font Size" : 1.000000,
-              "Location" : [0.000000, 0.000000, 1.300000],
-              "Rotation" : [0.000000, 0.000000, 0.000000],
-              "Scale" : [1.000000, 1.000000, 1.000000],
-              "Text" : "",
-              "Visible" : true,
-              "bTickEnable" : true
-            }
-          }],
-        "ClassName" : "UStaticMeshComponent",
-        "Properties" : {
-          "Element 0" : {
-            "Path" : "cloth",
-            "UVScroll" : false
-          },
-          "Location" : [-4.572765, 8.773433, 0.374525],
-          "Rotation" : [0.000000, -90.000000, 0.000000],
-          "Scale" : [3.000000, 3.000000, 3.000000],
-          "Visible" : true,
-          "bTickEnable" : true
-        }
-      },
-      "bVisible" : true
-    }, {
-      "ClassName" : "AStaticMeshActor",
-      "NonSceneComponents" : [],
-      "PrimitiveKey" : "21",
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
@@ -187,7 +35,7 @@
     }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "27",
+      "PrimitiveKey" : "14",
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
@@ -220,7 +68,7 @@
     }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "30",
+      "PrimitiveKey" : "17",
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
@@ -253,7 +101,7 @@
     }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "33",
+      "PrimitiveKey" : "20",
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
@@ -286,7 +134,7 @@
     }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "36",
+      "PrimitiveKey" : "23",
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
@@ -319,7 +167,7 @@
     }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "39",
+      "PrimitiveKey" : "26",
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
@@ -352,7 +200,7 @@
     }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "42",
+      "PrimitiveKey" : "29",
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
@@ -397,7 +245,7 @@
     }, {
       "ClassName" : "AStaticMeshActor",
       "NonSceneComponents" : [],
-      "PrimitiveKey" : "51",
+      "PrimitiveKey" : "38",
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
@@ -440,7 +288,7 @@
             "bTickEnable" : true
           }
         }],
-      "PrimitiveKey" : "54",
+      "PrimitiveKey" : "45",
       "RootComponent" : {
         "Children" : [{
             "Children" : [],
@@ -471,6 +319,246 @@
       },
       "bVisible" : true
     }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [{
+          "ClassName" : "URotatingMovementComponent",
+          "Properties" : {
+            "Auto Register Updated" : true,
+            "Pivot Translation" : [0.000000, 0.000000, 0.000000],
+            "Rotation In Local Space" : false,
+            "Rotation Rate" : [0.000000, 90.000000, 0.000000],
+            "Updated Component" : "",
+            "bTickEnable" : true
+          }
+        }],
+      "PrimitiveKey" : "49",
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UTextRenderComponent",
+            "Properties" : {
+              "Font" : "Default",
+              "Font Size" : 1.000000,
+              "Location" : [0.000000, 0.000000, 1.300000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Text" : "",
+              "Visible" : true,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "USpotLightComponent",
+            "Properties" : {
+              "Attenuation Radius" : 20.000000,
+              "InnerConeAngle" : 0.000000,
+              "Intensity" : 3.000000,
+              "LightColor" : [1.000000, 1.000000, 0.000000, 1.000000],
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.700000, -1.700000, 0.700000],
+              "OuterConeAngle" : 14.000000,
+              "Rotation" : [0.000000, -90.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Visible" : true,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "USpotLightComponent",
+            "Properties" : {
+              "Attenuation Radius" : 20.000000,
+              "InnerConeAngle" : 0.000000,
+              "Intensity" : 3.000000,
+              "LightColor" : [1.000000, 1.000000, 0.000000, 1.000000],
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [-0.700000, -1.700000, 0.700000],
+              "OuterConeAngle" : 14.000000,
+              "Rotation" : [0.000000, -90.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Visible" : true,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "Attenuation Radius" : 2.600000,
+              "Intensity" : 7.400000,
+              "LightColor" : [1.000000, 1.000000, 1.000000, 1.000000],
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, -1.000000, 1.200000],
+              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Visible" : true,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "UPointLightComponent",
+            "Properties" : {
+              "Attenuation Radius" : 3.100000,
+              "Intensity" : 4.400000,
+              "LightColor" : [1.000000, 1.000000, 1.000000, 1.000000],
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [0.000000, 1.500000, 1.600000],
+              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Visible" : true,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "USpotLightComponent",
+            "Properties" : {
+              "Attenuation Radius" : 8.400000,
+              "InnerConeAngle" : 0.000000,
+              "Intensity" : 9.900000,
+              "LightColor" : [1.000000, 1.000000, 1.000000, 1.000000],
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [3.700000, 0.000000, 0.060000],
+              "OuterConeAngle" : 43.400002,
+              "Rotation" : [0.000000, -180.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Visible" : true,
+              "bTickEnable" : true
+            }
+          }, {
+            "Children" : [],
+            "ClassName" : "USpotLightComponent",
+            "Properties" : {
+              "Attenuation Radius" : 8.100000,
+              "InnerConeAngle" : 0.000000,
+              "Intensity" : 8.400000,
+              "LightColor" : [1.000000, 1.000000, 1.000000, 1.000000],
+              "LightFalloffExponent" : 1.000000,
+              "Location" : [-3.700000, 0.000000, 0.060000],
+              "OuterConeAngle" : 41.200001,
+              "Rotation" : [-0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Visible" : true,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "wipers",
+            "UVScroll" : false
+          },
+          "Element 1" : {
+            "Path" : "wheel-brake-disc",
+            "UVScroll" : false
+          },
+          "Element 10" : {
+            "Path" : "Glass_-_Clear_-_Ridged_-_UV",
+            "UVScroll" : false
+          },
+          "Element 11" : {
+            "Path" : "media",
+            "UVScroll" : false
+          },
+          "Element 12" : {
+            "Path" : "Glass_ext-tinted",
+            "UVScroll" : false
+          },
+          "Element 13" : {
+            "Path" : "Glass_-_Clear_-_Bumps",
+            "UVScroll" : false
+          },
+          "Element 14" : {
+            "Path" : "Glass_ext",
+            "UVScroll" : false
+          },
+          "Element 15" : {
+            "Path" : "Glass_-_Clear",
+            "UVScroll" : false
+          },
+          "Element 16" : {
+            "Path" : "Glass_-_Clear_-_Ridged_",
+            "UVScroll" : false
+          },
+          "Element 17" : {
+            "Path" : "front-grille-texture",
+            "UVScroll" : false
+          },
+          "Element 18" : {
+            "Path" : "mirror",
+            "UVScroll" : false
+          },
+          "Element 2" : {
+            "Path" : "mechanics",
+            "UVScroll" : false
+          },
+          "Element 3" : {
+            "Path" : "interior",
+            "UVScroll" : false
+          },
+          "Element 4" : {
+            "Path" : "car-body",
+            "UVScroll" : false
+          },
+          "Element 5" : {
+            "Path" : "black-metal",
+            "UVScroll" : false
+          },
+          "Element 6" : {
+            "Path" : "tire-low.001",
+            "UVScroll" : false
+          },
+          "Element 7" : {
+            "Path" : "Rubber_-_Black",
+            "UVScroll" : false
+          },
+          "Element 8" : {
+            "Path" : "Glass_-_Red_-_Rough",
+            "UVScroll" : false
+          },
+          "Element 9" : {
+            "Path" : "Glass_-_Red",
+            "UVScroll" : false
+          },
+          "Location" : [-109.854980, -0.580739, -0.021768],
+          "Rotation" : [0.000000, 0.000000, 0.000000],
+          "Scale" : [2.000000, 2.000000, 2.000000],
+          "Visible" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
+      "ClassName" : "AStaticMeshActor",
+      "NonSceneComponents" : [],
+      "PrimitiveKey" : "129",
+      "RootComponent" : {
+        "Children" : [{
+            "Children" : [],
+            "ClassName" : "UTextRenderComponent",
+            "Properties" : {
+              "Font" : "Default",
+              "Font Size" : 1.000000,
+              "Location" : [0.000000, 0.000000, 1.300000],
+              "Rotation" : [0.000000, 0.000000, 0.000000],
+              "Scale" : [1.000000, 1.000000, 1.000000],
+              "Text" : "",
+              "Visible" : true,
+              "bTickEnable" : true
+            }
+          }],
+        "ClassName" : "UStaticMeshComponent",
+        "Properties" : {
+          "Element 0" : {
+            "Path" : "cloth",
+            "UVScroll" : false
+          },
+          "Location" : [-4.572765, 8.773433, 0.374525],
+          "Rotation" : [0.000000, -90.000000, 0.000000],
+          "Scale" : [3.000000, 3.000000, 3.000000],
+          "Visible" : true,
+          "bTickEnable" : true
+        }
+      },
+      "bVisible" : true
+    }, {
       "ClassName" : "AAmbientLight",
       "NonSceneComponents" : [],
       "RootComponent" : {
@@ -491,7 +579,7 @@
         "ClassName" : "UAmbientLightComponent",
         "Properties" : {
           "Intensity" : 1.000000,
-          "LightColor" : [0.924051, 0.888960, 0.888960, 1.000000],
+          "LightColor" : [0.147679, 0.145810, 0.145810, 1.000000],
           "Location" : [-0.876855, 7.656807, 3.269520],
           "Rotation" : [0.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
@@ -520,10 +608,10 @@
           }],
         "ClassName" : "UDirectionalLightComponent",
         "Properties" : {
-          "Intensity" : 0.800000,
+          "Intensity" : 1.000000,
           "LightColor" : [0.227848, 0.226887, 0.226887, 1.000000],
           "Location" : [-19.033533, 8.948752, 2.684925],
-          "Rotation" : [48.468994, 87.408325, 88.161407],
+          "Rotation" : [57.780212, 86.776459, 87.374146],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
           "bTickEnable" : true
@@ -1001,12 +1089,12 @@
         "ClassName" : "USpotLightComponent",
         "Properties" : {
           "Attenuation Radius" : 20.000000,
-          "InnerConeAngle" : 20.900000,
-          "Intensity" : 20.000000,
-          "LightColor" : [0.864979, 0.222632, 0.222632, 1.000000],
-          "LightFalloffExponent" : 1.600000,
-          "Location" : [-109.752670, -0.125370, 20.032894],
-          "OuterConeAngle" : 41.500000,
+          "InnerConeAngle" : 22.600000,
+          "Intensity" : 0.000000,
+          "LightColor" : [1.000000, 1.000000, 1.000000, 1.000000],
+          "LightFalloffExponent" : 0.300000,
+          "Location" : [-109.752670, -0.125370, 11.740615],
+          "OuterConeAngle" : 62.000000,
           "Rotation" : [90.000000, 0.000000, 0.000000],
           "Scale" : [1.000000, 1.000000, 1.000000],
           "Visible" : true,
@@ -1022,86 +1110,86 @@
   "PerspectiveCamera" : {
     "FOV" : 1.047198,
     "FarClip" : 1000.000000,
-    "Location" : [-94.244850, 6.889873, 5.214170],
+    "Location" : [-88.460289, -0.502459, 5.113031],
     "NearClip" : 0.100000,
-    "Rotation" : [0.000000, 3.914948, -159.851013]
+    "Rotation" : [-0.000000, 13.764068, 178.124588]
   },
   "Primitives" : {
-    "14" : {
+    "129" : {
       "Location" : [-4.572765, 8.773433, 0.374525],
       "ObjStaticMeshAsset" : "Data/Clothe/Lumia.obj",
       "Rotation" : [0.000000, -0.000000, -89.999992],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "21" : {
-      "Location" : [-39.540676, 9.464864, 1.984747],
-      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
-      "Rotation" : [0.000000, -0.000000, 0.000000],
-      "Scale" : [1.000000, 1.000000, 1.000000],
-      "Type" : "StaticMeshComp"
-    },
-    "27" : {
+    "14" : {
       "Location" : [-33.791168, 9.464864, 7.203735],
       "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
       "Rotation" : [0.000000, -0.000000, 0.000000],
       "Scale" : [1.000000, 1.000000, 1.000000],
       "Type" : "StaticMeshComp"
     },
-    "30" : {
+    "17" : {
       "Location" : [-33.791168, 9.464864, 2.006864],
       "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
       "Rotation" : [0.000000, -0.000000, 0.000000],
       "Scale" : [1.000000, 1.000000, 1.000000],
       "Type" : "StaticMeshComp"
     },
-    "33" : {
+    "20" : {
       "Location" : [-39.254246, 9.464864, 7.227422],
       "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
       "Rotation" : [0.000000, -0.000000, 0.000000],
       "Scale" : [1.000000, 1.000000, 1.000000],
       "Type" : "StaticMeshComp"
     },
-    "36" : {
+    "23" : {
       "Location" : [-36.704144, 11.042895, 4.293333],
       "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
       "Rotation" : [0.000000, -0.000000, 0.000000],
       "Scale" : [4.000000, 0.200000, 4.000000],
       "Type" : "StaticMeshComp"
     },
-    "39" : {
+    "26" : {
       "Location" : [-66.599083, 7.333184, 4.860976],
       "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
       "Rotation" : [0.000000, -0.000000, -89.999992],
-      "Scale" : [4.069321, 0.200000, 4.000000],
+      "Scale" : [4.069322, 0.200000, 4.000000],
       "Type" : "StaticMeshComp"
     },
-    "42" : {
+    "29" : {
       "Location" : [-110.000000, 0.000000, 4.274501],
       "ObjStaticMeshAsset" : "Data/Stage/Map1.obj",
       "Rotation" : [0.000000, -0.000000, 0.000000],
       "Scale" : [1.000000, 1.000000, 1.000000],
       "Type" : "StaticMeshComp"
     },
-    "51" : {
+    "38" : {
       "Location" : [-22.705727, 9.206909, 0.628926],
       "ObjStaticMeshAsset" : "Data/Clothe/Lumia.obj",
       "Rotation" : [0.000000, -0.000000, -87.960213],
       "Scale" : [3.000000, 3.000000, 3.000000],
       "Type" : "StaticMeshComp"
     },
-    "54" : {
+    "45" : {
       "Location" : [-110.072762, -0.087008, -0.363487],
       "ObjStaticMeshAsset" : "Data/BasicShape/Cylinder.obj",
       "Rotation" : [0.000000, -0.000000, 0.000000],
       "Scale" : [15.000000, 15.000000, 0.300000],
       "Type" : "StaticMeshComp"
     },
+    "49" : {
+      "Location" : [-109.854980, -0.580739, -0.021768],
+      "ObjStaticMeshAsset" : "Data/car/car1.obj",
+      "Rotation" : [0.000000, -0.000000, 0.000000],
+      "Scale" : [2.000000, 2.000000, 2.000000],
+      "Type" : "StaticMeshComp"
+    },
     "8" : {
-      "Location" : [-110.061104, -0.027277, 0.383381],
-      "ObjStaticMeshAsset" : "C:/Users/jungle/Desktop/testCar/Porsche.obj",
-      "Rotation" : [3.557266, -0.000000, 0.000000],
-      "Scale" : [200.000000, 200.000000, 200.000000],
+      "Location" : [-39.540676, 9.464864, 1.984747],
+      "ObjStaticMeshAsset" : "Data/BasicShape/Cube.OBJ",
+      "Rotation" : [0.000000, -0.000000, 0.000000],
+      "Scale" : [1.000000, 1.000000, 1.000000],
       "Type" : "StaticMeshComp"
     }
   },
