@@ -165,7 +165,7 @@ void ApplyLocalLightAttenuation(FLightData light, float3 worldPos, out float3 L,
     L = toLight / max(dist, 0.0001f);
 
     float distanceAtten = saturate(1.0f - dist / light.AttenuationRadius);
-    atten = pow(distanceAtten, light.FalloffExponent);
+    atten = pow(distanceAtten, max(light.FalloffExponent, 0.00001f));
 
     if (light.LightType == 1)
     {
